@@ -5,6 +5,7 @@ import { NavigationMenu } from './NavigationMenu';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import FilterSelectors from './FilterSelectors';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -27,6 +28,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <SidebarTrigger />
               <h1 className="text-xl font-semibold ml-2">Magento Sales Pulse</h1>
             </div>
+            <FilterSelectors />
             <div>
               <Button variant="ghost" size="sm" onClick={logout} className="flex items-center">
                 <LogOut className="mr-2 h-4 w-4" />
