@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,20 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+                magento: {
+                    50: '#eef7ff',
+                    100: '#d9edff',
+                    200: '#bce0ff',
+                    300: '#8eccff',
+                    400: '#58aeff',
+                    500: '#318cff',
+                    600: '#0F52BA', // main brand color
+                    700: '#0051d3',
+                    800: '#0043ab',
+                    900: '#083c88',
+                    950: '#052355',
+                }
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
