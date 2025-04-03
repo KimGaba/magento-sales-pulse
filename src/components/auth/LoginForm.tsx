@@ -4,14 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CardContent, CardFooter } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { CardContent } from '@/components/ui/card';
 import { Mail, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 const LoginForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -30,33 +31,43 @@ const LoginForm = () => {
     
     setIsLoading(true);
     
-    // Dette er en simuleret login-proces
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await login(email, password);
       toast({
         title: "Velkommen tilbage!",
         description: "Du er nu logget ind.",
       });
-      // I en rigtig implementation ville vi her gemme en auth token
-      localStorage.setItem("isLoggedIn", "true");
       navigate('/dashboard');
-    }, 1500);
+    } catch (error) {
+      toast({
+        title: "Fejl ved login",
+        description: "Der opstod en fejl under login. Prøv igen.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     setIsLoading(true);
     
-    // Dette er en simuleret Google login-proces
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await loginWithGoogle();
       toast({
         title: "Velkommen via Google!",
         description: "Du er nu logget ind med din Google-konto.",
       });
-      // I en rigtig implementation ville vi her gemme en auth token
-      localStorage.setItem("isLoggedIn", "true");
       navigate('/dashboard');
-    }, 1500);
+    } catch (error) {
+      toast({
+        title: "Fejl ved Google login",
+        description: "Der opstod en fejl under login. Prøv igen.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
