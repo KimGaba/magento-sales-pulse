@@ -18,7 +18,7 @@ const Index = () => {
               <li><Link to="/features" className="text-gray-600 hover:text-magento-600">Funktioner</Link></li>
               <li><Link to="/pricing" className="text-gray-600 hover:text-magento-600">Priser</Link></li>
               <li><Button asChild variant="outline"><Link to="/login">Log ind</Link></Button></li>
-              <li><Button asChild><Link to="/connect">Kom igang</Link></Button></li>
+              <li><Button asChild><Link to="/login">Kom igang</Link></Button></li>
             </ul>
           </nav>
         </div>
@@ -39,10 +39,10 @@ const Index = () => {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button asChild size="lg" className="bg-magento-600 hover:bg-magento-700">
-                    <Link to="/connect">Forbind din butik</Link>
+                    <Link to="/login">Forbind din butik</Link>
                   </Button>
                   <Button asChild size="lg" variant="outline">
-                    <Link to="/dashboard">Se demo</Link>
+                    <Link to="/login">Se demo</Link>
                   </Button>
                 </div>
               </div>
@@ -115,7 +115,7 @@ const Index = () => {
                 Slut med at rode med komplekse rapporter og uoverskuelige data. Få et klart overblik over din butik med Sales Pulse.
               </p>
               <Button asChild size="lg" className="bg-magento-600 hover:bg-magento-700">
-                <Link to="/connect">Start gratis prøveperiode</Link>
+                <Link to="/login">Start gratis prøveperiode</Link>
               </Button>
             </div>
           </div>
