@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { MagentoConnection } from '@/types/magento';
 
@@ -8,8 +9,7 @@ export const addMagentoConnection = async (
   userId: string,
   storeUrl: string,
   accessToken: string,
-  storeName: string,
-  orderStatuses: string[] = ["processing", "complete"]
+  storeName: string
 ) => {
   try {
     console.log(`Adding Magento connection for user ${userId} to store ${storeName}`);
@@ -22,8 +22,7 @@ export const addMagentoConnection = async (
           store_url: storeUrl,
           access_token: accessToken,
           store_name: storeName,
-          status: 'active',
-          order_statuses: orderStatuses
+          status: 'active'
         }
       ])
       .select();
@@ -59,14 +58,8 @@ export const fetchMagentoConnections = async (userId: string): Promise<MagentoCo
       throw error;
     }
     
-    // Make sure each connection has order_statuses, even if it's empty
-    const connectionsWithStatuses = data?.map(connection => ({
-      ...connection,
-      order_statuses: connection.order_statuses || []
-    })) as MagentoConnection[];
-    
-    console.log(`Fetched ${connectionsWithStatuses?.length || 0} Magento connections`);
-    return connectionsWithStatuses || [];
+    console.log(`Fetched ${data?.length || 0} Magento connections`);
+    return data as MagentoConnection[] || [];
   } catch (error) {
     console.error('Error fetching Magento connections:', error);
     throw error;
@@ -76,7 +69,7 @@ export const fetchMagentoConnections = async (userId: string): Promise<MagentoCo
 /**
  * Updates a Magento store connection
  */
-export const updateMagentoConnection = async (connectionId: string, data: { order_statuses?: string[] }) => {
+export const updateMagentoConnection = async (connectionId: string, data: Partial<MagentoConnection>) => {
   try {
     const { error } = await supabase
       .from('magento_connections')

@@ -60,11 +60,11 @@ export async function synchronizeMagentoData() {
       }
       
       // 3. Fetch sales data from Magento
-      // Get order statuses to sync from connection settings
-      const orderStatuses = connection.order_statuses || ["processing", "complete"];
-      console.log(`Using order statuses for sync: ${orderStatuses.join(', ')}`);
+      // Use default order statuses
+      const defaultOrderStatuses = ["processing", "complete"];
+      console.log(`Using default order statuses for sync: ${defaultOrderStatuses.join(', ')}`);
       
-      const salesData = await fetchMagentoSalesData(connection, orderStatuses);
+      const salesData = await fetchMagentoSalesData(connection, defaultOrderStatuses);
       
       if (!salesData || !salesData.length) {
         console.log(`No sales data fetched for store ${connection.store_name}`);
