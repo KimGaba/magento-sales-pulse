@@ -36,7 +36,7 @@ import { useForm } from "react-hook-form";
 
 interface StoreConnection {
   id: string;
-  store_id: string;
+  store_id?: string; // Making store_id optional to match MagentoConnection
   store_name: string;
   store_url: string;
   status: string;
