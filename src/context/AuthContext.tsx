@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -215,7 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log("Attempting test user login");
       const testEmail = "test@test.dk";
-      const testPassword = "1234";
+      const testPassword = "123456";
       
       const { data: existingUser, error: checkError } = await supabase.auth.signInWithPassword({
         email: testEmail,

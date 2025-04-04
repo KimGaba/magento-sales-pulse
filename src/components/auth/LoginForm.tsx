@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -190,7 +189,6 @@ const LoginForm = () => {
           {translations.login.googleButton}
         </Button>
         
-        {/* Add Test Login Button */}
         <Button 
           type="button" 
           variant="secondary" 
@@ -199,7 +197,7 @@ const LoginForm = () => {
           className="w-full"
         >
           <KeyRound className="mr-2 h-4 w-4" />
-          Test Login (Kun udvikling)
+          Test Login (test@test.dk / 123456)
         </Button>
       </CardContent>
       
