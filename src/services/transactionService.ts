@@ -16,12 +16,14 @@ export const fetchTransactionData = async (
       .from('transactions')
       .select('*')
       .gte('transaction_date', fromDate)
-      .lte('transaction_date', toDate)
-      .order('transaction_date', { ascending: false });
+      .lte('transaction_date', toDate);
     
     if (storeIds && storeIds.length > 0) {
       query = query.in('store_id', storeIds);
     }
+    
+    // Apply ordering after all filters
+    query = query.order('transaction_date', { ascending: false });
     
     const { data, error } = await query;
     
