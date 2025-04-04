@@ -1,4 +1,3 @@
-
 const da = {
   common: {
     back: "Tilbage",
@@ -6,12 +5,14 @@ const da = {
     error: "Fejl",
     logOut: "Log Ud",
     login: "Log Ind",
-    register: "Tilmeld"
+    register: "Tilmeld",
+    cancel: "Annuller",
+    confirm: "Bekræft"
   },
   login: {
     title: "Log ind på din konto",
     username: "Brugernavn",
-    email: "E-mail", // Add the missing email field
+    email: "E-mail",
     password: "Adgangskode",
     submit: "Log ind",
     forgotPassword: "Glemt adgangskode?",
@@ -114,7 +115,9 @@ const da = {
     saved: "Indstillingerne blev gemt",
     error: "Fejl ved gemning af indstillinger",
     backButton: "Tilbage",
-    logOutButton: "Log Ud"
+    logOutButton: "Log Ud",
+    logoutConfirmTitle: "Bekræft log ud",
+    logoutConfirmMessage: "Er du sikker på, at du vil logge ud? Alle ikke-gemte ændringer vil gå tabt."
   },
   connect: {
     title: "Forbind din Magento-butik",

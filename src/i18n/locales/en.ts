@@ -1,4 +1,3 @@
-
 const en = {
   common: {
     back: "Back",
@@ -6,12 +5,14 @@ const en = {
     error: "Error",
     logOut: "Log Out",
     login: "Login",
-    register: "Register"
+    register: "Register",
+    cancel: "Cancel",
+    confirm: "Confirm"
   },
   login: {
     title: "Login",
     username: "Username",
-    email: "Email", // Add the missing email field
+    email: "Email",
     password: "Password",
     submit: "Login",
     forgotPassword: "Forgot Password?",
@@ -109,7 +110,9 @@ const en = {
     saved: "Settings saved successfully",
     error: "Error saving settings",
     backButton: "Back",
-    logOutButton: "Log Out"
+    logOutButton: "Log Out",
+    logoutConfirmTitle: "Confirm Logout",
+    logoutConfirmMessage: "Are you sure you want to log out? Any unsaved changes will be lost."
   },
   connect: {
     title: "Connect your Magento Store",
