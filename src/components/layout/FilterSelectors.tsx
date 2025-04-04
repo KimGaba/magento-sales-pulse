@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useFilter } from '@/context/FilterContext';
 import { 
   Select, 
@@ -20,9 +20,21 @@ import { useLanguage } from '@/i18n/LanguageContext';
 const FilterSelectors = () => {
   const { storeView, customerGroup, setStoreView, setCustomerGroup } = useFilter();
   const { translations } = useLanguage();
+  
+  // Local state for the filters that will only be applied when the user clicks "Anvend filtre"
+  const [localStoreView, setLocalStoreView] = useState(storeView);
+  const [localCustomerGroup, setLocalCustomerGroup] = useState(customerGroup);
+  const [open, setOpen] = useState(false);
+
+  // Apply the filters and close the popover
+  const handleApplyFilters = () => {
+    setStoreView(localStoreView);
+    setCustomerGroup(localCustomerGroup);
+    setOpen(false);
+  };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-muted-foreground" />
@@ -39,8 +51,8 @@ const FilterSelectors = () => {
               <label htmlFor="store-filter" className="text-sm">Butik</label>
             </div>
             <Select 
-              value={storeView} 
-              onValueChange={(value) => setStoreView(value as any)}
+              value={localStoreView} 
+              onValueChange={(value) => setLocalStoreView(value as any)}
             >
               <SelectTrigger id="store-filter" className="w-full text-xs">
                 <SelectValue placeholder="Vælg butik" />
@@ -61,8 +73,8 @@ const FilterSelectors = () => {
               <label htmlFor="customer-filter" className="text-sm">Kundegruppe</label>
             </div>
             <Select 
-              value={customerGroup}
-              onValueChange={(value) => setCustomerGroup(value as any)}
+              value={localCustomerGroup}
+              onValueChange={(value) => setLocalCustomerGroup(value as any)}
             >
               <SelectTrigger id="customer-filter" className="w-full text-xs">
                 <SelectValue placeholder="Kundegruppe" />
@@ -77,7 +89,12 @@ const FilterSelectors = () => {
           </div>
           
           <div className="flex justify-end mt-4">
-            <Button size="sm" variant="outline" className="w-full">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="w-full"
+              onClick={handleApplyFilters}
+            >
               <Check className="mr-2 h-4 w-4" />
               Anvend filtre
             </Button>
