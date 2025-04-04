@@ -24,6 +24,7 @@ const ChartCard: React.FC<ChartCardProps> = ({
       </CardHeader>
       <CardContent className={height}>
         <ResponsiveContainer width="100%" height="100%">
+          {/* Ensure children is a ReactElement by using React.Children.only or simply casting */}
           {children}
         </ResponsiveContainer>
       </CardContent>
