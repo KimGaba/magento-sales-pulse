@@ -9,9 +9,9 @@ import {
   CustomerGroup
 } from '../types/magento';
 
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Initialize Supabase client with fallback to prevent runtime errors
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder-url.supabase.co';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Orders
