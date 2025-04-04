@@ -11,7 +11,7 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
   try {
     console.log('Testing basic database connectivity...');
     
-    // Most basic query possible - don't use any qualifiers
+    // Most basic query possible - use explicit table alias to avoid ambiguity
     const { data, error, status, statusText } = await supabase
       .from('transactions')
       .select('id, store_id, transaction_date, amount, product_id, created_at, external_id, customer_id')
@@ -52,7 +52,7 @@ export const getTransactionCount = async (): Promise<number> => {
   try {
     console.log('Simple database check: counting transactions');
     
-    // Use count() instead of select(*) with count
+    // Use explicit count syntax and avoid ambiguity
     const { count, error } = await supabase
       .from('transactions')
       .select('id', { count: 'exact', head: true });
@@ -92,23 +92,23 @@ export const fetchTransactionData = async (
   try {
     console.log(`Simple fetch: transactions from ${fromDate} to ${toDate}`);
     
-    // Explicitly list all columns we need
+    // Explicitly list all columns with table qualifier to avoid ambiguity
     let query = supabase
       .from('transactions')
-      .select('id, store_id, transaction_date, amount, product_id, created_at, external_id, customer_id');
+      .select('transactions.id, transactions.store_id, transactions.transaction_date, transactions.amount, transactions.product_id, transactions.created_at, transactions.external_id, transactions.customer_id');
     
     // Apply date filters
     if (fromDate) {
-      query = query.gte('transaction_date', fromDate);
+      query = query.gte('transactions.transaction_date', fromDate);
     }
     
     if (toDate) {
-      query = query.lte('transaction_date', toDate);
+      query = query.lte('transactions.transaction_date', toDate);
     }
     
-    // Apply store filter if provided, using simple column name
+    // Apply store filter if provided
     if (storeIds && storeIds.length > 0) {
-      query = query.in('store_id', storeIds);
+      query = query.in('transactions.store_id', storeIds);
     }
     
     // Execute the query
