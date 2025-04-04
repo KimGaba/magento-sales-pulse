@@ -20,7 +20,7 @@ export const fetchTransactionData = async (
       .order('transaction_date', { ascending: false });
     
     if (storeIds && storeIds.length > 0) {
-      query = query.in('store_id', storeIds);
+      query = query.in('transactions.store_id', storeIds);
     }
     
     const { data, error } = await query;
