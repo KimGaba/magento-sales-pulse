@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Loader2, Info } from 'lucide-react';
+import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Loader2, Info, Database } from 'lucide-react';
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -18,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format, startOfMonth, endOfMonth, isSameMonth, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { fetchDailySalesData, fetchAvailableDataMonths } from '@/services/salesService';
+import { fetchDailySalesData, fetchAvailableDataMonths, fetchTransactionCount } from '@/services/salesService';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -33,6 +33,11 @@ const DailySales = () => {
   
   const fromDate = date ? format(startOfMonth(date), 'yyyy-MM-dd') : '';
   const toDate = date ? format(endOfMonth(date), 'yyyy-MM-dd') : '';
+
+  const { data: transactionCount = 0, isLoading: isCountLoading } = useQuery({
+    queryKey: ['transactionCount'],
+    queryFn: () => fetchTransactionCount(),
+  });
 
   const { data: availableMonths = [], isLoading: isLoadingMonths } = useQuery({
     queryKey: ['availableMonths'],
@@ -128,6 +133,37 @@ const DailySales = () => {
         <h1 className="text-3xl font-bold mb-2">Dagligt Salg</h1>
         <p className="text-gray-500">Detaljer om dine daglige salgsresultater</p>
       </div>
+      
+      <Card className="mb-6">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-md font-medium">Database Check</CardTitle>
+          <Database className="h-5 w-5 text-magento-600" />
+        </CardHeader>
+        <CardContent>
+          {isCountLoading ? (
+            <div className="flex items-center">
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Checking database...
+            </div>
+          ) : (
+            <div>
+              <p className="text-lg">
+                Total transactions in database: <span className="font-bold">{transactionCount}</span>
+              </p>
+              {transactionCount === 0 && (
+                <p className="text-sm text-red-500 mt-2">
+                  No transactions found in the database. Please check your database connection or import some data.
+                </p>
+              )}
+              {transactionCount > 0 && (
+                <p className="text-sm text-green-500 mt-2">
+                  Database connection is working and transactions are available!
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
       
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
         <div className="flex items-center gap-2">

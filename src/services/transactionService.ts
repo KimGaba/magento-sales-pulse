@@ -55,6 +55,42 @@ export const fetchTransactionData = async (
 };
 
 /**
+ * Simple function to count the number of transactions in the database
+ * No filters, just a basic count
+ */
+export const getTransactionCount = async (): Promise<number> => {
+  try {
+    console.log('Fetching transaction count');
+    
+    // Simple count query without any joins or filters
+    const { count, error } = await supabase
+      .from('transactions')
+      .select('*', { count: 'exact', head: true });
+    
+    if (error) {
+      console.error('Error counting transactions:', error);
+      toast({
+        title: "Error counting transactions",
+        description: error.message,
+        variant: "destructive"
+      });
+      return 0;
+    }
+    
+    console.log(`Found ${count} transactions in the database`);
+    return count || 0;
+  } catch (error) {
+    console.error('Error in getTransactionCount:', error);
+    toast({
+      title: "Error counting transactions",
+      description: error instanceof Error ? error.message : "An unknown error occurred",
+      variant: "destructive"
+    });
+    return 0;
+  }
+};
+
+/**
  * Maps the raw data from Supabase to the Transaction type
  */
 const mapTransactionsData = (data: any[]): Transaction[] => {

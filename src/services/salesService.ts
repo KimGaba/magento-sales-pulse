@@ -1,7 +1,8 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Transaction } from '@/utils/repeatPurchaseCalculator';
-import { fetchTransactionData } from './transactionService';
+import { fetchTransactionData, getTransactionCount } from './transactionService';
 import { format, parseISO } from 'date-fns';
 
 /**
@@ -16,7 +17,6 @@ export const fetchDailySalesData = async (
     console.log(`Fetching daily sales from ${fromDate} to ${toDate}`);
     
     // Fetch transaction data using the transactionService
-    // We'll ignore storeIds for now to see if we can get the basic functionality working
     const transactions = await fetchTransactionData(fromDate, toDate);
     
     if (!transactions || transactions.length === 0) {
@@ -59,6 +59,14 @@ export const fetchDailySalesData = async (
     });
     return [];
   }
+};
+
+/**
+ * Fetches total transaction count from the database
+ * A simple function to check if we can access any data
+ */
+export const fetchTransactionCount = async () => {
+  return await getTransactionCount();
 };
 
 /**
