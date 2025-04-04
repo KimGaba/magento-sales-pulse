@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import LoginForm from '@/components/auth/LoginForm';
@@ -51,6 +51,11 @@ const Login = () => {
               <RegisterForm />
             </TabsContent>
           </Tabs>
+
+          <div className="p-4 text-center text-sm text-muted-foreground">
+            <p>Brug knappen "Fortsæt med Google" for at logge ind med Google.</p>
+            <p className="mt-2">Bemærk: Google-login skal være aktiveret i Supabase projektet.</p>
+          </div>
         </Card>
       </main>
 

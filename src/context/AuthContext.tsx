@@ -91,7 +91,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Google authentication error:", error);
+        throw error;
+      }
     } catch (error: any) {
       toast.error(`Google login fejlede: ${error.message}`);
       throw error;
@@ -112,14 +115,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const closeConfigError = () => {
-    setShowConfigError(false);
-  };
-
   return (
     <AuthContext.Provider value={{ isAuthenticated, user, login, loginWithGoogle, logout }}>
       {children}
-      <Dialog open={showConfigError} onOpenChange={closeConfigError}>
+      <Dialog open={showConfigError} onOpenChange={setShowConfigError}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Konfigurationsfejl</DialogTitle>
@@ -136,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             </p>
           </div>
           <div className="flex justify-end">
-            <Button onClick={closeConfigError}>Luk</Button>
+            <Button onClick={() => setShowConfigError(false)}>Luk</Button>
           </div>
         </DialogContent>
       </Dialog>

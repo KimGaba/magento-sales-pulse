@@ -51,9 +51,15 @@ const LoginForm = () => {
     
     try {
       await loginWithGoogle();
+      // No navigate here - the page will redirect via OAuth flow
     } catch (error: any) {
-      console.error(error);
-      setLoginError(error.message || 'Der opstod en fejl under Google login. Prøv igen senere.');
+      console.error("Google login error:", error);
+      
+      if (error.message?.includes("provider is not enabled")) {
+        setLoginError("Google login er ikke aktiveret. Kontakt venligst administratoren for at aktivere Google-integration i Supabase.");
+      } else {
+        setLoginError(error.message || 'Der opstod en fejl under Google login. Prøv igen senere.');
+      }
     } finally {
       setIsLoading(false);
     }
