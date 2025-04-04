@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -85,7 +86,14 @@ const LoginForm = () => {
       // Navigation handled automatically in AuthContext
     } catch (error: any) {
       console.error("Test login form error:", error);
-      setLoginError(error.message || 'Der opstod en fejl under test login. Prøv igen senere.');
+      
+      if (error.message?.includes("Email not confirmed") || error.message?.includes("email-bekræftelse er påkrævet")) {
+        setLoginError(error.message);
+        // Show specific instructions for email confirmation bypass
+        setLoginError('Test bruger oprettet! For at logge ind skal du enten verificere emailen eller deaktivere email-bekræftelse i Supabase-konsollen.');
+      } else {
+        setLoginError(error.message || 'Der opstod en fejl under test login. Prøv igen senere.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -199,6 +207,16 @@ const LoginForm = () => {
           <KeyRound className="mr-2 h-4 w-4" />
           Test Login (test@test.dk / 123456)
         </Button>
+        
+        <Alert className="bg-blue-50 border-blue-200">
+          <AlertCircle className="h-4 w-4 mr-2 text-blue-600" />
+          <div>
+            <AlertTitle className="text-blue-800">Email verification required</AlertTitle>
+            <AlertDescription className="text-blue-700">
+              For test login to work during development, email confirmation may need to be disabled in the Supabase console.
+            </AlertDescription>
+          </div>
+        </Alert>
       </CardContent>
       
       {showRegisterHint && (

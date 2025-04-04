@@ -218,36 +218,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const testEmail = "test@test.dk";
       const testPassword = "123456";
       
+      // First try to log in with existing credentials
       const { data: existingUser, error: checkError } = await supabase.auth.signInWithPassword({
         email: testEmail,
         password: testPassword,
       });
       
-      if (checkError && checkError.message.includes("Invalid login credentials")) {
-        console.log("Test user doesn't exist, creating it");
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      if (existingUser?.user) {
+        console.log("Test login successful with existing user");
+        toast.success('Logget ind som test bruger');
+        return;
+      }
+      
+      // If we get an email confirmation error, try admin API to bypass email verification
+      if (checkError && (checkError.message.includes("Email not confirmed") || checkError.message.includes("Invalid login credentials"))) {
+        console.log("Test user needs to be created with auto-confirmation");
+        
+        // Create the test user if it doesn't exist
+        const { error: signUpError, data: signUpData } = await supabase.auth.signUp({
           email: testEmail,
           password: testPassword,
           options: {
+            // Set metadata to indicate this is a test user
             data: {
-              email_confirmed: true
+              is_test_user: true
             }
           }
         });
         
         if (signUpError) throw signUpError;
         
+        // Use a custom approach to bypass email verification
+        // Since we can't directly mark email as confirmed through frontend,
+        // we'll use the admin API token in a production environment
+        
+        // For development purposes, we'll attempt direct login and inform the user
+        // about email confirmation requirements
+        
+        // Try to sign in again after creating the account
         const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
           email: testEmail,
           password: testPassword,
         });
         
-        if (loginError) throw loginError;
+        if (loginError && loginError.message.includes("Email not confirmed")) {
+          toast.warning('Test bruger oprettet! For at logge ind skal du verificere din email eller deaktivere email-bekræftelse i Supabase-konsollen.');
+          throw new Error("Test bruger oprettet, men email-bekræftelse er påkrævet. Kontakt venligst administratoren for at deaktivere email-bekræftelse i Supabase.");
+        } else if (loginError) {
+          throw loginError;
+        }
         
-        console.log("Test login successful:", loginData);
-        toast.success('Logget ind som test bruger');
-      } else if (existingUser) {
-        console.log("Test login successful with existing user");
+        console.log("Test login successful after creating user");
         toast.success('Logget ind som test bruger');
       } else if (checkError) {
         throw checkError;
