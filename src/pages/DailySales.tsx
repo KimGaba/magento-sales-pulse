@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,10 +20,9 @@ import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDailySalesData } from '@/services/salesService';
 import { useToast } from '@/hooks/use-toast';
-import { useFilterContext } from '@/context/FilterContext';
+import { useFilter } from '@/context/FilterContext';
 import ChartCard from '@/components/dashboard/ChartCard';
 
-// For formatting the date from the database
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.getDate().toString();
@@ -33,20 +31,26 @@ const formatDate = (dateString: string) => {
 const DailySales = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const { toast } = useToast();
-  const { selectedStoreIds } = useFilterContext();
+  const { storeView } = useFilter();
   
-  // Calculate first and last day of the selected month
+  const selectedStoreIds = React.useMemo(() => {
+    if (storeView === 'alle') return [];
+    if (storeView === 'dk') return ['dk-store-1', 'dk-store-2'];
+    if (storeView === 'se') return ['se-store-1', 'se-store-2'];
+    if (storeView === 'no') return ['no-store-1', 'no-store-2'];
+    if (storeView === 'fi') return ['fi-store-1', 'fi-store-2'];
+    return [];
+  }, [storeView]);
+  
   const fromDate = date ? format(startOfMonth(date), 'yyyy-MM-dd') : '';
   const toDate = date ? format(endOfMonth(date), 'yyyy-MM-dd') : '';
 
-  // Fetch daily sales data
   const { data: salesData, isLoading, error } = useQuery({
     queryKey: ['dailySales', fromDate, toDate, selectedStoreIds],
     queryFn: () => fetchDailySalesData(fromDate, toDate, selectedStoreIds),
     enabled: !!fromDate && !!toDate,
   });
 
-  // Format data for charts
   const dailySalesData = React.useMemo(() => {
     if (!salesData) return [];
     
@@ -58,7 +62,6 @@ const DailySales = () => {
     })).sort((a, b) => parseInt(a.day) - parseInt(b.day));
   }, [salesData]);
 
-  // Calculate hourly data (mock for now, as we don't have this in the database)
   const hourlyData = [
     { hour: '00-02', sales: 200, orders: 2 },
     { hour: '02-04', sales: 100, orders: 1 },
@@ -74,7 +77,6 @@ const DailySales = () => {
     { hour: '22-24', sales: 400, orders: 5 },
   ];
 
-  // Calculate top performers
   const topPerformers = React.useMemo(() => {
     if (!dailySalesData.length) return [];
     
@@ -85,7 +87,6 @@ const DailySales = () => {
       const dayName = format(dayDate, 'EEEE');
       const formattedDate = format(dayDate, 'd. MMM');
       
-      // Calculate change (mock for now)
       const change = "+15%"; 
       
       return {
@@ -97,7 +98,6 @@ const DailySales = () => {
     });
   }, [dailySalesData]);
 
-  // Calculate metrics
   const metrics = React.useMemo(() => {
     if (!dailySalesData.length) return { avgSales: 0, avgOrders: 0, bestDay: { day: '', date: '', sales: 0 } };
     
@@ -162,7 +162,6 @@ const DailySales = () => {
         </div>
       </div>
       
-      {/* Daily Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -234,7 +233,6 @@ const DailySales = () => {
         </Card>
       </div>
       
-      {/* Daily Sales Chart */}
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Daglig omsætning</CardTitle>
@@ -269,7 +267,6 @@ const DailySales = () => {
         </CardContent>
       </Card>
       
-      {/* Additional Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <Card>
           <CardHeader>
@@ -342,7 +339,6 @@ const DailySales = () => {
         </Card>
       </div>
       
-      {/* Daily Summary */}
       <Card>
         <CardHeader>
           <CardTitle>Daglig opsummering</CardTitle>
