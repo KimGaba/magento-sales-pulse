@@ -13,7 +13,7 @@ export const fetchTransactionData = async (
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate} for stores:`, storeIds);
     
-    // Create a query that explicitly selects all columns with table prefixes to avoid ambiguity
+    // Create a query with proper column selection to avoid ambiguity
     let query = supabase
       .from('transactions')
       .select(`
@@ -24,17 +24,17 @@ export const fetchTransactionData = async (
         external_id,
         created_at,
         product_id,
-        transactions.store_id
+        store_id
       `)
       .gte('transaction_date', fromDate)
       .lte('transaction_date', toDate);
     
     if (storeIds && storeIds.length > 0) {
       console.log('Filtering on store_ids:', storeIds);
-      query = query.in('transactions.store_id', storeIds);
+      query = query.in('store_id', storeIds);
     }
     
-    // Apply ordering with explicit table name
+    // Apply ordering
     query = query.order('transaction_date', { ascending: false });
     
     const { data, error } = await query;
@@ -42,32 +42,22 @@ export const fetchTransactionData = async (
     if (error) {
       console.error('Error fetching transaction data:', error);
       
-      // Try a minimal query as a fallback
-      console.log('Attempting minimal query...');
-      const { data: minimalData, error: minimalError } = await supabase
-        .from('transactions')
-        .select('id, transaction_date, amount')
-        .limit(5);
-        
-      if (minimalError) {
-        console.error('Even minimal query failed:', minimalError);
-      } else {
-        console.log('Minimal query succeeded with sample data:', minimalData);
-      }
-      
+      // Show toast with error
       toast({
         title: "Error fetching transactions",
         description: error.message,
         variant: "destructive"
       });
       
-      throw error;
+      // Return empty array instead of throwing an error, ensuring type safety
+      return [];
     }
     
     console.log(`Fetched ${data?.length || 0} transactions`);
     return data || [];
   } catch (error) {
     console.error('Error in fetchTransactionData:', error);
-    throw error;
+    // Return empty array instead of throwing an error when catching exceptions
+    return [];
   }
 };

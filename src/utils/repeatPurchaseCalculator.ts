@@ -14,7 +14,7 @@ export type RepeatPurchaseData = {
 };
 
 // Define a type for transaction data
-interface Transaction {
+export interface Transaction {
   customer_id: string | null;
   amount: number;
   transaction_date: string;

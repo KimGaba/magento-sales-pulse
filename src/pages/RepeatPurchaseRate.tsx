@@ -7,12 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { fetchTransactionData } from '@/services/supabase';
+import { fetchTransactionData } from '@/services/transactionService';
 import { Skeleton } from '@/components/ui/skeleton';
 import RepeatRateCard from '@/components/repeat-purchase/RepeatRateCard';
 import CustomersPieChart from '@/components/repeat-purchase/CustomersPieChart';
 import TopCustomersTable from '@/components/repeat-purchase/TopCustomersTable';
-import { calculateRepeatPurchaseRate } from '@/utils/repeatPurchaseCalculator';
+import { calculateRepeatPurchaseRate, Transaction } from '@/utils/repeatPurchaseCalculator';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const RepeatPurchaseRate = () => {
@@ -34,7 +34,11 @@ const RepeatPurchaseRate = () => {
   });
 
   // Calculate data for current active tab
-  const currentPeriodData = calculateRepeatPurchaseRate(transactions, parseInt(activeTab));
+  // Ensure we only pass valid transaction data to the calculator
+  const currentPeriodData = calculateRepeatPurchaseRate(
+    (transactions || []) as Transaction[], 
+    parseInt(activeTab)
+  );
   
   // Prepare data for pie chart
   const pieChartData = [
