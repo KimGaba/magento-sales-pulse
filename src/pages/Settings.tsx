@@ -6,14 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, Save, User } from 'lucide-react';
+import { ArrowLeft, LogOut, Save, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 const Settings = () => {
   const { user, logout } = useAuth();
   const { translations } = useLanguage();
+  const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
     displayName: '',
@@ -107,10 +109,10 @@ const Settings = () => {
         console.log("Profiles table might not exist:", profileError);
       }
 
-      toast.success(translations.settings?.saved || "Settings saved successfully");
+      toast.success("Settings saved successfully");
     } catch (error: any) {
       console.error("Error updating profile:", error);
-      toast.error(`${translations.settings?.error || "Error saving settings"}: ${error.message}`);
+      toast.error(`Error saving settings: ${error.message}`);
     }
   };
 
@@ -120,9 +122,22 @@ const Settings = () => {
     return user.email.substring(0, 2).toUpperCase();
   };
 
+  const handleBack = () => {
+    navigate(-1);
+  };
+
   return (
     <div className="container max-w-3xl py-6">
       <div className="mb-8 flex items-center gap-4">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={handleBack} 
+          className="mr-2"
+          aria-label="Back"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
         <Avatar className="h-16 w-16">
           <AvatarImage src={user?.user_metadata?.avatar_url} />
           <AvatarFallback className="bg-primary text-primary-foreground text-xl">
@@ -130,23 +145,23 @@ const Settings = () => {
           </AvatarFallback>
         </Avatar>
         <div>
-          <h1 className="text-2xl font-bold">{translations.settings?.title || "Account Settings"}</h1>
-          <p className="text-muted-foreground">{translations.settings?.subtitle || "Manage your account information"}</p>
+          <h1 className="text-2xl font-bold">Account Settings</h1>
+          <p className="text-muted-foreground">Manage your account information</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit}>
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>{translations.settings?.profileInfo || "Profile Information"}</CardTitle>
+            <CardTitle>Profile Information</CardTitle>
             <CardDescription>
-              {translations.settings?.profileDesc || "Update your personal information"}
+              Update your personal information
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="displayName">{translations.settings?.name || "Display Name"}</Label>
+                <Label htmlFor="displayName">Display Name</Label>
                 <Input
                   id="displayName"
                   name="displayName"
@@ -155,7 +170,7 @@ const Settings = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">{translations.settings?.email || "Email"}</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   name="email"
@@ -169,14 +184,14 @@ const Settings = () => {
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>{translations.settings?.invoiceInfo || "Invoice Information"}</CardTitle>
+            <CardTitle>Invoice Information</CardTitle>
             <CardDescription>
-              {translations.settings?.invoiceDesc || "Your billing information for invoices"}
+              Your billing information for invoices
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="invoiceAddress">{translations.settings?.address || "Address"}</Label>
+              <Label htmlFor="invoiceAddress">Address</Label>
               <Input
                 id="invoiceAddress"
                 name="invoiceAddress"
@@ -187,7 +202,7 @@ const Settings = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="city">{translations.settings?.city || "City"}</Label>
+                <Label htmlFor="city">City</Label>
                 <Input
                   id="city"
                   name="city"
@@ -196,7 +211,7 @@ const Settings = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="postalCode">{translations.settings?.postalCode || "Postal Code"}</Label>
+                <Label htmlFor="postalCode">Postal Code</Label>
                 <Input
                   id="postalCode"
                   name="postalCode"
@@ -205,7 +220,7 @@ const Settings = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="country">{translations.settings?.country || "Country"}</Label>
+                <Label htmlFor="country">Country</Label>
                 <Input
                   id="country"
                   name="country"
@@ -222,7 +237,7 @@ const Settings = () => {
             </Button>
             <Button type="submit">
               <Save className="mr-2 h-4 w-4" />
-              {translations.settings?.save || "Save Changes"}
+              Save Changes
             </Button>
           </CardFooter>
         </Card>

@@ -1,61 +1,85 @@
-
-export default {
+const da = {
   common: {
-    back: "Tilbage til forsiden",
+    back: "Tilbage",
     loading: "Indlæser...",
-    error: "Der opstod en fejl",
-    logOut: "Log ud",
-    login: "Log ind",
-    register: "Opret konto"
+    error: "Fejl",
+    logOut: "Log Ud",
+    login: "Log Ind",
+    register: "Tilmeld"
   },
   login: {
-    title: "Log ind på platformen",
-    subtitle: "Få adgang til din butiks indsigter",
-    email: "Email",
+    title: "Log ind på din konto",
+    username: "Brugernavn",
     password: "Adgangskode",
+    submit: "Log ind",
     forgotPassword: "Glemt adgangskode?",
-    loginButton: "Log ind",
-    loggingIn: "Logger ind...",
-    registerTab: "Opret konto",
-    loginTab: "Log ind",
-    continueWith: "Eller fortsæt med",
-    googleButton: "Fortsæt med Google",
-    loginError: "Forkert email eller adgangskode",
-    newAccountHint: "Har du ikke en konto endnu?",
-    newAccountText: "Det ser ud til, at denne email ikke er registreret. Du skal oprette en konto først.",
-    createNewAccount: "Opret ny konto"
+    noAccount: "Har du ikke en konto?",
+    registerNow: "Tilmeld dig nu",
+    usernameRequired: "Brugernavn er påkrævet",
+    passwordRequired: "Adgangskode er påkrævet"
   },
   register: {
-    title: "Opret din konto",
-    subtitle: "Kom i gang med din butiks indsigter",
-    email: "Email",
+    title: "Opret en ny konto",
+    username: "Brugernavn",
+    email: "E-mail",
     password: "Adgangskode",
     confirmPassword: "Bekræft adgangskode",
-    registerButton: "Opret konto",
-    registering: "Opretter konto...",
-    continueWith: "Eller fortsæt med",
-    googleButton: "Fortsæt med Google",
-    passwordMismatch: "Adgangskoderne matcher ikke",
-    emptyFields: "Udfyld venligst alle felter",
-    accountCreated: "Konto oprettet!",
-    accountCreatedDesc: "Du er nu registreret og logget ind."
+    submit: "Tilmeld",
+    alreadyAccount: "Har du allerede en konto?",
+    loginNow: "Log ind nu",
+    usernameRequired: "Brugernavn er påkrævet",
+    emailRequired: "E-mail er påkrævet",
+    passwordRequired: "Adgangskode er påkrævet",
+    confirmPasswordRequired: "Bekræft adgangskode er påkrævet",
+    passwordsMustMatch: "Adgangskoderne skal stemme overens"
   },
   auth: {
-    verifyEmail: "Bekræft din email",
-    verifyEmailDesc: "Vi har sendt en bekræftelsesmail til din adresse. Tjek venligst din indbakke og klik på linket for at bekræfte din konto.",
-    checkEmail: "Tjek din email",
-    verificationSent: "Bekræftelsesmail sendt",
-    resendEmail: "Send bekræftelsesmail igen"
+    invalidCredentials: "Ugyldige legitimationsoplysninger",
+    accountNotFound: "Konto ikke fundet",
+    emailNotVerified: "E-mail ikke bekræftet",
+    genericError: "Der opstod en fejl under godkendelsen"
   },
   layout: {
     dashboard: "Dashboard",
     products: "Produkter",
-    trends: "Trends",
-    dailySales: "Dagligt Salg",
-    connect: "Forbind"
+    trends: "Tendenser",
+    dailySales: "Daglige Salg",
+    connect: "Forbind",
+    settings: "Indstillinger"
   },
   languageSelector: {
-    english: "Engelsk",
-    danish: "Dansk"
+    selectLanguage: "Vælg sprog"
+  },
+  timeFilter: {
+    today: "I dag",
+    last7Days: "Sidste 7 dage",
+    last30Days: "Sidste 30 dage",
+    thisMonth: "Denne måned",
+    lastMonth: "Sidste måned"
+  },
+  dashboard: {
+    totalSales: "Samlet salg",
+    newCustomers: "Nye kunder",
+    averageOrderValue: "Gennemsnitlig ordreværdi",
+    customerSatisfaction: "Kundetilfredshed"
+  },
+  settings: {
+    title: "Kontoindstillinger",
+    subtitle: "Administrer dine kontooplysninger",
+    profileInfo: "Profilinformation",
+    profileDesc: "Opdater dine personlige oplysninger",
+    name: "Visningsnavn",
+    email: "E-mail",
+    invoiceInfo: "Faktureringsoplysninger",
+    invoiceDesc: "Dine faktureringsoplysninger til fakturaer",
+    address: "Adresse",
+    city: "By",
+    postalCode: "Postnummer",
+    country: "Land",
+    save: "Gem ændringer",
+    saved: "Indstillingerne blev gemt",
+    error: "Fejl ved gemning af indstillinger"
   }
 };
+
+export default da;

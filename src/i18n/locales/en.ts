@@ -1,61 +1,90 @@
-
-export default {
+const en = {
   common: {
-    back: "Back to home",
+    back: "Back",
     loading: "Loading...",
-    error: "An error occurred",
-    logOut: "Log out",
-    login: "Log in",
-    register: "Create account"
+    error: "Error",
+    logOut: "Log Out",
+    login: "Login",
+    register: "Register"
   },
   login: {
-    title: "Log in to the platform",
-    subtitle: "Access your store insights",
-    email: "Email",
+    title: "Login",
+    username: "Username",
     password: "Password",
-    forgotPassword: "Forgot password?",
-    loginButton: "Log in",
-    loggingIn: "Logging in...",
-    registerTab: "Create account",
-    loginTab: "Log in",
-    continueWith: "Or continue with",
-    googleButton: "Continue with Google",
-    loginError: "Incorrect email or password",
-    newAccountHint: "Don't have an account yet?",
-    newAccountText: "It looks like this email is not registered. You need to create an account first.",
-    createNewAccount: "Create new account"
+    submit: "Login",
+    forgotPassword: "Forgot Password?",
+    noAccount: "Don't have an account?",
+    createOne: "Create one",
+    error: "Invalid credentials"
   },
   register: {
-    title: "Create your account",
-    subtitle: "Get started with your store insights",
+    title: "Register",
+    username: "Username",
     email: "Email",
     password: "Password",
-    confirmPassword: "Confirm password",
-    registerButton: "Create account",
-    registering: "Creating account...",
-    continueWith: "Or continue with",
-    googleButton: "Continue with Google",
-    passwordMismatch: "Passwords don't match",
-    emptyFields: "Please fill in all fields",
-    accountCreated: "Account created!",
-    accountCreatedDesc: "You are now registered and logged in."
+    confirmPassword: "Confirm Password",
+    submit: "Register",
+    haveAccount: "Already have an account?",
+    login: "Login",
+    error: "Registration failed",
+    success: "Registration successful!"
   },
   auth: {
-    verifyEmail: "Verify your email",
-    verifyEmailDesc: "We've sent a verification email to your address. Please check your inbox and click the link to verify your account.",
-    checkEmail: "Check your email",
-    verificationSent: "Verification email sent",
-    resendEmail: "Resend verification email"
+    authentication: "Authentication",
+    authorization: "Authorization"
   },
   layout: {
     dashboard: "Dashboard",
     products: "Products",
     trends: "Trends",
     dailySales: "Daily Sales",
-    connect: "Connect"
+    connect: "Connect",
+    settings: "Settings"
   },
   languageSelector: {
+    language: "Language",
     english: "English",
     danish: "Danish"
+  },
+  timeFilter: {
+    today: "Today",
+    yesterday: "Yesterday",
+    last7Days: "Last 7 Days",
+    last30Days: "Last 30 Days",
+    thisMonth: "This Month",
+    lastMonth: "Last Month"
+  },
+  dashboard: {
+    totalSales: "Total Sales",
+    newCustomers: "New Customers",
+    averageOrderValue: "Average Order Value",
+    customerSatisfaction: "Customer Satisfaction",
+    salesReport: "Sales Report",
+    recentOrders: "Recent Orders",
+    orderId: "Order ID",
+    customer: "Customer",
+    date: "Date",
+    amount: "Amount",
+    status: "Status",
+    viewAll: "View All"
+  },
+  settings: {
+    title: "Account Settings",
+    subtitle: "Manage your account information",
+    profileInfo: "Profile Information",
+    profileDesc: "Update your personal information",
+    name: "Display Name",
+    email: "Email",
+    invoiceInfo: "Invoice Information",
+    invoiceDesc: "Your billing information for invoices",
+    address: "Address",
+    city: "City",
+    postalCode: "Postal Code",
+    country: "Country",
+    save: "Save Changes",
+    saved: "Settings saved successfully",
+    error: "Error saving settings"
   }
 };
+
+export default en;
