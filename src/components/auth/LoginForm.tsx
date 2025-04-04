@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -33,17 +32,9 @@ const LoginForm = () => {
     
     try {
       await login(email, password);
-      toast({
-        title: "Velkommen tilbage!",
-        description: "Du er nu logget ind.",
-      });
       navigate('/dashboard');
     } catch (error) {
-      toast({
-        title: "Fejl ved login",
-        description: "Der opstod en fejl under login. Prøv igen.",
-        variant: "destructive",
-      });
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -54,17 +45,8 @@ const LoginForm = () => {
     
     try {
       await loginWithGoogle();
-      toast({
-        title: "Velkommen via Google!",
-        description: "Du er nu logget ind med din Google-konto.",
-      });
-      navigate('/dashboard');
     } catch (error) {
-      toast({
-        title: "Fejl ved Google login",
-        description: "Der opstod en fejl under login. Prøv igen.",
-        variant: "destructive",
-      });
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
