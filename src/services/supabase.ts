@@ -272,8 +272,14 @@ export const fetchMagentoConnections = async (userId: string): Promise<MagentoCo
       throw error;
     }
     
-    console.log(`Fetched ${data?.length || 0} Magento connections`);
-    return data || [];
+    // Make sure each connection has order_statuses, even if it's empty
+    const connectionsWithStatuses = data?.map(connection => ({
+      ...connection,
+      order_statuses: connection.order_statuses || []
+    }));
+    
+    console.log(`Fetched ${connectionsWithStatuses?.length || 0} Magento connections`);
+    return connectionsWithStatuses || [];
   } catch (error) {
     console.error('Error fetching Magento connections:', error);
     throw error;
