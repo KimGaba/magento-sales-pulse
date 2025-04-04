@@ -14,19 +14,10 @@ export const fetchTransactionData = async (
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate} for stores:`, storeIds);
     
-    // Use a query with aliased column names to avoid ambiguity without dot notation
+    // Use simple select without any dot notation or prefixes
     let query = supabase
       .from('transactions')
-      .select(`
-        id,
-        transaction_date,
-        amount,
-        customer_id,
-        external_id,
-        created_at,
-        product_id,
-        store_id
-      `)
+      .select('*')
       .gte('transaction_date', fromDate)
       .lte('transaction_date', toDate);
     
@@ -35,7 +26,7 @@ export const fetchTransactionData = async (
       query = query.in('store_id', storeIds);
     }
     
-    // Apply ordering
+    // Apply simple ordering without prefixes
     query = query.order('transaction_date', { ascending: false });
     
     const { data, error } = await query;
