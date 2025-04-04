@@ -11,6 +11,7 @@ const da = {
   login: {
     title: "Log ind på din konto",
     username: "Brugernavn",
+    email: "E-mail", // Add the missing email field
     password: "Adgangskode",
     submit: "Log ind",
     forgotPassword: "Glemt adgangskode?",

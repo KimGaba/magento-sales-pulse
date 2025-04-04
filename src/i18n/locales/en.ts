@@ -11,6 +11,7 @@ const en = {
   login: {
     title: "Login",
     username: "Username",
+    email: "Email", // Add the missing email field
     password: "Password",
     submit: "Login",
     forgotPassword: "Forgot Password?",
