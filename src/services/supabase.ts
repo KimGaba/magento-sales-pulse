@@ -10,6 +10,7 @@ import {
 } from '../types/magento';
 import { toast } from 'sonner';
 import { supabase as configuredSupabase } from '@/integrations/supabase/client';
+import { PostgrestQueryBuilder } from '@supabase/supabase-js';
 
 // Initialize Supabase client - brug den forudkonfigurerede klient
 export const supabase = configuredSupabase;
@@ -19,7 +20,7 @@ export const getOrders = async (storeView: StoreView, customerGroup: CustomerGro
   try {
     let query = supabase
       .from('magento_orders')
-      .select('*') as any;
+      .select('*');
       
     query = query.order('created_at', { ascending: false })
       .limit(limit);
@@ -44,9 +45,9 @@ export const getOrders = async (storeView: StoreView, customerGroup: CustomerGro
 
 export const getOrderById = async (orderId: string) => {
   try {
-    const { data, error } = await (supabase
+    const { data, error } = await supabase
       .from('magento_orders')
-      .select('*') as any)
+      .select('*')
       .eq('id', orderId)
       .single();
     
@@ -63,7 +64,7 @@ export const getProducts = async (storeView: StoreView, limit = 100) => {
   try {
     let query = supabase
       .from('magento_products')
-      .select('*') as any;
+      .select('*');
       
     query = query.limit(limit);
     
@@ -91,7 +92,7 @@ export const getSalesStatistics = async (
   try {
     let query = supabase
       .from('magento_sales_statistics')
-      .select('*') as any;
+      .select('*');
       
     query = query
       .gte('date', startDate)
@@ -125,7 +126,7 @@ export const getProductSales = async (
   try {
     let query = supabase
       .from('magento_product_sales')
-      .select('*') as any;
+      .select('*');
       
     query = query
       .gte('date', startDate)
