@@ -63,3 +63,16 @@ export interface MagentoProductSale {
 
 export type StoreView = 'alle' | 'dk' | 'se' | 'no' | 'fi';
 export type CustomerGroup = 'alle' | 'retail' | 'wholesale' | 'vip';
+
+export interface MagentoConnection {
+  id: string;
+  user_id: string;
+  store_id: string | null;
+  store_name: string;
+  store_url: string;
+  access_token: string;
+  status: string;
+  order_statuses: string[];
+  created_at: string;
+  updated_at: string;
+}

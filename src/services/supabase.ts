@@ -1,5 +1,7 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
+import { MagentoConnection } from '@/types/magento';
 
 type Tables = Database['public']['Tables'];
 
@@ -255,7 +257,7 @@ export const triggerMagentoSync = async () => {
 /**
  * Fetches magento connections for a user
  */
-export const fetchMagentoConnections = async (userId: string) => {
+export const fetchMagentoConnections = async (userId: string): Promise<MagentoConnection[]> => {
   try {
     console.log(`Fetching Magento connections for user ${userId}`);
     

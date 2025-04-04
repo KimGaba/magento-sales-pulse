@@ -53,6 +53,7 @@ export interface Database {
           store_url: string
           updated_at: string
           user_id: string
+          order_statuses: string[]
         }
         Insert: {
           access_token: string
@@ -64,6 +65,7 @@ export interface Database {
           store_url: string
           updated_at?: string
           user_id: string
+          order_statuses?: string[]
         }
         Update: {
           access_token?: string
@@ -75,6 +77,7 @@ export interface Database {
           store_url?: string
           updated_at?: string
           user_id?: string
+          order_statuses?: string[]
         }
       }
       products: {
