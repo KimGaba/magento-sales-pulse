@@ -11,10 +11,10 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
   try {
     console.log('Testing basic database connectivity...');
     
-    // Most basic query possible - avoid using dot notation with asterisk
+    // Most basic query possible - don't use any qualifiers
     const { data, error, status, statusText } = await supabase
       .from('transactions')
-      .select()
+      .select('id, store_id, transaction_date, amount, product_id, created_at, external_id, customer_id')
       .limit(1);
     
     // Log everything to help diagnose the issue
@@ -52,10 +52,10 @@ export const getTransactionCount = async (): Promise<number> => {
   try {
     console.log('Simple database check: counting transactions');
     
-    // Most basic count query possible - don't use table name qualifier with asterisk
+    // Use count() instead of select(*) with count
     const { count, error } = await supabase
       .from('transactions')
-      .select('*', { count: 'exact' });
+      .select('id', { count: 'exact', head: true });
     
     if (error) {
       console.error('Database error:', error);
@@ -92,8 +92,10 @@ export const fetchTransactionData = async (
   try {
     console.log(`Simple fetch: transactions from ${fromDate} to ${toDate}`);
     
-    // Start with absolutely minimal query - use simple select without qualification
-    let query = supabase.from('transactions').select();
+    // Explicitly list all columns we need
+    let query = supabase
+      .from('transactions')
+      .select('id, store_id, transaction_date, amount, product_id, created_at, external_id, customer_id');
     
     // Apply date filters
     if (fromDate) {
