@@ -14,9 +14,8 @@ export const fetchTransactionData = async (
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate} for stores:`, storeIds);
     
-    // Build the base query with explicit column selection to avoid ambiguity
-    let query = supabase.from('transactions')
-      .select('transactions.id, transactions.customer_id, transactions.amount, transactions.transaction_date, transactions.external_id, transactions.created_at, transactions.product_id, transactions.store_id');
+    // Build the query without explicit column selection to avoid ambiguity
+    let query = supabase.from('transactions').select();
     
     // Apply filters after the select() call
     if (fromDate) {
