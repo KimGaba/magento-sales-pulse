@@ -1,149 +1,135 @@
 
-import { 
-  MagentoOrder, 
-  MagentoProduct, 
-  MagentoSalesStatistic, 
-  MagentoProductSale,
-  StoreView,
-  CustomerGroup
-} from '../types/magento';
-import { toast } from 'sonner';
-import { supabase as configuredSupabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
-// Initialize Supabase client - brug den forudkonfigurerede klient
-export const supabase = configuredSupabase;
-
-// Orders
-export const getOrders = async (storeView: StoreView, customerGroup: CustomerGroup, limit = 100) => {
+/**
+ * Fetches all transaction data for the given date range
+ */
+export const fetchTransactionData = async (
+  fromDate: string, 
+  toDate: string,
+  storeIds: string[] = []
+) => {
   try {
     let query = supabase
-      .from('magento_orders')
-      .select('*') as any;
-      
-    query = query.order('created_at', { ascending: false })
-      .limit(limit);
+      .from('transactions' as any)
+      .select('*')
+      .gte('transaction_date', fromDate)
+      .lte('transaction_date', toDate)
+      .order('transaction_date', { ascending: false });
     
-    if (storeView !== 'alle') {
-      query = query.eq('store_view', storeView);
-    }
-    
-    if (customerGroup !== 'alle') {
-      query = query.eq('customer_group', customerGroup);
+    if (storeIds && storeIds.length > 0) {
+      query = query.in('store_id', storeIds);
     }
     
     const { data, error } = await query;
     
     if (error) throw error;
-    return data as MagentoOrder[];
+    return data || [];
   } catch (error) {
-    console.error('Error fetching orders:', error);
-    return [] as MagentoOrder[];
-  }
-};
-
-export const getOrderById = async (orderId: string) => {
-  try {
-    const { data, error } = await (supabase
-      .from('magento_orders')
-      .select('*') as any)
-      .eq('id', orderId)
-      .single();
-    
-    if (error) throw error;
-    return data as MagentoOrder;
-  } catch (error) {
-    console.error('Error fetching order by ID:', error);
+    console.error('Error fetching transaction data:', error);
     throw error;
   }
 };
 
-// Products
-export const getProducts = async (storeView: StoreView, limit = 100) => {
+/**
+ * Fetches all product data
+ */
+export const fetchProductData = async (storeIds: string[] = []) => {
   try {
     let query = supabase
-      .from('magento_products')
-      .select('*') as any;
-      
-    query = query.limit(limit);
+      .from('products' as any)
+      .select('*')
+      .order('name');
     
-    if (storeView !== 'alle') {
-      query = query.eq('store_view', storeView);
+    if (storeIds && storeIds.length > 0) {
+      query = query.in('store_id', storeIds);
     }
     
     const { data, error } = await query;
     
     if (error) throw error;
-    return data as MagentoProduct[];
+    return data || [];
   } catch (error) {
-    console.error('Error fetching products:', error);
-    return [] as MagentoProduct[];
+    console.error('Error fetching product data:', error);
+    throw error;
   }
 };
 
-// Sales Statistics
-export const getSalesStatistics = async (
-  storeView: StoreView, 
-  customerGroup: CustomerGroup, 
-  startDate: string, 
-  endDate: string
-) => {
+/**
+ * Fetches all store data
+ */
+export const fetchStoreData = async () => {
   try {
-    let query = supabase
-      .from('magento_sales_statistics')
-      .select('*') as any;
-      
-    query = query
-      .gte('date', startDate)
-      .lte('date', endDate);
-    
-    if (storeView !== 'alle') {
-      query = query.eq('store_view', storeView);
-    }
-    
-    if (customerGroup !== 'alle') {
-      query = query.eq('customer_group', customerGroup);
-    }
-    
-    const { data, error } = await query;
+    const { data, error } = await supabase
+      .from('stores' as any)
+      .select('*')
+      .order('name');
     
     if (error) throw error;
-    return data as MagentoSalesStatistic[];
+    return data || [];
   } catch (error) {
-    console.error('Error fetching sales statistics:', error);
-    return [] as MagentoSalesStatistic[];
+    console.error('Error fetching store data:', error);
+    throw error;
   }
 };
 
-// Product Sales
-export const getProductSales = async (
-  storeView: StoreView, 
-  customerGroup: CustomerGroup, 
-  startDate: string, 
-  endDate: string
+/**
+ * Fetches daily sales data
+ */
+export const fetchDailySalesData = async (
+  fromDate: string, 
+  toDate: string,
+  storeIds: string[] = []
 ) => {
   try {
     let query = supabase
-      .from('magento_product_sales')
-      .select('*') as any;
-      
-    query = query
-      .gte('date', startDate)
-      .lte('date', endDate);
+      .from('daily_sales' as any)
+      .select('*')
+      .gte('date', fromDate)
+      .lte('date', toDate)
+      .order('date');
     
-    if (storeView !== 'alle') {
-      query = query.eq('store_view', storeView);
-    }
-    
-    if (customerGroup !== 'alle') {
-      query = query.eq('customer_group', customerGroup);
+    if (storeIds && storeIds.length > 0) {
+      query = query.in('store_id', storeIds);
     }
     
     const { data, error } = await query;
     
     if (error) throw error;
-    return data as MagentoProductSale[];
+    return data || [];
   } catch (error) {
-    console.error('Error fetching product sales:', error);
-    return [] as MagentoProductSale[];
+    console.error('Error fetching daily sales data:', error);
+    throw error;
+  }
+};
+
+/**
+ * Adds a Magento store connection
+ */
+export const addMagentoConnection = async (
+  userId: string,
+  storeUrl: string,
+  accessToken: string,
+  storeName: string
+) => {
+  try {
+    const { data, error } = await supabase
+      .from('magento_connections' as any)
+      .insert([
+        {
+          user_id: userId,
+          store_url: storeUrl,
+          access_token: accessToken,
+          store_name: storeName,
+          status: 'active'
+        }
+      ])
+      .select();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error adding Magento connection:', error);
+    throw error;
   }
 };
