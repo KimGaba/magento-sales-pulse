@@ -3,19 +3,27 @@ import React from 'react';
 import { Sidebar, SidebarContent, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { NavigationMenu } from './NavigationMenu';
 import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
+import { User } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/i18n/LanguageContext';
 import FilterSelectors from './FilterSelectors';
 import LanguageSelector from './LanguageSelector';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Link } from 'react-router-dom';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { logout } = useAuth();
+  const { user } = useAuth();
   const { translations } = useLanguage();
+
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    if (!user || !user.email) return 'U';
+    return user.email.substring(0, 2).toUpperCase();
+  };
 
   return (
     <SidebarProvider>
@@ -40,10 +48,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <FilterSelectors />
             <div className="flex items-center gap-2">
               <LanguageSelector />
-              <Button variant="ghost" size="sm" onClick={logout} className="flex items-center">
-                <LogOut className="mr-2 h-4 w-4" />
-                {translations.common.logOut}
-              </Button>
+              <Link to="/settings">
+                <Avatar className="cursor-pointer">
+                  <AvatarImage src={user?.user_metadata?.avatar_url} />
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    {getUserInitials()}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
             </div>
           </header>
           <main className="container p-4 md:p-6">{children}</main>
