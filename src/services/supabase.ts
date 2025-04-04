@@ -276,7 +276,7 @@ export const fetchMagentoConnections = async (userId: string): Promise<MagentoCo
     const connectionsWithStatuses = data?.map(connection => ({
       ...connection,
       order_statuses: connection.order_statuses || []
-    }));
+    })) as MagentoConnection[];
     
     console.log(`Fetched ${connectionsWithStatuses?.length || 0} Magento connections`);
     return connectionsWithStatuses || [];
