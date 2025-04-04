@@ -16,6 +16,7 @@ import RepeatPurchaseRate from "./pages/RepeatPurchaseRate";
 import DailySales from "./pages/DailySales";
 import Connect from "./pages/Connect";
 import Settings from "./pages/Settings";
+import IntegrationStatus from "./pages/IntegrationStatus";
 import NotFound from "./pages/NotFound";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -38,6 +39,7 @@ const App = () => (
                 <Route path="/daily-sales" element={<AuthGuard><DailySales /></AuthGuard>} />
                 <Route path="/connect" element={<AuthGuard><Connect /></AuthGuard>} />
                 <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
+                <Route path="/integration-status" element={<AuthGuard><IntegrationStatus /></AuthGuard>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <Toaster />

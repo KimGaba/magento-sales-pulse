@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem 
 } from '@/components/ui/sidebar';
-import { BarChart, Calendar, Database, TrendingUp, RefreshCw } from 'lucide-react';
+import { BarChart, Calendar, Database, TrendingUp, RefreshCw, Activity } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 export const NavigationMenu: React.FC = () => {
@@ -73,14 +73,38 @@ export const NavigationMenu: React.FC = () => {
         </SidebarGroupContent>
       </SidebarGroup>
       
+      <SidebarGroup>
+        <SidebarGroupLabel>Integration</SidebarGroupLabel>
+        <SidebarGroupContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link to="/connect" className="flex items-center">
+                  <Database className="mr-2 h-4 w-4" />
+                  <span>Forbind Butik</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild>
+                <Link to="/integration-status" className="flex items-center">
+                  <Activity className="mr-2 h-4 w-4" />
+                  <span>Integration Status</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroupContent>
+      </SidebarGroup>
+      
       <SidebarGroup className="mt-auto">
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Link to="/connect" className="flex items-center text-magento-600 font-medium">
+                <Link to="/settings" className="flex items-center text-gray-600">
                   <Database className="mr-2 h-4 w-4" />
-                  <span>Forbind Butik</span>
+                  <span>Indstillinger</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
