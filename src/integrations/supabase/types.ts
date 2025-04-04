@@ -248,7 +248,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_store_data: {
+        Args: {
+          target_store_id: string
+        }
+        Returns: undefined
+      }
+      user_has_store_access: {
+        Args: {
+          store_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

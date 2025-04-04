@@ -1,3 +1,4 @@
+
 const en = {
   common: {
     back: "Back",
@@ -84,6 +85,28 @@ const en = {
     save: "Save Changes",
     saved: "Settings saved successfully",
     error: "Error saving settings"
+  },
+  connect: {
+    title: "Connect your Magento Store",
+    subtitle: "Follow these steps to connect your store with Sales Pulse",
+    existingConnections: "Existing Connections",
+    addNewConnection: "Add New Connection",
+    noConnectionsFound: "No connections found",
+    noConnectionsDesc: "You haven't connected any Magento stores yet.",
+    disconnectStore: "Disconnect",
+    deleteStore: "Delete Store",
+    deleteConfirmTitle: "Delete this store?",
+    deleteConfirmDesc: "This will delete all data related to the store. This action cannot be undone.",
+    cancelDelete: "Cancel",
+    confirmDelete: "Yes, delete store",
+    storeDeleted: "Store removed",
+    storeDeletedDesc: "The store and all related data have been deleted.",
+    deleteError: "Error deleting store",
+    deleteErrorDesc: "An error occurred while deleting the store.",
+    connectMoreStores: "Connect more stores",
+    goToDashboard: "Go to Dashboard",
+    activeStatus: "Active",
+    pendingStatus: "Pending"
   }
 };
 

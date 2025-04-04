@@ -1,20 +1,33 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, Database } from 'lucide-react';
+import { CheckCircle, Database, Trash2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { addMagentoConnection } from '@/services/supabase';
+import { addMagentoConnection, fetchMagentoConnections, triggerMagentoSync } from '@/services/supabase';
 import { supabase } from '@/integrations/supabase/client';
 import { Progress } from '@/components/ui/progress';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTranslation } from '@/i18n/LanguageContext';
 
 const Connect = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [storeName, setStoreName] = useState('');
   const [url, setUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
@@ -27,6 +40,35 @@ const Connect = () => {
     customers: 'waiting',
     statistics: 'waiting'
   });
+  const [connections, setConnections] = useState([]);
+  const [loadingConnections, setLoadingConnections] = useState(true);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [storeToDelete, setStoreToDelete] = useState(null);
+  
+  useEffect(() => {
+    if (user) {
+      loadConnections();
+    }
+  }, [user]);
+  
+  const loadConnections = async () => {
+    if (!user) return;
+    
+    setLoadingConnections(true);
+    try {
+      const connectionsData = await fetchMagentoConnections(user.id);
+      setConnections(connectionsData);
+    } catch (error) {
+      console.error("Error fetching connections:", error);
+      toast({
+        title: "Fejl ved indlæsning",
+        description: "Der opstod en fejl ved indlæsning af dine forbindelser.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingConnections(false);
+    }
+  };
   
   const handleConnect = async () => {
     if (!url.trim() || !apiKey.trim() || !storeName.trim()) {
@@ -95,6 +137,8 @@ const Connect = () => {
               // Move to the final step
               setTimeout(() => {
                 setStep(3);
+                // Refresh connections list
+                loadConnections();
               }, 1000);
             }, 1000);
           }, 1500);
@@ -137,7 +181,128 @@ const Connect = () => {
   };
   
   const handleFinish = () => {
-    window.location.href = '/dashboard';
+    // Reset form and go back to the first view with connections list
+    setStoreName('');
+    setUrl('');
+    setApiKey('');
+    setStep(1);
+    setSyncProgress(0);
+    setSyncStatus({
+      products: 'waiting',
+      orders: 'waiting',
+      customers: 'waiting',
+      statistics: 'waiting'
+    });
+    setConnecting(false);
+  };
+
+  const handleDisconnect = (connection) => {
+    setStoreToDelete(connection);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!storeToDelete) return;
+
+    try {
+      // Call the Supabase function to delete the store data
+      if (storeToDelete.store_id) {
+        const { data, error } = await supabase.rpc('delete_store_data', {
+          target_store_id: storeToDelete.store_id
+        });
+
+        if (error) {
+          throw error;
+        }
+      }
+
+      // Delete the connection itself
+      const { error } = await supabase
+        .from('magento_connections')
+        .delete()
+        .eq('id', storeToDelete.id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Reload connections
+      await loadConnections();
+
+      toast({
+        title: "Butik fjernet",
+        description: "Butikken og alle tilhørende data er blevet slettet.",
+      });
+    } catch (error) {
+      console.error("Error deleting store:", error);
+      toast({
+        title: "Fejl ved sletning",
+        description: "Der opstod en fejl ved sletning af butikken.",
+        variant: "destructive",
+      });
+    } finally {
+      setShowDeleteDialog(false);
+      setStoreToDelete(null);
+    }
+  };
+
+  const ConnectionsList = () => {
+    if (loadingConnections) {
+      return (
+        <div className="flex justify-center items-center p-8">
+          <div className="w-8 h-8 rounded-full border-4 border-magento-600 border-t-transparent animate-spin mr-2"></div>
+          <p>Indlæser forbindelser...</p>
+        </div>
+      );
+    }
+
+    if (connections.length === 0) {
+      return (
+        <div className="text-center p-8">
+          <div className="flex justify-center mb-4">
+            <Database className="h-12 w-12 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium mb-2">Ingen forbindelser fundet</h3>
+          <p className="text-gray-500">Du har endnu ikke forbundet nogen Magento-butikker.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {connections.map(connection => (
+          <Card key={connection.id} className="border-l-4 border-l-magento-600">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-bold text-lg">{connection.store_name}</h3>
+                  <p className="text-sm text-gray-500">{connection.store_url}</p>
+                  <div className="flex items-center mt-2">
+                    <span className={`inline-flex h-2 w-2 rounded-full mr-2 ${
+                      connection.status === 'active' ? 'bg-green-500' : 'bg-amber-500'
+                    }`}></span>
+                    <span className="text-sm">
+                      {connection.status === 'active' ? 'Aktiv' : 'Afventer'}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="border-red-500 text-red-500 hover:bg-red-50"
+                    onClick={() => handleDisconnect(connection)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Frakobl
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -148,194 +313,212 @@ const Connect = () => {
       </div>
 
       <div className="max-w-3xl mx-auto">
-        <div className="flex justify-between mb-10">
-          <div className="flex flex-col items-center">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 1 ? 'bg-magento-600 text-white' : 'bg-gray-200'}`}>
-              1
-            </div>
-            <p className="text-sm mt-2">Forbind butik</p>
-          </div>
-          <div className="flex-1 border-t mt-5 mx-4"></div>
-          <div className="flex flex-col items-center">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 2 ? 'bg-magento-600 text-white' : 'bg-gray-200'}`}>
-              2
-            </div>
-            <p className="text-sm mt-2">Synkronisering</p>
-          </div>
-          <div className="flex-1 border-t mt-5 mx-4"></div>
-          <div className="flex flex-col items-center">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step >= 3 ? 'bg-magento-600 text-white' : 'bg-gray-200'}`}>
-              3
-            </div>
-            <p className="text-sm mt-2">Færdig</p>
-          </div>
-        </div>
+        <Tabs defaultValue="existing" className="mb-8">
+          <TabsList className="mb-4">
+            <TabsTrigger value="existing">Eksisterende forbindelser</TabsTrigger>
+            <TabsTrigger value="new">Tilføj ny forbindelse</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="existing">
+            <ConnectionsList />
+          </TabsContent>
+          
+          <TabsContent value="new">
+            {step === 1 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Forbind til Magento</CardTitle>
+                  <CardDescription>
+                    Indtast din Magento butiksadresse og API-nøgle
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="store-name">Butiksnavn</Label>
+                    <Input 
+                      id="store-name" 
+                      placeholder="Min Butik" 
+                      value={storeName}
+                      onChange={(e) => setStoreName(e.target.value)}
+                    />
+                    <p className="text-xs text-gray-500">Et navn til at identificere din butik i systemet</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="store-url">Magento URL</Label>
+                    <Input 
+                      id="store-url" 
+                      placeholder="https://dinbutik.dk" 
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                    />
+                    <p className="text-xs text-gray-500">F.eks. https://dinbutik.dk</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="api-key">API-nøgle</Label>
+                    <Input 
+                      id="api-key" 
+                      type="password" 
+                      placeholder="Din Magento API-nøgle" 
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                    />
+                    <p className="text-xs text-gray-500">
+                      <a href="#" className="text-magento-600 hover:underline">
+                        Hvor finder jeg min API-nøgle?
+                      </a>
+                    </p>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full bg-magento-600 hover:bg-magento-700"
+                    onClick={handleConnect}
+                    disabled={connecting}
+                  >
+                    {connecting ? "Forbinder..." : "Forbind butik"}
+                  </Button>
+                </CardFooter>
+              </Card>
+            )}
 
-        {step === 1 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Forbind til Magento</CardTitle>
-              <CardDescription>
-                Indtast din Magento butiksadresse og API-nøgle
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="store-name">Butiksnavn</Label>
-                <Input 
-                  id="store-name" 
-                  placeholder="Min Butik" 
-                  value={storeName}
-                  onChange={(e) => setStoreName(e.target.value)}
-                />
-                <p className="text-xs text-gray-500">Et navn til at identificere din butik i systemet</p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="store-url">Magento URL</Label>
-                <Input 
-                  id="store-url" 
-                  placeholder="https://dinbutik.dk" 
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                />
-                <p className="text-xs text-gray-500">F.eks. https://dinbutik.dk</p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="api-key">API-nøgle</Label>
-                <Input 
-                  id="api-key" 
-                  type="password" 
-                  placeholder="Din Magento API-nøgle" 
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                />
-                <p className="text-xs text-gray-500">
-                  <a href="#" className="text-magento-600 hover:underline">
-                    Hvor finder jeg min API-nøgle?
-                  </a>
-                </p>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                className="w-full bg-magento-600 hover:bg-magento-700"
-                onClick={handleConnect}
-                disabled={connecting}
-              >
-                {connecting ? "Forbinder..." : "Forbind butik"}
-              </Button>
-            </CardFooter>
-          </Card>
-        )}
+            {step === 2 && (
+              <Card>
+                <CardHeader className="text-center">
+                  <div className="flex justify-center mb-4">
+                    <Database className="h-12 w-12 text-magento-600" />
+                  </div>
+                  <CardTitle>Synkroniserer data</CardTitle>
+                  <CardDescription>
+                    Vi henter dine butiksdata. Dette kan tage et par minutter...
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span>Produkter</span>
+                      {syncStatus.products === 'completed' ? (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      ) : syncStatus.products === 'syncing' ? (
+                        <div className="w-5 h-5 rounded-full border-2 border-magento-600 border-t-transparent animate-spin"></div>
+                      ) : (
+                        <span className="text-gray-400">Venter...</span>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Ordrer</span>
+                      {syncStatus.orders === 'completed' ? (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      ) : syncStatus.orders === 'syncing' ? (
+                        <div className="w-5 h-5 rounded-full border-2 border-magento-600 border-t-transparent animate-spin"></div>
+                      ) : (
+                        <span className="text-gray-400">Venter...</span>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Kunder</span>
+                      {syncStatus.customers === 'completed' ? (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      ) : syncStatus.customers === 'syncing' ? (
+                        <div className="w-5 h-5 rounded-full border-2 border-magento-600 border-t-transparent animate-spin"></div>
+                      ) : (
+                        <span className="text-gray-400">Venter...</span>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Salgstatistikker</span>
+                      {syncStatus.statistics === 'completed' ? (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      ) : syncStatus.statistics === 'syncing' ? (
+                        <div className="w-5 h-5 rounded-full border-2 border-magento-600 border-t-transparent animate-spin"></div>
+                      ) : (
+                        <span className="text-gray-400">Venter...</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <Progress value={syncProgress} className="h-2.5" />
+                  </div>
+                  <p className="text-center mt-2 text-sm">{syncProgress}% fuldført</p>
+                </CardContent>
+                <CardFooter className="flex justify-center">
+                  <p className="text-sm text-gray-500">
+                    Dette vindue opdateres automatisk når synkroniseringen er færdig
+                  </p>
+                </CardFooter>
+              </Card>
+            )}
 
-        {step === 2 && (
-          <Card>
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-4">
-                <Database className="h-12 w-12 text-magento-600" />
-              </div>
-              <CardTitle>Synkroniserer data</CardTitle>
-              <CardDescription>
-                Vi henter dine butiksdata. Dette kan tage et par minutter...
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span>Produkter</span>
-                  {syncStatus.products === 'completed' ? (
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                  ) : syncStatus.products === 'syncing' ? (
-                    <div className="w-5 h-5 rounded-full border-2 border-magento-600 border-t-transparent animate-spin"></div>
-                  ) : (
-                    <span className="text-gray-400">Venter...</span>
-                  )}
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Ordrer</span>
-                  {syncStatus.orders === 'completed' ? (
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                  ) : syncStatus.orders === 'syncing' ? (
-                    <div className="w-5 h-5 rounded-full border-2 border-magento-600 border-t-transparent animate-spin"></div>
-                  ) : (
-                    <span className="text-gray-400">Venter...</span>
-                  )}
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Kunder</span>
-                  {syncStatus.customers === 'completed' ? (
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                  ) : syncStatus.customers === 'syncing' ? (
-                    <div className="w-5 h-5 rounded-full border-2 border-magento-600 border-t-transparent animate-spin"></div>
-                  ) : (
-                    <span className="text-gray-400">Venter...</span>
-                  )}
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Salgstatistikker</span>
-                  {syncStatus.statistics === 'completed' ? (
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                  ) : syncStatus.statistics === 'syncing' ? (
-                    <div className="w-5 h-5 rounded-full border-2 border-magento-600 border-t-transparent animate-spin"></div>
-                  ) : (
-                    <span className="text-gray-400">Venter...</span>
-                  )}
-                </div>
-              </div>
-              
-              <div className="mt-6">
-                <Progress value={syncProgress} className="h-2.5" />
-              </div>
-              <p className="text-center mt-2 text-sm">{syncProgress}% fuldført</p>
-            </CardContent>
-            <CardFooter className="flex justify-center">
-              <p className="text-sm text-gray-500">
-                Dette vindue opdateres automatisk når synkroniseringen er færdig
-              </p>
-            </CardFooter>
-          </Card>
-        )}
-
-        {step === 3 && (
-          <Card>
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-4">
-                <CheckCircle className="h-16 w-16 text-green-600" />
-              </div>
-              <CardTitle>Forbindelse fuldført!</CardTitle>
-              <CardDescription>
-                Din Magento-butik er nu forbundet med Sales Pulse
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p>
-                Alle dine data er blevet synkroniseret, og du kan nu begynde at bruge
-                din salgsoversigt.
-              </p>
-              
-              <div className="mt-6 border rounded-lg p-4 bg-blue-50">
-                <h3 className="font-semibold">Næste skridt:</h3>
-                <ul className="text-sm mt-2 space-y-1 text-left list-disc list-inside">
-                  <li>Udforsk dit dashboard</li>
-                  <li>Undersøg dine bedst sælgende produkter</li>
-                  <li>Analyser dine daglige salgsmønstre</li>
-                  <li>Opdag trends og indsigter</li>
-                </ul>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                className="w-full bg-magento-600 hover:bg-magento-700"
-                onClick={handleFinish}
-              >
-                Gå til dashboard
-              </Button>
-            </CardFooter>
-          </Card>
-        )}
+            {step === 3 && (
+              <Card>
+                <CardHeader className="text-center">
+                  <div className="flex justify-center mb-4">
+                    <CheckCircle className="h-16 w-16 text-green-600" />
+                  </div>
+                  <CardTitle>Forbindelse fuldført!</CardTitle>
+                  <CardDescription>
+                    Din Magento-butik er nu forbundet med Sales Pulse
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p>
+                    Alle dine data er blevet synkroniseret, og du kan nu begynde at bruge
+                    din salgsoversigt.
+                  </p>
+                  
+                  <div className="mt-6 border rounded-lg p-4 bg-blue-50">
+                    <h3 className="font-semibold">Næste skridt:</h3>
+                    <ul className="text-sm mt-2 space-y-1 text-left list-disc list-inside">
+                      <li>Udforsk dit dashboard</li>
+                      <li>Undersøg dine bedst sælgende produkter</li>
+                      <li>Analyser dine daglige salgsmønstre</li>
+                      <li>Opdag trends og indsigter</li>
+                    </ul>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button 
+                    variant="outline"
+                    onClick={handleFinish}
+                  >
+                    Forbind flere butikker
+                  </Button>
+                  <Button 
+                    className="bg-magento-600 hover:bg-magento-700"
+                    onClick={() => window.location.href = '/dashboard'}
+                  >
+                    Gå til dashboard
+                  </Button>
+                </CardFooter>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Vil du slette denne butik?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Dette vil slette alle data relateret til butikken "{storeToDelete?.store_name}". 
+              Denne handling kan ikke fortrydes, og alle data vil gå tabt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuller</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              Ja, slet butikken
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 };

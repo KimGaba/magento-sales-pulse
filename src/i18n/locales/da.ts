@@ -1,3 +1,4 @@
+
 const da = {
   common: {
     back: "Tilbage",
@@ -79,6 +80,28 @@ const da = {
     save: "Gem ændringer",
     saved: "Indstillingerne blev gemt",
     error: "Fejl ved gemning af indstillinger"
+  },
+  connect: {
+    title: "Forbind din Magento-butik",
+    subtitle: "Følg disse trin for at forbinde din butik med Sales Pulse",
+    existingConnections: "Eksisterende forbindelser",
+    addNewConnection: "Tilføj ny forbindelse",
+    noConnectionsFound: "Ingen forbindelser fundet",
+    noConnectionsDesc: "Du har endnu ikke forbundet nogen Magento-butikker.",
+    disconnectStore: "Frakobl",
+    deleteStore: "Slet butik",
+    deleteConfirmTitle: "Vil du slette denne butik?",
+    deleteConfirmDesc: "Dette vil slette alle data relateret til butikken. Denne handling kan ikke fortrydes.",
+    cancelDelete: "Annuller",
+    confirmDelete: "Ja, slet butikken",
+    storeDeleted: "Butik fjernet",
+    storeDeletedDesc: "Butikken og alle tilhørende data er blevet slettet.",
+    deleteError: "Fejl ved sletning",
+    deleteErrorDesc: "Der opstod en fejl ved sletning af butikken.",
+    connectMoreStores: "Forbind flere butikker",
+    goToDashboard: "Gå til dashboard",
+    activeStatus: "Aktiv",
+    pendingStatus: "Afventer"
   }
 };
 
