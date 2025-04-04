@@ -24,21 +24,18 @@ const LoginForm = () => {
     setLoginError('');
     
     if (!email || !password) {
-      toast({
-        title: "Fejl ved login",
-        description: "Udfyld venligst både email og adgangskode",
-        variant: "destructive",
-      });
+      setLoginError('Udfyld venligst både email og adgangskode');
       return;
     }
 
     setIsLoading(true);
     
     try {
+      console.log("Handling email login submission for:", email);
       await login(email, password);
-      navigate('/dashboard');
+      // Navigation håndteres automatisk i AuthContext
     } catch (error: any) {
-      console.error(error);
+      console.error("Login form error:", error);
       setLoginError(error.message || 'Der opstod en fejl under login. Prøv igen senere.');
     } finally {
       setIsLoading(false);
@@ -50,10 +47,11 @@ const LoginForm = () => {
     setIsLoading(true);
     
     try {
+      console.log("Handling Google login click");
       await loginWithGoogle();
       // No navigate here - the page will redirect via OAuth flow
     } catch (error: any) {
-      console.error("Google login error:", error);
+      console.error("Google login form error:", error);
       
       if (error.message?.includes("provider is not enabled")) {
         setLoginError("Google login er ikke aktiveret. Kontakt venligst administratoren for at aktivere Google-integration i Supabase.");

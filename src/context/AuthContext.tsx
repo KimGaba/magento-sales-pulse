@@ -36,71 +36,101 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [showConfigError, setShowConfigError] = useState<boolean>(false);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   // Check if we're on the login page
   const isLoginPage = location.pathname === '/login';
+  
+  console.log("AuthContext initialized, current path:", location.pathname);
 
   useEffect(() => {
-    // Set up auth state change listener FIRST
+    console.log("Setting up auth effect");
+    
+    // Important: First set up the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         console.log("Auth state changed:", event, currentSession);
         
-        if (event === 'SIGNED_IN' && currentSession) {
+        if (currentSession) {
+          console.log("User authenticated:", currentSession.user?.email);
           setIsAuthenticated(true);
           setUser(currentSession.user);
           setSession(currentSession);
           
-          console.log("Signed in, current path:", location.pathname);
-          
-          // Use setTimeout to avoid immediate navigation which can cause issues
-          setTimeout(() => {
-            if (isLoginPage) {
-              console.log("On login page, redirecting to dashboard");
-              navigate('/dashboard', { replace: true });
-            }
-          }, 0);
-        } else if (event === 'SIGNED_OUT') {
+          // Only redirect if we're on the login page and initialization is complete
+          if (isLoginPage && isInitialized) {
+            console.log("Redirecting from login to dashboard");
+            navigate('/dashboard', { replace: true });
+          }
+        } else {
+          console.log("No active session");
           setIsAuthenticated(false);
           setUser(null);
           setSession(null);
-          navigate('/login', { replace: true });
-        } else if (event === 'TOKEN_REFRESHED' && currentSession) {
-          // Update local state when token is refreshed to maintain session
-          setIsAuthenticated(true);
-          setUser(currentSession.user);
-          setSession(currentSession);
+          
+          // Only redirect to login if not already on login page and initialization is complete
+          if (!isLoginPage && isInitialized) {
+            console.log("Not authenticated, redirecting to login");
+            navigate('/login', { replace: true });
+          }
         }
       }
     );
 
-    // THEN check for existing session
+    // Then check for existing session
     const checkSession = async () => {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      console.log("Session check:", currentSession);
-      
-      if (currentSession) {
-        setIsAuthenticated(true);
-        setUser(currentSession.user);
-        setSession(currentSession);
+      console.log("Checking for existing session...");
+      try {
+        const { data, error } = await supabase.auth.getSession();
         
-        // Only redirect if on login page
-        if (isLoginPage) {
-          console.log("Already authenticated, redirecting from login to dashboard");
-          navigate('/dashboard', { replace: true });
+        console.log("Session check result:", data.session, error);
+        
+        if (error) {
+          console.error("Error checking session:", error);
+          setIsAuthenticated(false);
+          setUser(null);
+          setSession(null);
+        } else if (data.session) {
+          console.log("Found existing session:", data.session.user?.email);
+          setIsAuthenticated(true);
+          setUser(data.session.user);
+          setSession(data.session);
+          
+          // Redirect to dashboard if on login page
+          if (isLoginPage) {
+            console.log("Already logged in, redirecting to dashboard");
+            navigate('/dashboard', { replace: true });
+          }
+        } else {
+          console.log("No existing session found");
+          setIsAuthenticated(false);
+          setUser(null);
+          setSession(null);
+          
+          // Redirect to login if not on login page
+          if (!isLoginPage) {
+            console.log("No session, redirecting to login");
+            navigate('/login', { replace: true });
+          }
         }
-      } else if (!isLoginPage) {
-        // If not authenticated and not on login page, redirect to login
-        console.log("Not authenticated, redirecting to login");
-        navigate('/login', { replace: true });
+        
+        // Mark initialization as complete after session check
+        setIsInitialized(true);
+      } catch (error) {
+        console.error("Unexpected error checking session:", error);
+        setIsAuthenticated(false);
+        setUser(null);
+        setSession(null);
+        setIsInitialized(true);
       }
     };
 
     checkSession();
 
     return () => {
+      console.log("Cleaning up auth effect, unsubscribing");
       subscription.unsubscribe();
     };
   }, [navigate, isLoginPage]);
@@ -108,14 +138,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       console.log("Attempting email login with:", email);
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
       
+      console.log("Login successful, session:", data.session);
       toast.success('Login successful!');
+      
+      // We don't need to navigate here, the auth state change will handle it
     } catch (error: any) {
       console.error("Login error:", error);
       toast.error(`Login fejlede: ${error.message}`);
@@ -148,15 +181,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      console.log("Attempting logout");
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
+      console.log("Logout successful");
       setIsAuthenticated(false);
       setUser(null);
       setSession(null);
       navigate('/login', { replace: true });
       toast.success('Logget ud');
     } catch (error: any) {
+      console.error("Logout error:", error);
       toast.error(`Logout fejlede: ${error.message}`);
     }
   };

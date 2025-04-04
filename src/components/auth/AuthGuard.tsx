@@ -24,8 +24,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
       setIsChecking(false);
     };
     
-    // Short delay to let AuthContext initialize first
-    const timeout = setTimeout(checkAuth, 100);
+    // Give AuthContext more time to initialize first
+    const timeout = setTimeout(checkAuth, 300);
     return () => clearTimeout(timeout);
   }, [isAuthenticated, navigate, location.pathname]);
 

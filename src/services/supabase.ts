@@ -13,6 +13,8 @@ export const fetchTransactionData = async (
   storeIds: string[] = []
 ) => {
   try {
+    console.log(`Fetching transactions from ${fromDate} to ${toDate} for stores:`, storeIds);
+    
     let query = supabase
       .from('transactions')
       .select('*')
@@ -26,7 +28,12 @@ export const fetchTransactionData = async (
     
     const { data, error } = await query;
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching transaction data:', error);
+      throw error;
+    }
+    
+    console.log(`Fetched ${data?.length || 0} transactions`);
     return data || [];
   } catch (error) {
     console.error('Error fetching transaction data:', error);
@@ -39,6 +46,8 @@ export const fetchTransactionData = async (
  */
 export const fetchProductData = async (storeIds: string[] = []) => {
   try {
+    console.log('Fetching products for stores:', storeIds);
+    
     let query = supabase
       .from('products')
       .select('*')
@@ -50,7 +59,12 @@ export const fetchProductData = async (storeIds: string[] = []) => {
     
     const { data, error } = await query;
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching product data:', error);
+      throw error;
+    }
+    
+    console.log(`Fetched ${data?.length || 0} products`);
     return data || [];
   } catch (error) {
     console.error('Error fetching product data:', error);
@@ -63,12 +77,19 @@ export const fetchProductData = async (storeIds: string[] = []) => {
  */
 export const fetchStoreData = async () => {
   try {
+    console.log('Fetching stores');
+    
     const { data, error } = await supabase
       .from('stores')
       .select('*')
       .order('name');
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching store data:', error);
+      throw error;
+    }
+    
+    console.log(`Fetched ${data?.length || 0} stores`);
     return data || [];
   } catch (error) {
     console.error('Error fetching store data:', error);
@@ -85,6 +106,8 @@ export const fetchDailySalesData = async (
   storeIds: string[] = []
 ) => {
   try {
+    console.log(`Fetching daily sales from ${fromDate} to ${toDate} for stores:`, storeIds);
+    
     let query = supabase
       .from('daily_sales')
       .select('*')
@@ -98,7 +121,12 @@ export const fetchDailySalesData = async (
     
     const { data, error } = await query;
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching daily sales data:', error);
+      throw error;
+    }
+    
+    console.log(`Fetched ${data?.length || 0} daily sales records`);
     return data || [];
   } catch (error) {
     console.error('Error fetching daily sales data:', error);
@@ -116,6 +144,8 @@ export const addMagentoConnection = async (
   storeName: string
 ) => {
   try {
+    console.log(`Adding Magento connection for user ${userId} to store ${storeName}`);
+    
     const { data, error } = await supabase
       .from('magento_connections')
       .insert([
@@ -129,10 +159,70 @@ export const addMagentoConnection = async (
       ])
       .select();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error adding Magento connection:', error);
+      throw error;
+    }
+    
+    console.log('Successfully added Magento connection:', data);
     return data;
   } catch (error) {
     console.error('Error adding Magento connection:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches user profile data
+ */
+export const fetchUserProfile = async (userId: string) => {
+  try {
+    console.log(`Fetching profile for user ${userId}`);
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching user profile:', error);
+      throw error;
+    }
+    
+    console.log('Fetched user profile:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    throw error;
+  }
+};
+
+/**
+ * Updates user profile data
+ */
+export const updateUserProfile = async (
+  userId: string, 
+  updates: { display_name?: string; avatar_url?: string }
+) => {
+  try {
+    console.log(`Updating profile for user ${userId}:`, updates);
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', userId)
+      .select();
+    
+    if (error) {
+      console.error('Error updating user profile:', error);
+      throw error;
+    }
+    
+    console.log('Successfully updated user profile:', data);
+    return data;
+  } catch (error) {
+    console.error('Error updating user profile:', error);
     throw error;
   }
 };
