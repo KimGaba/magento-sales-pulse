@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { Transaction } from '@/utils/repeatPurchaseCalculator';
 
 /**
  * Fetches all transaction data for the given date range
@@ -9,7 +10,7 @@ export const fetchTransactionData = async (
   fromDate: string, 
   toDate: string,
   storeIds: string[] = []
-) => {
+): Promise<Transaction[]> => {
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate} for stores:`, storeIds);
     

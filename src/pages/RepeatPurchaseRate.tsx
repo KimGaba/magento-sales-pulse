@@ -34,9 +34,9 @@ const RepeatPurchaseRate = () => {
   });
 
   // Calculate data for current active tab
-  // Ensure we only pass valid transaction data to the calculator
+  // Ensure we have valid transaction data before passing to the calculator
   const currentPeriodData = calculateRepeatPurchaseRate(
-    (transactions || []) as Transaction[], 
+    transactions || [], 
     parseInt(activeTab)
   );
   
