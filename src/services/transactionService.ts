@@ -15,15 +15,15 @@ export const fetchTransactionData = async (
     let query = supabase
       .from('transactions')
       .select('*')
-      .gte('transaction_date', fromDate)
-      .lte('transaction_date', toDate);
+      .gte('transactions.transaction_date', fromDate)
+      .lte('transactions.transaction_date', toDate);
     
     if (storeIds && storeIds.length > 0) {
-      query = query.in('store_id', storeIds);
+      query = query.in('transactions.store_id', storeIds);
     }
     
     // Apply ordering after all filters
-    query = query.order('transaction_date', { ascending: false });
+    query = query.order('transactions.transaction_date', { ascending: false });
     
     const { data, error } = await query;
     
