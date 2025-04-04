@@ -16,7 +16,7 @@ export const fetchDailySalesData = async (
   try {
     console.log(`Fetching daily sales from ${fromDate} to ${toDate}`);
     
-    // Fetch transaction data using the transactionService
+    // Fetch transaction data using the simplified transactionService
     const transactions = await fetchTransactionData(fromDate, toDate, storeIds);
     
     if (!transactions || transactions.length === 0) {

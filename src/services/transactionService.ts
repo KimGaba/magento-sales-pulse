@@ -4,8 +4,44 @@ import { toast } from '@/hooks/use-toast';
 import { Transaction } from '@/utils/repeatPurchaseCalculator';
 
 /**
- * Fetches all transaction data for the given date range
- * Simplified version that doesn't apply store filtering
+ * Extremely simple function to check database connectivity
+ * No filters, no joins, just a basic count
+ */
+export const getTransactionCount = async (): Promise<number> => {
+  try {
+    console.log('Simple database check: counting transactions');
+    
+    // Most basic count query possible
+    const { count, error } = await supabase
+      .from('transactions')
+      .select('*', { count: 'exact' });
+    
+    if (error) {
+      console.error('Database error:', error);
+      toast({
+        title: "Database error",
+        description: error.message,
+        variant: "destructive"
+      });
+      return 0;
+    }
+    
+    console.log(`Found ${count} transactions`);
+    return count || 0;
+  } catch (error) {
+    console.error('Exception in getTransactionCount:', error);
+    toast({
+      title: "Error checking database",
+      description: error instanceof Error ? error.message : "An unknown error occurred",
+      variant: "destructive"
+    });
+    return 0;
+  }
+};
+
+/**
+ * Simplified transaction fetching with only essential filtering
+ * No joins, only simple field selection
  */
 export const fetchTransactionData = async (
   fromDate: string, 
@@ -13,19 +49,10 @@ export const fetchTransactionData = async (
   storeIds: string[] = []
 ): Promise<Transaction[]> => {
   try {
-    console.log(`Fetching transactions from ${fromDate} to ${toDate}`);
+    console.log(`Simple fetch: transactions from ${fromDate} to ${toDate}`);
     
-    // Use explicit table selection to avoid ambiguous column references
-    let query = supabase.from('transactions').select(`
-      id,
-      customer_id, 
-      amount, 
-      transaction_date, 
-      external_id, 
-      created_at, 
-      product_id, 
-      store_id
-    `);
+    // Start with absolutely minimal query
+    let query = supabase.from('transactions').select('*');
     
     // Apply date filters
     if (fromDate) {
@@ -36,7 +63,7 @@ export const fetchTransactionData = async (
       query = query.lte('transaction_date', toDate);
     }
     
-    // Apply store filter if provided
+    // Apply store filter if provided, using exact column name
     if (storeIds && storeIds.length > 0) {
       query = query.in('store_id', storeIds);
     }
@@ -45,7 +72,7 @@ export const fetchTransactionData = async (
     const { data, error } = await query;
     
     if (error) {
-      console.error('Error fetching transaction data:', error);
+      console.error('Database error in fetchTransactionData:', error);
       toast({
         title: "Error fetching transactions",
         description: error.message,
@@ -54,9 +81,10 @@ export const fetchTransactionData = async (
       return [];
     }
     
-    return mapTransactionsData(data || []);
+    console.log(`Retrieved ${data?.length || 0} transactions`);
+    return data as Transaction[] || [];
   } catch (error) {
-    console.error('Error in fetchTransactionData:', error);
+    console.error('Exception in fetchTransactionData:', error);
     toast({
       title: "Error fetching transactions",
       description: error instanceof Error ? error.message : "An unknown error occurred",
@@ -67,61 +95,9 @@ export const fetchTransactionData = async (
 };
 
 /**
- * Simple function to count the number of transactions in the database
- * No filters, just a basic count
- */
-export const getTransactionCount = async (): Promise<number> => {
-  try {
-    console.log('Fetching transaction count');
-    
-    // Simple count query with explicit selection to avoid ambiguity
-    const { count, error } = await supabase
-      .from('transactions')
-      .select('id', { count: 'exact', head: true });
-    
-    if (error) {
-      console.error('Error counting transactions:', error);
-      toast({
-        title: "Error counting transactions",
-        description: error.message,
-        variant: "destructive"
-      });
-      return 0;
-    }
-    
-    console.log(`Found ${count} transactions in the database`);
-    return count || 0;
-  } catch (error) {
-    console.error('Error in getTransactionCount:', error);
-    toast({
-      title: "Error counting transactions",
-      description: error instanceof Error ? error.message : "An unknown error occurred",
-      variant: "destructive"
-    });
-    return 0;
-  }
-};
-
-/**
  * Maps the raw data from Supabase to the Transaction type
+ * Simplified to just return the data as is, with minimal processing
  */
 const mapTransactionsData = (data: any[]): Transaction[] => {
-  const transactions: Transaction[] = data.map(item => ({
-    customer_id: item.customer_id,
-    amount: item.amount,
-    transaction_date: item.transaction_date,
-    id: item.id,
-    external_id: item.external_id,
-    created_at: item.created_at,
-    product_id: item.product_id,
-    store_id: item.store_id
-  }));
-  
-  // Sort the data in memory
-  transactions.sort((a, b) => {
-    return new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime();
-  });
-  
-  console.log(`Fetched ${transactions.length} transactions`);
-  return transactions;
+  return data;
 };
