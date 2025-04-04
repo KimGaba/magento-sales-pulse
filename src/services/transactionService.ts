@@ -25,14 +25,14 @@ export const fetchTransactionData = async (
         external_id,
         created_at,
         product_id,
-        transactions.store_id
+        store_id
       `)
       .gte('transaction_date', fromDate)
       .lte('transaction_date', toDate);
     
     if (storeIds && storeIds.length > 0) {
       console.log('Filtering on store_ids:', storeIds);
-      query = query.in('transactions.store_id', storeIds);
+      query = query.in('store_id', storeIds);
     }
     
     // Apply ordering with explicit table name
@@ -54,8 +54,11 @@ export const fetchTransactionData = async (
       return [];
     }
     
-    console.log(`Fetched ${data?.length || 0} transactions`);
-    return data || [];
+    // Ensure the data returned matches the Transaction type
+    // Use type assertion to ensure proper type conversion from any Supabase data
+    const transactions = (data || []) as Transaction[];
+    console.log(`Fetched ${transactions.length} transactions`);
+    return transactions;
   } catch (error) {
     console.error('Error in fetchTransactionData:', error);
     // Return empty array instead of throwing an error when catching exceptions
