@@ -17,7 +17,11 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   useEffect(() => {
     const checkAuth = () => {
       console.log("AuthGuard - checking authentication:", { isAuthenticated, path: location.pathname });
-      if (!isAuthenticated && location.pathname !== '/login') {
+      
+      // Public routes that don't require authentication
+      const publicRoutes = ['/', '/login'];
+      
+      if (!isAuthenticated && !publicRoutes.includes(location.pathname)) {
         console.log("AuthGuard - not authenticated, redirecting to login");
         navigate('/login', { replace: true });
       }
@@ -40,7 +44,7 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
     );
   }
 
-  if (!isAuthenticated && location.pathname !== '/login') {
+  if (!isAuthenticated && !['/', '/login'].includes(location.pathname)) {
     return null;
   }
 

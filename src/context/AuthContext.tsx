@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -40,8 +39,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check if we're on the login page
-  const isLoginPage = location.pathname === '/login';
+  // Check if we're on the login page or index page (public pages)
+  const isPublicPage = location.pathname === '/login' || location.pathname === '/';
   
   console.log("AuthContext initialized, current path:", location.pathname);
 
@@ -60,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(currentSession);
           
           // Only redirect if we're on the login page and initialization is complete
-          if (isLoginPage && isInitialized) {
+          if (location.pathname === '/login' && isInitialized) {
             console.log("Redirecting from login to dashboard");
             navigate('/dashboard', { replace: true });
           }
@@ -70,8 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(null);
           setSession(null);
           
-          // Only redirect to login if not already on login page and initialization is complete
-          if (!isLoginPage && isInitialized) {
+          // Only redirect to login if not on a public page and initialization is complete
+          if (!isPublicPage && isInitialized) {
             console.log("Not authenticated, redirecting to login");
             navigate('/login', { replace: true });
           }
@@ -99,7 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(data.session);
           
           // Redirect to dashboard if on login page
-          if (isLoginPage) {
+          if (location.pathname === '/login') {
             console.log("Already logged in, redirecting to dashboard");
             navigate('/dashboard', { replace: true });
           }
@@ -109,8 +108,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(null);
           setSession(null);
           
-          // Redirect to login if not on login page
-          if (!isLoginPage) {
+          // Redirect to login if not on a public page
+          if (!isPublicPage) {
             console.log("No session, redirecting to login");
             navigate('/login', { replace: true });
           }
@@ -133,7 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Cleaning up auth effect, unsubscribing");
       subscription.unsubscribe();
     };
-  }, [navigate, isLoginPage]);
+  }, [navigate, isPublicPage, location.pathname, isInitialized]);
 
   const login = async (email: string, password: string) => {
     try {
