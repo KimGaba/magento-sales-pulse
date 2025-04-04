@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CardContent, CardFooter } from '@/components/ui/card';
-import { Mail, Loader2, AlertCircle, UserPlus } from 'lucide-react';
+import { Mail, Loader2, AlertCircle, UserPlus, KeyRound } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -15,7 +15,7 @@ import { useLanguage } from '@/i18n/LanguageContext';
 const LoginForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, testLogin } = useAuth();
   const { translations } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -70,6 +70,23 @@ const LoginForm = () => {
       } else {
         setLoginError(error.message || 'Der opstod en fejl under Google login. Prøv igen senere.');
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTestLogin = async () => {
+    setLoginError('');
+    setShowRegisterHint(false);
+    setIsLoading(true);
+    
+    try {
+      console.log("Handling test login");
+      await testLogin();
+      // Navigation handled automatically in AuthContext
+    } catch (error: any) {
+      console.error("Test login form error:", error);
+      setLoginError(error.message || 'Der opstod en fejl under test login. Prøv igen senere.');
     } finally {
       setIsLoading(false);
     }
@@ -171,6 +188,18 @@ const LoginForm = () => {
             <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
           </svg>
           {translations.login.googleButton}
+        </Button>
+        
+        {/* Add Test Login Button */}
+        <Button 
+          type="button" 
+          variant="secondary" 
+          onClick={handleTestLogin}
+          disabled={isLoading}
+          className="w-full"
+        >
+          <KeyRound className="mr-2 h-4 w-4" />
+          Test Login (Kun udvikling)
         </Button>
       </CardContent>
       

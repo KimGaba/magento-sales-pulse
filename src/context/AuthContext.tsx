@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -20,6 +19,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  testLogin: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -28,7 +28,8 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   loginWithGoogle: async () => {},
   register: async () => {},
-  logout: () => {}
+  logout: () => {},
+  testLogin: async () => {}
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -42,15 +43,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check if we're on the login page, index page, or other public pages
   const isPublicPage = location.pathname === '/login' || location.pathname === '/';
   
   console.log("AuthContext initialized, current path:", location.pathname);
 
   useEffect(() => {
-    console.log("Setting up auth effect");
-    
-    // Important: First set up the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         console.log("Auth state changed:", event, currentSession);
@@ -61,7 +58,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(currentSession.user);
           setSession(currentSession);
           
-          // Only redirect if we're on the login page and initialization is complete
           if (location.pathname === '/login' && isInitialized) {
             console.log("Redirecting from login to dashboard");
             navigate('/dashboard', { replace: true });
@@ -72,7 +68,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(null);
           setSession(null);
           
-          // Only redirect to login if not on a public page and initialization is complete
           if (!isPublicPage && isInitialized) {
             console.log("Not authenticated, redirecting to login");
             navigate('/login', { replace: true });
@@ -81,7 +76,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Then check for existing session
     const checkSession = async () => {
       console.log("Checking for existing session...");
       try {
@@ -100,7 +94,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(data.session.user);
           setSession(data.session);
           
-          // Redirect to dashboard if on login page
           if (location.pathname === '/login') {
             console.log("Already logged in, redirecting to dashboard");
             navigate('/dashboard', { replace: true });
@@ -111,14 +104,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(null);
           setSession(null);
           
-          // Redirect to login if not on a public page
           if (!isPublicPage) {
             console.log("No session, redirecting to login");
             navigate('/login', { replace: true });
           }
         }
         
-        // Mark initialization as complete after session check
         setIsInitialized(true);
       } catch (error) {
         console.error("Unexpected error checking session:", error);
@@ -150,7 +141,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("Login successful, session:", data.session);
       toast.success('Login successful!');
       
-      // We don't need to navigate here, the auth state change will handle it
     } catch (error: any) {
       console.error("Login error:", error);
       toast.error(`Login fejlede: ${error.message}`);
@@ -172,8 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) throw error;
       
       console.log("Registration successful:", data);
-      // Don't navigate or set authenticated state yet - wait for email verification
-      return; // Explicitly return void to satisfy the Promise<void> type
+      return;
     } catch (error: any) {
       console.error("Registration error:", error);
       toast.error(`Registration fejlede: ${error.message}`);
@@ -222,8 +211,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const testLogin = async () => {
+    try {
+      console.log("Attempting test user login");
+      const testEmail = "test@test.dk";
+      const testPassword = "1234";
+      
+      const { data: existingUser, error: checkError } = await supabase.auth.signInWithPassword({
+        email: testEmail,
+        password: testPassword,
+      });
+      
+      if (checkError && checkError.message.includes("Invalid login credentials")) {
+        console.log("Test user doesn't exist, creating it");
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: testEmail,
+          password: testPassword,
+          options: {
+            data: {
+              email_confirmed: true
+            }
+          }
+        });
+        
+        if (signUpError) throw signUpError;
+        
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+          email: testEmail,
+          password: testPassword,
+        });
+        
+        if (loginError) throw loginError;
+        
+        console.log("Test login successful:", loginData);
+        toast.success('Logget ind som test bruger');
+      } else if (existingUser) {
+        console.log("Test login successful with existing user");
+        toast.success('Logget ind som test bruger');
+      } else if (checkError) {
+        throw checkError;
+      }
+    } catch (error: any) {
+      console.error("Test login error:", error);
+      toast.error(`Test login fejlede: ${error.message}`);
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, loginWithGoogle, register, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, loginWithGoogle, register, logout, testLogin }}>
       {children}
       <Dialog open={showConfigError} onOpenChange={setShowConfigError}>
         <DialogContent className="sm:max-w-md">
