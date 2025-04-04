@@ -16,7 +16,8 @@ export {
 } from './storeService';
 
 export {
-  fetchDailySalesData
+  fetchDailySalesData,
+  fetchAvailableDataMonths
 } from './salesService';
 
 export {

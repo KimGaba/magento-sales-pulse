@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Loader2, Info } from 'lucide-react';
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -15,13 +15,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
+import { format, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { fetchDailySalesData } from '@/services/salesService';
+import { fetchDailySalesData, fetchAvailableDataMonths } from '@/services/salesService';
 import { useToast } from '@/hooks/use-toast';
 import { useFilter } from '@/context/FilterContext';
 import ChartCard from '@/components/dashboard/ChartCard';
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -44,6 +45,11 @@ const DailySales = () => {
   
   const fromDate = date ? format(startOfMonth(date), 'yyyy-MM-dd') : '';
   const toDate = date ? format(endOfMonth(date), 'yyyy-MM-dd') : '';
+
+  const { data: availableMonths = [], isLoading: isLoadingMonths } = useQuery({
+    queryKey: ['availableMonths', selectedStoreIds],
+    queryFn: () => fetchAvailableDataMonths(selectedStoreIds),
+  });
 
   const { data: salesData, isLoading, error } = useQuery({
     queryKey: ['dailySales', fromDate, toDate, selectedStoreIds],
@@ -116,6 +122,10 @@ const DailySales = () => {
     };
   }, [dailySalesData]);
 
+  const hasDataForMonth = (day: Date) => {
+    return availableMonths.some(availMonth => isSameMonth(availMonth, day));
+  };
+
   if (error) {
     toast({
       title: "Error fetching sales data",
@@ -132,29 +142,57 @@ const DailySales = () => {
       </div>
       
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className="w-[240px] pl-3 text-left font-normal"
-            >
-              {date ? (
-                format(date, "MMMM yyyy")
-              ) : (
-                <span>Vælg måned</span>
-              )}
-              <CalendarIcon className="ml-auto h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className="w-[240px] pl-3 text-left font-normal"
+              >
+                {date ? (
+                  format(date, "MMMM yyyy")
+                ) : (
+                  <span>Vælg måned</span>
+                )}
+                <CalendarIcon className="ml-auto h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                initialFocus
+                modifiers={{
+                  highlighted: hasDataForMonth
+                }}
+                modifiersClassNames={{
+                  highlighted: "bg-green-100 font-bold"
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+          
+          <UITooltip>
+            <TooltipTrigger asChild>
+              <Info className="h-4 w-4 text-gray-400 cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="max-w-xs">
+                Måneder med data er fremhævet med grøn. 
+                {availableMonths.length > 0 ? (
+                  <>
+                    <br/>Data findes for: {availableMonths.map(m => format(m, 'MMM yyyy')).join(', ')}
+                  </>
+                ) : 'Ingen måneder har data endnu.'}
+              </p>
+            </TooltipContent>
+          </UITooltip>
+
+          {isLoadingMonths && (
+            <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+          )}
+        </div>
         
         <div className="flex space-x-2">
           <Button variant="outline" size="sm">Eksportér data</Button>
