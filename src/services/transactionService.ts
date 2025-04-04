@@ -14,23 +14,43 @@ export const fetchTransactionData = async (
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate} for stores:`, storeIds);
     
-    // Build the query with the correct chain order
-    // Start with from() and then select() before applying filters
-    let query = supabase
+    // Explicitly select the table columns to avoid ambiguous column references
+    const query = supabase
       .from('transactions')
-      .select('*');
-    
-    // Then apply date filters
-    query = query.gte('transaction_date', fromDate);
-    query = query.lte('transaction_date', toDate);
+      .select(`
+        id,
+        external_id,
+        customer_id,
+        amount,
+        transaction_date,
+        created_at,
+        product_id,
+        store_id
+      `)
+      .gte('transaction_date', fromDate)
+      .lte('transaction_date', toDate);
     
     // Apply store filter if needed
     if (storeIds && storeIds.length > 0) {
       console.log('Filtering on store_ids:', storeIds);
-      query = query.in('store_id', storeIds);
+      // Explicitly specify the transactions table for store_id column
+      const filteredQuery = query.in('transactions.store_id', storeIds);
+      const { data, error } = await filteredQuery;
+      
+      if (error) {
+        console.error('Error fetching transaction data:', error);
+        toast({
+          title: "Error fetching transactions",
+          description: error.message,
+          variant: "destructive"
+        });
+        return [];
+      }
+      
+      return mapTransactionsData(data || []);
     }
     
-    // Execute the query
+    // Execute the query without store filtering
     const { data, error } = await query;
     
     if (error) {
@@ -43,31 +63,7 @@ export const fetchTransactionData = async (
       return [];
     }
     
-    // Ensure we handle the data correctly
-    if (!data) {
-      return [];
-    }
-    
-    // Map the data to the Transaction type
-    const transactions: Transaction[] = data.map(item => ({
-      customer_id: item.customer_id,
-      amount: item.amount,
-      transaction_date: item.transaction_date,
-      id: item.id,
-      external_id: item.external_id,
-      created_at: item.created_at,
-      product_id: item.product_id,
-      store_id: item.store_id
-    }));
-    
-    // Sort the data in memory instead of in the database query
-    // This avoids SQL parsing errors with order clauses
-    transactions.sort((a, b) => {
-      return new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime();
-    });
-    
-    console.log(`Fetched ${transactions.length} transactions`);
-    return transactions;
+    return mapTransactionsData(data || []);
   } catch (error) {
     console.error('Error in fetchTransactionData:', error);
     toast({
@@ -77,4 +73,28 @@ export const fetchTransactionData = async (
     });
     return [];
   }
+};
+
+/**
+ * Maps the raw data from Supabase to the Transaction type
+ */
+const mapTransactionsData = (data: any[]): Transaction[] => {
+  const transactions: Transaction[] = data.map(item => ({
+    customer_id: item.customer_id,
+    amount: item.amount,
+    transaction_date: item.transaction_date,
+    id: item.id,
+    external_id: item.external_id,
+    created_at: item.created_at,
+    product_id: item.product_id,
+    store_id: item.store_id
+  }));
+  
+  // Sort the data in memory
+  transactions.sort((a, b) => {
+    return new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime();
+  });
+  
+  console.log(`Fetched ${transactions.length} transactions`);
+  return transactions;
 };
