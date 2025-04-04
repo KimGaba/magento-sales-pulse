@@ -1,5 +1,4 @@
 
-import { createClient } from '@supabase/supabase-js';
 import { 
   MagentoOrder, 
   MagentoProduct, 
@@ -44,9 +43,9 @@ export const getOrders = async (storeView: StoreView, customerGroup: CustomerGro
 
 export const getOrderById = async (orderId: string) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase
       .from('magento_orders')
-      .select('*') as any
+      .select('*') as any)
       .eq('id', orderId)
       .single();
     
