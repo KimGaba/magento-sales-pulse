@@ -8,39 +8,16 @@ import {
   CustomerGroup
 } from '../types/magento';
 import { toast } from 'sonner';
+import { supabase as configuredSupabase } from '@/integrations/supabase/client';
 
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Initialize Supabase client - brug den forudkonfigurerede klient
+export const supabase = configuredSupabase;
 
-// Validate Supabase configuration
-if (!supabaseUrl || supabaseUrl === 'https://placeholder-url.supabase.co') {
-  console.error('Error: Valid Supabase URL is missing. Check your environment variables.');
-}
-
-if (!supabaseKey || supabaseKey === 'placeholder-key') {
-  console.error('Error: Valid Supabase Anonymous Key is missing. Check your environment variables.');
-}
-
-// Create client with validation
-export const supabase = createClient(
-  supabaseUrl || 'https://example.supabase.co', // Using example instead of placeholder to avoid DNS lookup
-  supabaseKey || 'example-key'
-);
-
-// Check if we're using fallback values
-export const isUsingFallbackConfig = 
-  !supabaseUrl || 
-  supabaseUrl === 'https://placeholder-url.supabase.co' || 
-  !supabaseKey || 
-  supabaseKey === 'placeholder-key';
+// Tjek om vi bruger fallback-værdier - dette er nu altid falsk, da vi bruger den korrekte klient
+export const isUsingFallbackConfig = false;
 
 // Orders
 export const getOrders = async (storeView: StoreView, customerGroup: CustomerGroup, limit = 100) => {
-  if (isUsingFallbackConfig) {
-    throw new Error('Supabase is not properly configured');
-  }
-  
   let query = supabase.from('magento_orders').select('*').order('created_at', { ascending: false }).limit(limit);
   
   if (storeView !== 'alle') {

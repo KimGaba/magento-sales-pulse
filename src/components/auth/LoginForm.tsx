@@ -8,7 +8,6 @@ import { CardContent } from '@/components/ui/card';
 import { Mail, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { isUsingFallbackConfig } from '../../services/supabase';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const LoginForm = () => {
@@ -32,11 +31,6 @@ const LoginForm = () => {
       });
       return;
     }
-    
-    if (isUsingFallbackConfig) {
-      setLoginError('Supabase forbindelsen er ikke korrekt konfigureret. Kontakt venligst administratoren.');
-      return;
-    }
 
     setIsLoading(true);
     
@@ -53,12 +47,6 @@ const LoginForm = () => {
   
   const handleGoogleLogin = async () => {
     setLoginError('');
-
-    if (isUsingFallbackConfig) {
-      setLoginError('Supabase forbindelsen er ikke korrekt konfigureret. Kontakt venligst administratoren.');
-      return;
-    }
-    
     setIsLoading(true);
     
     try {
@@ -91,7 +79,7 @@ const LoginForm = () => {
                 placeholder="din@email.dk"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading || isUsingFallbackConfig}
+                disabled={isLoading}
                 required
               />
             </div>
@@ -107,14 +95,14 @@ const LoginForm = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)} 
-                disabled={isLoading || isUsingFallbackConfig}
+                disabled={isLoading}
                 required
               />
             </div>
             <Button 
               type="submit" 
               className="w-full"
-              disabled={isLoading || isUsingFallbackConfig}
+              disabled={isLoading}
             >
               {isLoading ? (
                 <>
@@ -141,7 +129,7 @@ const LoginForm = () => {
           type="button" 
           variant="outline" 
           onClick={handleGoogleLogin}
-          disabled={isLoading || isUsingFallbackConfig}
+          disabled={isLoading}
           className="w-full"
         >
           <svg 

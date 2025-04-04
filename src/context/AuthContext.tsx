@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { supabase, isUsingFallbackConfig } from '../services/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -33,16 +33,10 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<any>(null);
-  const [showConfigError, setShowConfigError] = useState<boolean>(isUsingFallbackConfig);
+  const [showConfigError, setShowConfigError] = useState<boolean>(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for configuration errors
-    if (isUsingFallbackConfig) {
-      setShowConfigError(true);
-      return;
-    }
-
     // Check if user is already logged in via Supabase session
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
@@ -73,12 +67,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    if (isUsingFallbackConfig) {
-      toast.error('Supabase er ikke korrekt konfigureret. Kontakt venligst systemadministratoren.');
-      setShowConfigError(true);
-      return;
-    }
-
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -95,12 +83,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithGoogle = async () => {
-    if (isUsingFallbackConfig) {
-      toast.error('Supabase er ikke korrekt konfigureret. Kontakt venligst systemadministratoren.');
-      setShowConfigError(true);
-      return;
-    }
-
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -117,11 +99,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    if (isUsingFallbackConfig) {
-      toast.error('Supabase er ikke korrekt konfigureret. Kontakt venligst systemadministratoren.');
-      return;
-    }
-
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;

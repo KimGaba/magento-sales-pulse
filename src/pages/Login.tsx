@@ -2,17 +2,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mail, ArrowRight, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import LoginForm from '@/components/auth/LoginForm';
 import RegisterForm from '@/components/auth/RegisterForm';
-import { isUsingFallbackConfig } from '../services/supabase';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -44,18 +38,6 @@ const Login = () => {
               Få adgang til din butiks indsigter
             </CardDescription>
           </CardHeader>
-
-          {isUsingFallbackConfig && (
-            <div className="px-6">
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Konfigurationsfejl</AlertTitle>
-                <AlertDescription>
-                  Supabase-forbindelsen er ikke korrekt konfigureret. Login-funktionen vil ikke virke før dette er løst.
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
 
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
