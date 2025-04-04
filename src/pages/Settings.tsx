@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import SettingsHeader from '@/components/settings/SettingsHeader';
 import ProfileInfoCard from '@/components/settings/ProfileInfoCard';
 import InvoiceInfoCard from '@/components/settings/InvoiceInfoCard';
-import { fetchMagentoConnections } from '@/services/supabase';
+import { fetchMagentoConnections, updateMagentoConnection } from '@/services/magentoService';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from '@/components/ui/button';
@@ -180,12 +180,7 @@ const Settings = () => {
       .map(([status]) => status);
       
     try {
-      const { error } = await supabase
-        .from('magento_connections')
-        .update({ order_statuses: selectedStatuses })
-        .eq('id', connectionId);
-        
-      if (error) throw error;
+      await updateMagentoConnection(connectionId, { order_statuses: selectedStatuses });
       
       toast.success("Ordre-statusindstillinger gemt");
       
