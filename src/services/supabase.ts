@@ -19,8 +19,9 @@ export const getOrders = async (storeView: StoreView, customerGroup: CustomerGro
   try {
     let query = supabase
       .from('magento_orders')
-      .select('*')
-      .order('created_at', { ascending: false })
+      .select('*') as any;
+      
+    query = query.order('created_at', { ascending: false })
       .limit(limit);
     
     if (storeView !== 'alle') {
@@ -43,9 +44,9 @@ export const getOrders = async (storeView: StoreView, customerGroup: CustomerGro
 
 export const getOrderById = async (orderId: string) => {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase
       .from('magento_orders')
-      .select('*')
+      .select('*') as any)
       .eq('id', orderId)
       .single();
     
@@ -62,8 +63,9 @@ export const getProducts = async (storeView: StoreView, limit = 100) => {
   try {
     let query = supabase
       .from('magento_products')
-      .select('*')
-      .limit(limit);
+      .select('*') as any;
+      
+    query = query.limit(limit);
     
     if (storeView !== 'alle') {
       query = query.eq('store_view', storeView);
@@ -89,7 +91,9 @@ export const getSalesStatistics = async (
   try {
     let query = supabase
       .from('magento_sales_statistics')
-      .select('*')
+      .select('*') as any;
+      
+    query = query
       .gte('date', startDate)
       .lte('date', endDate);
     
@@ -121,7 +125,9 @@ export const getProductSales = async (
   try {
     let query = supabase
       .from('magento_product_sales')
-      .select('*')
+      .select('*') as any;
+      
+    query = query
       .gte('date', startDate)
       .lte('date', endDate);
     
