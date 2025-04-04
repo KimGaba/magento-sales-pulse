@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,19 +12,27 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [oauthError, setOauthError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('login');
 
   // Check if there's an error in the URL (from OAuth redirect)
-  React.useEffect(() => {
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const error = params.get('error');
     const errorDescription = params.get('error_description');
+    const register = params.get('register');
     
     if (error) {
       setOauthError(`${error}: ${errorDescription || 'Uventet fejl ved login. Prøv igen senere.'}`);
     }
-  }, []);
+
+    // If register parameter exists, switch to register tab
+    if (register === 'true') {
+      setActiveTab('register');
+    }
+  }, [location]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -63,10 +71,10 @@ const Login = () => {
             </div>
           )}
 
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Log ind</TabsTrigger>
-              <TabsTrigger value="register">Opret konto</TabsTrigger>
+              <TabsTrigger value="login" data-value="login">Log ind</TabsTrigger>
+              <TabsTrigger value="register" data-value="register">Opret konto</TabsTrigger>
             </TabsList>
             <TabsContent value="login">
               <LoginForm />

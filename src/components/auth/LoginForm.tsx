@@ -4,11 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CardContent } from '@/components/ui/card';
-import { Mail, Loader2, AlertCircle } from 'lucide-react';
+import { CardContent, CardFooter } from '@/components/ui/card';
+import { Mail, Loader2, AlertCircle, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { TabsTrigger } from '@/components/ui/tabs';
 
 const LoginForm = () => {
   const navigate = useNavigate();
@@ -18,10 +19,12 @@ const LoginForm = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [showRegisterHint, setShowRegisterHint] = useState(false);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    setShowRegisterHint(false);
     
     if (!email || !password) {
       setLoginError('Udfyld venligst både email og adgangskode');
@@ -36,7 +39,13 @@ const LoginForm = () => {
       // Navigation håndteres automatisk i AuthContext
     } catch (error: any) {
       console.error("Login form error:", error);
-      setLoginError(error.message || 'Der opstod en fejl under login. Prøv igen senere.');
+      
+      if (error.message?.includes("Invalid login credentials")) {
+        setLoginError('Forkert email eller adgangskode');
+        setShowRegisterHint(true);
+      } else {
+        setLoginError(error.message || 'Der opstod en fejl under login. Prøv igen senere.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -44,6 +53,7 @@ const LoginForm = () => {
   
   const handleGoogleLogin = async () => {
     setLoginError('');
+    setShowRegisterHint(false);
     setIsLoading(true);
     
     try {
@@ -68,8 +78,20 @@ const LoginForm = () => {
       <CardContent className="space-y-4 pt-4">
         {loginError && (
           <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
+            <AlertCircle className="h-4 w-4 mr-2" />
             <AlertDescription>{loginError}</AlertDescription>
+          </Alert>
+        )}
+
+        {showRegisterHint && (
+          <Alert className="mb-4 bg-amber-50 border-amber-200">
+            <UserPlus className="h-4 w-4 mr-2 text-amber-600" />
+            <div>
+              <AlertTitle className="text-amber-800">Har du ikke en konto endnu?</AlertTitle>
+              <AlertDescription className="text-amber-700">
+                Det ser ud til, at denne email ikke er registreret. Du skal oprette en konto først.
+              </AlertDescription>
+            </div>
           </Alert>
         )}
 
@@ -149,6 +171,22 @@ const LoginForm = () => {
           Fortsæt med Google
         </Button>
       </CardContent>
+      
+      {showRegisterHint && (
+        <CardFooter className="px-6 pt-0 pb-5">
+          <Button 
+            variant="secondary" 
+            className="w-full" 
+            onClick={() => {
+              const registerTab = document.querySelector('[data-value="register"]') as HTMLElement;
+              if (registerTab) registerTab.click();
+            }}
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            Opret ny konto
+          </Button>
+        </CardFooter>
+      )}
     </>
   );
 };
