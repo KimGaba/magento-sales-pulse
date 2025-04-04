@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,9 +11,9 @@ const Index = () => {
         <div className="container mx-auto py-4 px-4 flex justify-between items-center">
           <div className="flex items-center">
             <img 
-              src="/lovable-uploads/77d4d3a2-fd52-4411-8a63-380c197c5c7a.png" 
-              alt="MetricMate Logo" 
-              className="h-10"
+              src="/lovable-uploads/b987e83a-8258-4105-ad71-1cc75ec496f7.png" 
+              alt="Logo" 
+              className="h-12"
             />
           </div>
           <nav className="flex-1 flex justify-center">
@@ -133,11 +134,10 @@ const Index = () => {
             <div>
               <div className="flex items-center mb-4">
                 <img 
-                  src="/lovable-uploads/77d4d3a2-fd52-4411-8a63-380c197c5c7a.png" 
-                  alt="MetricMate Logo" 
-                  className="h-8 mr-2"
+                  src="/lovable-uploads/b987e83a-8258-4105-ad71-1cc75ec496f7.png" 
+                  alt="Logo" 
+                  className="h-10"
                 />
-                <h3 className="font-bold text-xl text-gray-700">MetricMate</h3>
               </div>
               <p className="text-gray-600">
                 Simpelt og intuitivt værktøj til at holde øje med din Magento-butiks præstation.
@@ -160,7 +160,7 @@ const Index = () => {
             </div>
           </div>
           <div className="border-t mt-8 pt-8 text-center">
-            <p className="text-gray-600">© {new Date().getFullYear()} MetricMate. Alle rettigheder forbeholdes.</p>
+            <p className="text-gray-600">© {new Date().getFullYear()} Alle rettigheder forbeholdes.</p>
           </div>
         </div>
       </footer>

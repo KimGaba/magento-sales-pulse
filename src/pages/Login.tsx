@@ -32,11 +32,10 @@ const Login = () => {
         <div className="container mx-auto py-4 px-4 flex justify-between items-center">
           <div className="flex items-center">
             <img 
-              src="/lovable-uploads/77d4d3a2-fd52-4411-8a63-380c197c5c7a.png" 
-              alt="MetricMate Logo" 
-              className="h-8 mr-2"
+              src="/lovable-uploads/b987e83a-8258-4105-ad71-1cc75ec496f7.png" 
+              alt="Logo" 
+              className="h-10"
             />
-            <h1 className="text-xl font-bold">MetricMate</h1>
           </div>
           <nav>
             <Button variant="ghost" onClick={() => navigate('/')}>Tilbage til forsiden</Button>
@@ -47,7 +46,7 @@ const Login = () => {
       <main className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Log ind på MetricMate</CardTitle>
+            <CardTitle className="text-2xl">Log ind på platformen</CardTitle>
             <CardDescription>
               Få adgang til din butiks indsigter
             </CardDescription>
@@ -79,7 +78,7 @@ const Login = () => {
 
       <footer className="bg-white py-6 border-t">
         <div className="container mx-auto px-4 text-center text-gray-600">
-          <p>© {new Date().getFullYear()} MetricMate. Alle rettigheder forbeholdes.</p>
+          <p>© {new Date().getFullYear()} Alle rettigheder forbeholdes.</p>
         </div>
       </footer>
     </div>
