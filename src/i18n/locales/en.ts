@@ -64,7 +64,8 @@ const en = {
     trends: "Trends",
     dailySales: "Daily Sales",
     connect: "Connect",
-    settings: "Settings"
+    settings: "Settings",
+    repeatPurchase: "Repeat Purchase Rate"
   },
   languageSelector: {
     language: "Language",
@@ -135,6 +136,26 @@ const en = {
     goToDashboard: "Go to Dashboard",
     activeStatus: "Active",
     pendingStatus: "Pending"
+  },
+  repeatPurchase: {
+    title: "Repeat Purchase Rate",
+    subtitle: "Analyze how often customers return to make additional purchases",
+    description: "The repeat purchase rate shows the percentage of customers who have made more than one purchase within a specific time period.",
+    months3: "Last 3 Months",
+    months6: "Last 6 Months",
+    months12: "Last 12 Months",
+    months18: "Last 18 Months",
+    months24: "Last 24 Months",
+    noData: "No data available for the selected period",
+    customersWithRepeat: "Customers with repeat purchases",
+    totalCustomers: "Total customers",
+    repeatRate: "Repeat rate",
+    topReturningCustomers: "Top Returning Customers",
+    customerEmail: "Customer Email",
+    purchaseCount: "Purchases",
+    totalSpent: "Total Spent",
+    lastPurchase: "Last Purchase",
+    viewDetails: "View Details"
   }
 };
 

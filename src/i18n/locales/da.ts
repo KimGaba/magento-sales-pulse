@@ -68,7 +68,8 @@ const da = {
     trends: "Tendenser",
     dailySales: "Daglige Salg",
     connect: "Forbind",
-    settings: "Indstillinger"
+    settings: "Indstillinger",
+    repeatPurchase: "Gentaget Købsrate"
   },
   languageSelector: {
     language: "Sprog",
@@ -140,6 +141,26 @@ const da = {
     goToDashboard: "Gå til dashboard",
     activeStatus: "Aktiv",
     pendingStatus: "Afventer"
+  },
+  repeatPurchase: {
+    title: "Gentaget Købsrate",
+    subtitle: "Analysér hvor ofte kunder vender tilbage for at foretage yderligere køb",
+    description: "Gentaget købsrate viser procentdelen af kunder, der har foretaget mere end ét køb inden for en specifik tidsperiode.",
+    months3: "Sidste 3 Måneder",
+    months6: "Sidste 6 Måneder",
+    months12: "Sidste 12 Måneder",
+    months18: "Sidste 18 Måneder",
+    months24: "Sidste 24 Måneder",
+    noData: "Ingen data tilgængelig for den valgte periode",
+    customersWithRepeat: "Kunder med gentagne køb",
+    totalCustomers: "Samlede kunder",
+    repeatRate: "Gentagelsesrate",
+    topReturningCustomers: "Bedste tilbagevendende kunder",
+    customerEmail: "Kunde Email",
+    purchaseCount: "Antal køb",
+    totalSpent: "Samlet brugt",
+    lastPurchase: "Seneste køb",
+    viewDetails: "Se detaljer"
   }
 };
 

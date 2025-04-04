@@ -9,27 +9,35 @@ import {
   SidebarMenuButton,
   SidebarMenuItem 
 } from '@/components/ui/sidebar';
-import { BarChart, Calendar, Database, TrendingUp } from 'lucide-react';
+import { BarChart, Calendar, Database, TrendingUp, RefreshCw } from 'lucide-react';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 export const NavigationMenu: React.FC = () => {
+  const { translations } = useLanguage();
+  
   const menuItems = [
     { 
-      title: 'Dashboard', 
+      title: translations.layout.dashboard, 
       path: '/dashboard', 
       icon: BarChart 
     },
     { 
-      title: 'Produkter', 
+      title: translations.layout.products, 
       path: '/products', 
       icon: Database 
     },
     { 
-      title: 'Salgstrends', 
+      title: translations.layout.trends, 
       path: '/trends', 
       icon: TrendingUp 
     },
     { 
-      title: 'Daglig Salg', 
+      title: translations.layout.repeatPurchase, 
+      path: '/repeat-purchase', 
+      icon: RefreshCw 
+    },
+    { 
+      title: translations.layout.dailySales, 
       path: '/daily-sales', 
       icon: Calendar 
     },
