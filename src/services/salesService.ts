@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Transaction } from '@/utils/repeatPurchaseCalculator';
 import { fetchTransactionData } from './transactionService';
 import { format, parseISO } from 'date-fns';
@@ -14,10 +13,11 @@ export const fetchDailySalesData = async (
   storeIds: string[] = []
 ) => {
   try {
-    console.log(`Fetching daily sales from ${fromDate} to ${toDate} for stores:`, storeIds);
+    console.log(`Fetching daily sales from ${fromDate} to ${toDate}`);
     
-    // Fetch transaction data using the same service as repeat purchase report
-    const transactions = await fetchTransactionData(fromDate, toDate, storeIds);
+    // Fetch transaction data using the transactionService
+    // We'll ignore storeIds for now to see if we can get the basic functionality working
+    const transactions = await fetchTransactionData(fromDate, toDate);
     
     if (!transactions || transactions.length === 0) {
       return [];
@@ -32,8 +32,7 @@ export const fetchDailySalesData = async (
         acc[date] = {
           date: date,
           total_sales: 0,
-          order_count: 0,
-          store_id: transaction.store_id
+          order_count: 0
         };
       }
       
@@ -45,7 +44,6 @@ export const fetchDailySalesData = async (
       date: string;
       total_sales: number;
       order_count: number;
-      store_id: string;
     }>);
     
     const dailySalesData = Object.values(salesByDate);
@@ -69,14 +67,15 @@ export const fetchDailySalesData = async (
  */
 export const fetchAvailableDataMonths = async (storeIds: string[] = []) => {
   try {
-    console.log('Fetching available data months for stores:', storeIds);
+    console.log('Fetching available data months');
     
     // Use the transactionService to get all transactions
     // We'll just get the past 24 months to keep the query small
+    // We'll ignore storeIds for now to simplify
     const fromDate = format(new Date(new Date().setMonth(new Date().getMonth() - 24)), 'yyyy-MM-dd');
     const toDate = format(new Date(), 'yyyy-MM-dd');
     
-    const transactions = await fetchTransactionData(fromDate, toDate, storeIds);
+    const transactions = await fetchTransactionData(fromDate, toDate);
     
     if (!transactions || transactions.length === 0) {
       return [];

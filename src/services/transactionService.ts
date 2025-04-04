@@ -1,10 +1,11 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Transaction } from '@/utils/repeatPurchaseCalculator';
 
 /**
  * Fetches all transaction data for the given date range
+ * Simplified version that doesn't apply store filtering
  */
 export const fetchTransactionData = async (
   fromDate: string, 
@@ -12,12 +13,12 @@ export const fetchTransactionData = async (
   storeIds: string[] = []
 ): Promise<Transaction[]> => {
   try {
-    console.log(`Fetching transactions from ${fromDate} to ${toDate} for stores:`, storeIds);
+    console.log(`Fetching transactions from ${fromDate} to ${toDate}`);
     
-    // Build the query without explicit column selection to avoid ambiguity
-    let query = supabase.from('transactions').select();
+    // Build a simple query without column selection or joins
+    let query = supabase.from('transactions').select('*');
     
-    // Apply filters after the select() call
+    // Apply date filters
     if (fromDate) {
       query = query.gte('transaction_date', fromDate);
     }
@@ -26,10 +27,7 @@ export const fetchTransactionData = async (
       query = query.lte('transaction_date', toDate);
     }
     
-    if (storeIds && storeIds.length > 0) {
-      console.log('Filtering on store_ids:', storeIds);
-      query = query.in('store_id', storeIds);
-    }
+    // We're ignoring the storeIds filter for now
     
     // Execute the query
     const { data, error } = await query;

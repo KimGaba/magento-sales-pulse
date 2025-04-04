@@ -20,7 +20,6 @@ import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDailySalesData, fetchAvailableDataMonths } from '@/services/salesService';
 import { useToast } from '@/hooks/use-toast';
-import { useFilter } from '@/context/FilterContext';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const formatDate = (dateString: string) => {
@@ -31,28 +30,18 @@ const formatDate = (dateString: string) => {
 const DailySales = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const { toast } = useToast();
-  const { storeView } = useFilter();
-  
-  const selectedStoreIds = React.useMemo(() => {
-    if (storeView === 'alle') return [];
-    if (storeView === 'dk') return ['dk-store-1', 'dk-store-2'];
-    if (storeView === 'se') return ['se-store-1', 'se-store-2'];
-    if (storeView === 'no') return ['no-store-1', 'no-store-2'];
-    if (storeView === 'fi') return ['fi-store-1', 'fi-store-2'];
-    return [];
-  }, [storeView]);
   
   const fromDate = date ? format(startOfMonth(date), 'yyyy-MM-dd') : '';
   const toDate = date ? format(endOfMonth(date), 'yyyy-MM-dd') : '';
 
   const { data: availableMonths = [], isLoading: isLoadingMonths } = useQuery({
-    queryKey: ['availableMonths', selectedStoreIds],
-    queryFn: () => fetchAvailableDataMonths(selectedStoreIds),
+    queryKey: ['availableMonths'],
+    queryFn: () => fetchAvailableDataMonths(),
   });
 
   const { data: salesData = [], isLoading, error } = useQuery({
-    queryKey: ['dailySales', fromDate, toDate, selectedStoreIds],
-    queryFn: () => fetchDailySalesData(fromDate, toDate, selectedStoreIds),
+    queryKey: ['dailySales', fromDate, toDate],
+    queryFn: () => fetchDailySalesData(fromDate, toDate),
     enabled: !!fromDate && !!toDate,
   });
 
