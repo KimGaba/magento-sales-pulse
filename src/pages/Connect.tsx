@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -36,7 +35,7 @@ import { useForm } from "react-hook-form";
 
 interface StoreConnection {
   id: string;
-  store_id?: string; // Making store_id optional to match MagentoConnection
+  store_id?: string;
   store_name: string;
   store_url: string;
   status: string;
@@ -133,7 +132,6 @@ const Connect = () => {
     setConnecting(true);
     
     try {
-      // Convert orderStatuses object to array of selected statuses
       const selectedStatuses = Object.entries(values.orderStatuses)
         .filter(([_, isSelected]) => isSelected)
         .map(([status]) => status);
@@ -142,8 +140,7 @@ const Connect = () => {
         user.id,
         values.url,
         values.apiKey,
-        values.storeName,
-        selectedStatuses
+        values.storeName
       );
       
       setStep(2);
@@ -156,7 +153,6 @@ const Connect = () => {
       updateSyncStatus('products', 'syncing');
       setSyncProgress(10);
       
-      // Simulate sync progress (this would be replaced by real progress in production)
       setTimeout(() => {
         updateSyncStatus('products', 'completed');
         updateSyncStatus('orders', 'syncing');
