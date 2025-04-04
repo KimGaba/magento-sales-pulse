@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { format, subMonths } from 'date-fns';
 import Layout from '@/components/layout/Layout';
@@ -33,6 +34,7 @@ const RepeatPurchaseRate = () => {
     },
   });
 
+  // Ensure we always have an array of transactions
   const transactions: Transaction[] = data || [];
   
   const currentPeriodData = calculateRepeatPurchaseRate(
