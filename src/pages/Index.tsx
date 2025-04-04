@@ -3,8 +3,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Database, BarChart, TrendingUp, Calendar } from 'lucide-react';
+import LanguageSelector from '@/components/layout/LanguageSelector';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 const Index = () => {
+  const { translations } = useLanguage();
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b bg-white">
@@ -23,7 +27,8 @@ const Index = () => {
               <li><Link to="/pricing" className="text-gray-600 hover:text-magento-600">Priser</Link></li>
             </ul>
           </nav>
-          <div className="flex space-x-4">
+          <div className="flex items-center space-x-4">
+            <LanguageSelector />
             <Button asChild variant="outline"><Link to="/login">Log ind</Link></Button>
             <Button asChild><Link to="/login">Kom igang</Link></Button>
           </div>
