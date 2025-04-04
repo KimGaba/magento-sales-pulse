@@ -13,8 +13,16 @@ export type RepeatPurchaseData = {
   }[];
 };
 
+// Define a type for transaction data
+interface Transaction {
+  customer_id: string | null;
+  amount: number;
+  transaction_date: string;
+  [key: string]: any; // For any other properties
+}
+
 export const calculateRepeatPurchaseRate = (
-  transactions: any[] | undefined,
+  transactions: Transaction[] | undefined,
   months: number
 ): RepeatPurchaseData => {
   if (!transactions || transactions.length === 0) {
@@ -55,7 +63,7 @@ export const calculateRepeatPurchaseRate = (
     purchases: number;
     totalSpent: number;
     lastPurchase: string;
-    transactions: any[];
+    transactions: Transaction[];
   }>);
   
   // Count total unique customers and repeat customers
