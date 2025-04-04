@@ -51,9 +51,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth state changed:", event, session);
         if (event === 'SIGNED_IN' && session) {
           setIsAuthenticated(true);
           setUser(session.user);
+          navigate('/dashboard');
         } else if (event === 'SIGNED_OUT') {
           setIsAuthenticated(false);
           setUser(null);
@@ -64,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -77,6 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       toast.success('Login successful!');
     } catch (error: any) {
+      console.error("Login error:", error);
       toast.error(`Login fejlede: ${error.message}`);
       throw error;
     }
@@ -84,18 +87,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log("Starting Google login...");
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
         }
       });
 
+      console.log("Google login response:", { data, error });
+      
       if (error) {
         console.error("Google authentication error:", error);
         throw error;
       }
     } catch (error: any) {
+      console.error("Google login error:", error);
       toast.error(`Google login fejlede: ${error.message}`);
       throw error;
     }

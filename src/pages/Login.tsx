@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,10 +8,23 @@ import { useToast } from '@/hooks/use-toast';
 import LoginForm from '@/components/auth/LoginForm';
 import RegisterForm from '@/components/auth/RegisterForm';
 import { InfoIcon } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [oauthError, setOauthError] = useState<string | null>(null);
+
+  // Check if there's an error in the URL (from OAuth redirect)
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    const errorDescription = params.get('error_description');
+    
+    if (error) {
+      setOauthError(`${error}: ${errorDescription || 'Uventet fejl ved login. Prøv igen senere.'}`);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -39,6 +52,15 @@ const Login = () => {
               Få adgang til din butiks indsigter
             </CardDescription>
           </CardHeader>
+
+          {oauthError && (
+            <div className="px-6">
+              <Alert variant="destructive" className="mb-4">
+                <InfoIcon className="h-4 w-4 mr-2" />
+                <AlertDescription>{oauthError}</AlertDescription>
+              </Alert>
+            </div>
+          )}
 
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
