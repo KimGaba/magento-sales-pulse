@@ -22,8 +22,8 @@ export const fetchTransactionData = async (
       query = query.in('transactions.store_id', storeIds);
     }
     
-    // Apply ordering after all filters
-    query = query.order('transactions.transaction_date', { ascending: false });
+    // Fix the order syntax - remove the table prefix for the order parameter
+    query = query.order('transaction_date', { ascending: false });
     
     const { data, error } = await query;
     
