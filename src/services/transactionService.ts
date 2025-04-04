@@ -29,7 +29,7 @@ export const fetchTransactionData = async (
     
     if (storeIds && storeIds.length > 0) {
       console.log('Filtering on store_ids:', storeIds);
-      query = query.in('transactions.store_id', storeIds);
+      query = query.in('store_id', storeIds);
     }
     
     // Execute the query
