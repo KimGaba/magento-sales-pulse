@@ -9,7 +9,240 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      daily_sales: {
+        Row: {
+          average_order_value: number | null
+          created_at: string
+          date: string
+          id: string
+          order_count: number
+          store_id: string
+          total_sales: number
+          updated_at: string
+        }
+        Insert: {
+          average_order_value?: number | null
+          created_at?: string
+          date: string
+          id?: string
+          order_count?: number
+          store_id: string
+          total_sales?: number
+          updated_at?: string
+        }
+        Update: {
+          average_order_value?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          order_count?: number
+          store_id?: string
+          total_sales?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_sales_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      magento_connections: {
+        Row: {
+          access_token: string
+          created_at: string
+          id: string
+          status: string
+          store_id: string | null
+          store_name: string
+          store_url: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          id?: string
+          status?: string
+          store_id?: string | null
+          store_name: string
+          store_url: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          id?: string
+          status?: string
+          store_id?: string | null
+          store_name?: string
+          store_url?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "magento_connections_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          created_at: string
+          description: string | null
+          external_id: string | null
+          id: string
+          image_url: string | null
+          in_stock: boolean | null
+          name: string
+          price: number | null
+          sku: string | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          external_id?: string | null
+          id?: string
+          image_url?: string | null
+          in_stock?: boolean | null
+          name: string
+          price?: number | null
+          sku?: string | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          external_id?: string | null
+          id?: string
+          image_url?: string | null
+          in_stock?: boolean | null
+          name?: string
+          price?: number | null
+          sku?: string | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      stores: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_id: string | null
+          external_id: string | null
+          id: string
+          product_id: string | null
+          store_id: string
+          transaction_date: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          customer_id?: string | null
+          external_id?: string | null
+          id?: string
+          product_id?: string | null
+          store_id: string
+          transaction_date?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_id?: string | null
+          external_id?: string | null
+          id?: string
+          product_id?: string | null
+          store_id?: string
+          transaction_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

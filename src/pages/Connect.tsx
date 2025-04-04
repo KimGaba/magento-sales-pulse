@@ -7,19 +7,32 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CheckCircle, Database } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/context/AuthContext';
+import { addMagentoConnection } from '@/services/supabase';
 
 const Connect = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [storeName, setStoreName] = useState('');
   const [url, setUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [connecting, setConnecting] = useState(false);
   const [step, setStep] = useState(1);
   
-  const handleConnect = () => {
-    if (!url.trim() || !apiKey.trim()) {
+  const handleConnect = async () => {
+    if (!url.trim() || !apiKey.trim() || !storeName.trim()) {
       toast({
         title: "Fejl ved forbindelse",
-        description: "Venligst udfyld både URL og API-nøgle",
+        description: "Venligst udfyld både butiksnavn, URL og API-nøgle",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!user || !user.id) {
+      toast({
+        title: "Bruger ikke fundet",
+        description: "Du skal være logget ind for at forbinde en butik",
         variant: "destructive",
       });
       return;
@@ -27,16 +40,37 @@ const Connect = () => {
     
     setConnecting(true);
     
-    // Simulate connection process
-    setTimeout(() => {
-      setConnecting(false);
+    try {
+      // Save connection to database
+      await addMagentoConnection(
+        user.id,
+        url,
+        apiKey,
+        storeName
+      );
+      
+      // Move to next step on success
       setStep(2);
+      
       toast({
         title: "Forbindelse oprettet!",
         description: "Din Magento-butik blev forbundet med succes",
-        variant: "default",
       });
-    }, 2000);
+      
+      // Simulate sync process
+      setTimeout(() => {
+        setStep(3);
+      }, 5000);
+    } catch (error) {
+      console.error("Connection error:", error);
+      toast({
+        title: "Forbindelsesfejl",
+        description: "Der opstod en fejl ved forbindelse til Magento. Prøv igen senere.",
+        variant: "destructive",
+      });
+    } finally {
+      setConnecting(false);
+    }
   };
   
   const handleFinish = () => {
@@ -83,6 +117,17 @@ const Connect = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="store-name">Butiksnavn</Label>
+                <Input 
+                  id="store-name" 
+                  placeholder="Min Butik" 
+                  value={storeName}
+                  onChange={(e) => setStoreName(e.target.value)}
+                />
+                <p className="text-xs text-gray-500">Et navn til at identificere din butik i systemet</p>
+              </div>
+              
               <div className="space-y-2">
                 <Label htmlFor="store-url">Magento URL</Label>
                 <Input 
