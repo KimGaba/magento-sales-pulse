@@ -39,7 +39,12 @@ export const NavigationMenu: React.FC = () => {
     <>
       <div className="p-4">
         <div className="flex items-center">
-          <h1 className="text-xl font-bold text-magento-600">Sales Pulse</h1>
+          <img 
+            src="/lovable-uploads/77d4d3a2-fd52-4411-8a63-380c197c5c7a.png" 
+            alt="MetricMate Logo" 
+            className="h-8 mr-2"
+          />
+          <h1 className="text-xl font-semibold">MetricMate</h1>
         </div>
       </div>
 

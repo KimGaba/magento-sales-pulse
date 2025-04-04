@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,17 +9,23 @@ const Index = () => {
       <header className="border-b bg-white">
         <div className="container mx-auto py-4 px-4 flex justify-between items-center">
           <div className="flex items-center">
-            <h1 className="text-xl font-bold text-magento-600">Magento Sales Pulse</h1>
+            <img 
+              src="/lovable-uploads/77d4d3a2-fd52-4411-8a63-380c197c5c7a.png" 
+              alt="MetricMate Logo" 
+              className="h-10"
+            />
           </div>
-          <nav>
-            <ul className="flex space-x-6">
+          <nav className="flex-1 flex justify-center">
+            <ul className="flex space-x-8">
               <li><Link to="/dashboard" className="text-gray-600 hover:text-magento-600">Dashboard</Link></li>
               <li><Link to="/features" className="text-gray-600 hover:text-magento-600">Funktioner</Link></li>
               <li><Link to="/pricing" className="text-gray-600 hover:text-magento-600">Priser</Link></li>
-              <li><Button asChild variant="outline"><Link to="/login">Log ind</Link></Button></li>
-              <li><Button asChild><Link to="/login">Kom igang</Link></Button></li>
             </ul>
           </nav>
+          <div className="flex space-x-4">
+            <Button asChild variant="outline"><Link to="/login">Log ind</Link></Button>
+            <Button asChild><Link to="/login">Kom igang</Link></Button>
+          </div>
         </div>
       </header>
 
@@ -126,7 +131,14 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <h3 className="font-bold text-xl text-magento-600 mb-4">Magento Sales Pulse</h3>
+              <div className="flex items-center mb-4">
+                <img 
+                  src="/lovable-uploads/77d4d3a2-fd52-4411-8a63-380c197c5c7a.png" 
+                  alt="MetricMate Logo" 
+                  className="h-8 mr-2"
+                />
+                <h3 className="font-bold text-xl text-gray-700">MetricMate</h3>
+              </div>
               <p className="text-gray-600">
                 Simpelt og intuitivt værktøj til at holde øje med din Magento-butiks præstation.
               </p>
@@ -142,13 +154,13 @@ const Index = () => {
             <div>
               <h4 className="font-semibold mb-4">Kontakt</h4>
               <p className="text-gray-600">
-                kontakt@salespulse.dk<br />
+                kontakt@metricmate.dk<br />
                 +45 12 34 56 78
               </p>
             </div>
           </div>
           <div className="border-t mt-8 pt-8 text-center">
-            <p className="text-gray-600">© {new Date().getFullYear()} Magento Sales Pulse. Alle rettigheder forbeholdes.</p>
+            <p className="text-gray-600">© {new Date().getFullYear()} MetricMate. Alle rettigheder forbeholdes.</p>
           </div>
         </div>
       </footer>

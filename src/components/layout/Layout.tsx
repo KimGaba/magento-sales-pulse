@@ -26,7 +26,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <header className="border-b p-4 flex justify-between items-center">
             <div className="flex items-center">
               <SidebarTrigger />
-              <h1 className="text-xl font-semibold ml-2">Magento Sales Pulse</h1>
+              <div className="flex items-center ml-2">
+                <img 
+                  src="/lovable-uploads/77d4d3a2-fd52-4411-8a63-380c197c5c7a.png" 
+                  alt="MetricMate Logo" 
+                  className="h-6 mr-2"
+                />
+                <h1 className="text-xl font-semibold">MetricMate</h1>
+              </div>
             </div>
             <FilterSelectors />
             <div>
