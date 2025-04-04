@@ -112,7 +112,9 @@ const da = {
     country: "Land",
     save: "Gem ændringer",
     saved: "Indstillingerne blev gemt",
-    error: "Fejl ved gemning af indstillinger"
+    error: "Fejl ved gemning af indstillinger",
+    backButton: "Tilbage",
+    logOutButton: "Log Ud"
   },
   connect: {
     title: "Forbind din Magento-butik",

@@ -107,7 +107,9 @@ const en = {
     country: "Country",
     save: "Save Changes",
     saved: "Settings saved successfully",
-    error: "Error saving settings"
+    error: "Error saving settings",
+    backButton: "Back",
+    logOutButton: "Log Out"
   },
   connect: {
     title: "Connect your Magento Store",
