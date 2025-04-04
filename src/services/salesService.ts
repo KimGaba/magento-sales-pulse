@@ -17,7 +17,7 @@ export const fetchDailySalesData = async (
     console.log(`Fetching daily sales from ${fromDate} to ${toDate}`);
     
     // Fetch transaction data using the transactionService
-    const transactions = await fetchTransactionData(fromDate, toDate);
+    const transactions = await fetchTransactionData(fromDate, toDate, storeIds);
     
     if (!transactions || transactions.length === 0) {
       return [];
@@ -83,7 +83,7 @@ export const fetchAvailableDataMonths = async (storeIds: string[] = []) => {
     const fromDate = format(new Date(new Date().setMonth(new Date().getMonth() - 24)), 'yyyy-MM-dd');
     const toDate = format(new Date(), 'yyyy-MM-dd');
     
-    const transactions = await fetchTransactionData(fromDate, toDate);
+    const transactions = await fetchTransactionData(fromDate, toDate, storeIds);
     
     if (!transactions || transactions.length === 0) {
       return [];

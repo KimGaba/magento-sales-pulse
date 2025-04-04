@@ -15,8 +15,17 @@ export const fetchTransactionData = async (
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate}`);
     
-    // Build a simple query without column selection or joins
-    let query = supabase.from('transactions').select('*');
+    // Use explicit table selection to avoid ambiguous column references
+    let query = supabase.from('transactions').select(`
+      id,
+      customer_id, 
+      amount, 
+      transaction_date, 
+      external_id, 
+      created_at, 
+      product_id, 
+      store_id
+    `);
     
     // Apply date filters
     if (fromDate) {
@@ -27,7 +36,10 @@ export const fetchTransactionData = async (
       query = query.lte('transaction_date', toDate);
     }
     
-    // We're ignoring the storeIds filter for now
+    // Apply store filter if provided
+    if (storeIds && storeIds.length > 0) {
+      query = query.in('store_id', storeIds);
+    }
     
     // Execute the query
     const { data, error } = await query;
@@ -62,10 +74,10 @@ export const getTransactionCount = async (): Promise<number> => {
   try {
     console.log('Fetching transaction count');
     
-    // Simple count query without any joins or filters
+    // Simple count query with explicit selection to avoid ambiguity
     const { count, error } = await supabase
       .from('transactions')
-      .select('*', { count: 'exact', head: true });
+      .select('id', { count: 'exact', head: true });
     
     if (error) {
       console.error('Error counting transactions:', error);
