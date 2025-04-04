@@ -18,15 +18,15 @@ const RepeatRateCard: React.FC<RepeatRateCardProps> = ({
   customersWithRepeatLabel
 }) => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">{title}</CardTitle>
+    <Card className="h-full">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base md:text-xl">{title}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center">
-        <div className="text-5xl font-bold text-magento-600 mb-2">
+        <div className="text-4xl md:text-5xl font-bold text-magento-600 mb-1 md:mb-2">
           {repeatRate.toFixed(1)}%
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="text-xs md:text-sm text-gray-500 text-center">
           {repeatCustomers} / {totalCustomers} {customersWithRepeatLabel}
         </div>
       </CardContent>

@@ -16,6 +16,7 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Customer {
   email: string;
@@ -42,35 +43,43 @@ const TopCustomersTable: React.FC<TopCustomersTableProps> = ({
   description,
   labels
 }) => {
+  const isMobile = useIsMobile();
+  
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
+      <CardHeader className="py-4 md:py-6">
+        <CardTitle className="text-xl md:text-2xl">{title}</CardTitle>
         <CardDescription>
           {description}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-2 md:px-6 pb-4 md:pb-6 overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{labels.customerEmail}</TableHead>
-              <TableHead className="text-right">{labels.purchaseCount}</TableHead>
-              <TableHead className="text-right">{labels.totalSpent}</TableHead>
-              <TableHead>{labels.lastPurchase}</TableHead>
+              <TableHead className="whitespace-nowrap">{labels.customerEmail}</TableHead>
+              <TableHead className="text-right whitespace-nowrap">{labels.purchaseCount}</TableHead>
+              <TableHead className="text-right whitespace-nowrap">{labels.totalSpent}</TableHead>
+              {!isMobile && <TableHead className="whitespace-nowrap">{labels.lastPurchase}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {customers.map((customer, index) => (
               <TableRow key={index}>
-                <TableCell className="font-medium">{customer.email}</TableCell>
-                <TableCell className="text-right">{customer.purchases}</TableCell>
+                <TableCell className="font-medium max-w-[150px] md:max-w-none truncate">
+                  {customer.email}
+                </TableCell>
                 <TableCell className="text-right">
+                  {customer.purchases}
+                </TableCell>
+                <TableCell className="text-right whitespace-nowrap">
                   {new Intl.NumberFormat('da-DK', { style: 'currency', currency: 'DKK' }).format(customer.totalSpent)}
                 </TableCell>
-                <TableCell>
-                  {format(new Date(customer.lastPurchase), 'dd/MM/yyyy')}
-                </TableCell>
+                {!isMobile && (
+                  <TableCell className="whitespace-nowrap">
+                    {format(new Date(customer.lastPurchase), 'dd/MM/yyyy')}
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>
