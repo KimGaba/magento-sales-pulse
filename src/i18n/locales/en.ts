@@ -16,7 +16,19 @@ const en = {
     forgotPassword: "Forgot Password?",
     noAccount: "Don't have an account?",
     createOne: "Create one",
-    error: "Invalid credentials"
+    error: "Invalid credentials",
+    subtitle: "Enter your credentials to continue",
+    loginTab: "Login",
+    registerTab: "Register",
+    emptyFields: "Please fill in all fields",
+    loginError: "Could not log in. Please check your credentials and try again.",
+    newAccountHint: "Don't have an account yet?",
+    newAccountText: "Create a new account",
+    loggingIn: "Logging in...",
+    loginButton: "Login",
+    continueWith: "Or continue with",
+    googleButton: "Continue with Google",
+    createNewAccount: "Create new account"
   },
   register: {
     title: "Register",
@@ -28,11 +40,21 @@ const en = {
     haveAccount: "Already have an account?",
     login: "Login",
     error: "Registration failed",
-    success: "Registration successful!"
+    success: "Registration successful!",
+    emptyFields: "All fields must be filled",
+    passwordMismatch: "Passwords do not match",
+    accountCreated: "Account created!",
+    registering: "Registering...",
+    registerButton: "Register",
+    continueWith: "Or continue with",
+    googleButton: "Continue with Google"
   },
   auth: {
     authentication: "Authentication",
-    authorization: "Authorization"
+    authorization: "Authorization",
+    verifyEmail: "Verify your email",
+    verifyEmailDesc: "We've sent a confirmation email to your inbox.",
+    checkEmail: "Check your email to activate your account."
   },
   layout: {
     dashboard: "Dashboard",

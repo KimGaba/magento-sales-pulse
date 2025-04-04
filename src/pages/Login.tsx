@@ -28,7 +28,7 @@ const Login = () => {
     const register = params.get('register');
     
     if (error) {
-      setOauthError(`${error}: ${errorDescription || 'Uventet fejl ved login. Prøv igen senere.'}`);
+      setOauthError(`${error}: ${errorDescription || 'Unexpected error during login. Please try again later.'}`);
     }
 
     // If register parameter exists, switch to register tab
@@ -61,9 +61,11 @@ const Login = () => {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">{translations.login.title}</CardTitle>
-            <CardDescription>
-              {translations.login.subtitle}
-            </CardDescription>
+            {translations.login.subtitle && (
+              <CardDescription>
+                {translations.login.subtitle}
+              </CardDescription>
+            )}
           </CardHeader>
 
           {oauthError && (
@@ -77,8 +79,12 @@ const Login = () => {
 
           <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login" data-value="login">{translations.login.loginTab}</TabsTrigger>
-              <TabsTrigger value="register" data-value="register">{translations.login.registerTab}</TabsTrigger>
+              <TabsTrigger value="login" data-value="login">
+                {translations.login.loginTab || translations.common.login}
+              </TabsTrigger>
+              <TabsTrigger value="register" data-value="register">
+                {translations.login.registerTab || translations.common.register}
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="login">
               <LoginForm />
@@ -92,7 +98,7 @@ const Login = () => {
 
       <footer className="bg-white py-6 border-t">
         <div className="container mx-auto px-4 text-center text-gray-600">
-          <p>© {new Date().getFullYear()} Alle rettigheder forbeholdes.</p>
+          <p>© {new Date().getFullYear()} All rights reserved.</p>
         </div>
       </footer>
     </div>

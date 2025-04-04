@@ -27,6 +27,12 @@ const LanguageContext = createContext<LanguageContextType>({
 
 export const useLanguage = () => useContext(LanguageContext);
 
+// Add the useTranslation hook
+export const useTranslation = () => {
+  const { translations } = useLanguage();
+  return { t: translations };
+};
+
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [locale, setLocale] = useState<Locale>(() => {
     // Try to get language from localStorage or use browser language

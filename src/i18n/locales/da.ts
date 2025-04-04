@@ -15,9 +15,20 @@ const da = {
     submit: "Log ind",
     forgotPassword: "Glemt adgangskode?",
     noAccount: "Har du ikke en konto?",
-    registerNow: "Tilmeld dig nu",
-    usernameRequired: "Brugernavn er påkrævet",
-    passwordRequired: "Adgangskode er påkrævet"
+    createOne: "Opret en konto",
+    error: "Ugyldige legitimationsoplysninger",
+    subtitle: "Indtast dine oplysninger for at fortsætte",
+    loginTab: "Log ind",
+    registerTab: "Opret konto",
+    emptyFields: "Venligst udfyld alle felter",
+    loginError: "Kunne ikke logge ind. Tjek dine oplysninger og prøv igen.",
+    newAccountHint: "Har du ikke en konto endnu?",
+    newAccountText: "Opret en ny konto",
+    loggingIn: "Logger ind...",
+    loginButton: "Log ind",
+    continueWith: "Eller fortsæt med",
+    googleButton: "Fortsæt med Google",
+    createNewAccount: "Opret ny konto"
   },
   register: {
     title: "Opret en ny konto",
@@ -26,19 +37,28 @@ const da = {
     password: "Adgangskode",
     confirmPassword: "Bekræft adgangskode",
     submit: "Tilmeld",
-    alreadyAccount: "Har du allerede en konto?",
-    loginNow: "Log ind nu",
-    usernameRequired: "Brugernavn er påkrævet",
-    emailRequired: "E-mail er påkrævet",
-    passwordRequired: "Adgangskode er påkrævet",
-    confirmPasswordRequired: "Bekræft adgangskode er påkrævet",
-    passwordsMustMatch: "Adgangskoderne skal stemme overens"
+    haveAccount: "Har du allerede en konto?",
+    login: "Log ind",
+    error: "Registrering mislykkedes",
+    success: "Registrering gennemført!",
+    emptyFields: "Alle felter skal udfyldes",
+    passwordMismatch: "Adgangskoderne matcher ikke",
+    accountCreated: "Konto oprettet!",
+    registering: "Opretter konto...",
+    registerButton: "Opret konto",
+    continueWith: "Eller fortsæt med",
+    googleButton: "Fortsæt med Google"
   },
   auth: {
+    authentication: "Godkendelse",
+    authorization: "Autorisation",
     invalidCredentials: "Ugyldige legitimationsoplysninger",
     accountNotFound: "Konto ikke fundet",
     emailNotVerified: "E-mail ikke bekræftet",
-    genericError: "Der opstod en fejl under godkendelsen"
+    genericError: "Der opstod en fejl under godkendelsen",
+    verifyEmail: "Bekræft din e-mail",
+    verifyEmailDesc: "Vi har sendt en bekræftelses-e-mail til din indbakke.",
+    checkEmail: "Tjek din e-mail for at aktivere din konto."
   },
   layout: {
     dashboard: "Dashboard",
@@ -49,10 +69,14 @@ const da = {
     settings: "Indstillinger"
   },
   languageSelector: {
+    language: "Sprog",
+    english: "Engelsk",
+    danish: "Dansk",
     selectLanguage: "Vælg sprog"
   },
   timeFilter: {
     today: "I dag",
+    yesterday: "I går",
     last7Days: "Sidste 7 dage",
     last30Days: "Sidste 30 dage",
     thisMonth: "Denne måned",
@@ -62,7 +86,15 @@ const da = {
     totalSales: "Samlet salg",
     newCustomers: "Nye kunder",
     averageOrderValue: "Gennemsnitlig ordreværdi",
-    customerSatisfaction: "Kundetilfredshed"
+    customerSatisfaction: "Kundetilfredshed",
+    salesReport: "Salgsrapport",
+    recentOrders: "Seneste ordrer",
+    orderId: "Ordre-ID",
+    customer: "Kunde",
+    date: "Dato",
+    amount: "Beløb",
+    status: "Status",
+    viewAll: "Se alle"
   },
   settings: {
     title: "Kontoindstillinger",

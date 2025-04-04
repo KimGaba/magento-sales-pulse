@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, Database, Trash2, AlertCircle } from 'lucide-react';
+import { CheckCircle, Database, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { addMagentoConnection, fetchMagentoConnections, triggerMagentoSync } from '@/services/supabase';
@@ -24,6 +23,14 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from '@/i18n/LanguageContext';
 
+interface StoreConnection {
+  id: string;
+  store_id: string;
+  store_name: string;
+  store_url: string;
+  status: string;
+}
+
 const Connect = () => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -40,10 +47,10 @@ const Connect = () => {
     customers: 'waiting',
     statistics: 'waiting'
   });
-  const [connections, setConnections] = useState([]);
+  const [connections, setConnections] = useState<StoreConnection[]>([]);
   const [loadingConnections, setLoadingConnections] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [storeToDelete, setStoreToDelete] = useState(null);
+  const [storeToDelete, setStoreToDelete] = useState<StoreConnection | null>(null);
   
   useEffect(() => {
     if (user) {
@@ -92,7 +99,6 @@ const Connect = () => {
     setConnecting(true);
     
     try {
-      // Save connection to database
       await addMagentoConnection(
         user.id,
         url,
@@ -100,7 +106,6 @@ const Connect = () => {
         storeName
       );
       
-      // Move to next step on success
       setStep(2);
       
       toast({
@@ -108,7 +113,6 @@ const Connect = () => {
         description: "Din Magento-butik blev forbundet med succes. Starter synkronisering...",
       });
       
-      // Set up simulated sync process with more realistic steps
       updateSyncStatus('products', 'syncing');
       setSyncProgress(10);
       
@@ -131,13 +135,10 @@ const Connect = () => {
               updateSyncStatus('statistics', 'completed');
               setSyncProgress(100);
               
-              // Trigger the actual sync process in the background
               triggerInitialSync();
               
-              // Move to the final step
               setTimeout(() => {
                 setStep(3);
-                // Refresh connections list
                 loadConnections();
               }, 1000);
             }, 1000);
@@ -165,7 +166,6 @@ const Connect = () => {
   
   const triggerInitialSync = async () => {
     try {
-      // Call the Supabase Edge Function to trigger an initial sync
       const { data, error } = await supabase.functions.invoke('magento-sync', {
         body: { trigger: 'initial_connection' }
       });
@@ -181,7 +181,6 @@ const Connect = () => {
   };
   
   const handleFinish = () => {
-    // Reset form and go back to the first view with connections list
     setStoreName('');
     setUrl('');
     setApiKey('');
@@ -196,7 +195,7 @@ const Connect = () => {
     setConnecting(false);
   };
 
-  const handleDisconnect = (connection) => {
+  const handleDisconnect = (connection: StoreConnection) => {
     setStoreToDelete(connection);
     setShowDeleteDialog(true);
   };
@@ -205,7 +204,6 @@ const Connect = () => {
     if (!storeToDelete) return;
 
     try {
-      // Call the Supabase function to delete the store data
       if (storeToDelete.store_id) {
         const { data, error } = await supabase.rpc('delete_store_data', {
           target_store_id: storeToDelete.store_id
@@ -216,7 +214,6 @@ const Connect = () => {
         }
       }
 
-      // Delete the connection itself
       const { error } = await supabase
         .from('magento_connections')
         .delete()
@@ -226,18 +223,17 @@ const Connect = () => {
         throw error;
       }
 
-      // Reload connections
       await loadConnections();
 
       toast({
-        title: "Butik fjernet",
-        description: "Butikken og alle tilhørende data er blevet slettet.",
+        title: t.connect.storeDeleted,
+        description: t.connect.storeDeletedDesc,
       });
     } catch (error) {
       console.error("Error deleting store:", error);
       toast({
-        title: "Fejl ved sletning",
-        description: "Der opstod en fejl ved sletning af butikken.",
+        title: t.connect.deleteError,
+        description: t.connect.deleteErrorDesc,
         variant: "destructive",
       });
     } finally {
@@ -498,7 +494,6 @@ const Connect = () => {
         </Tabs>
       </div>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
