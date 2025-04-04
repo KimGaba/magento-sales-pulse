@@ -1,1 +1,26 @@
+
+# Project ID from your Supabase project settings
 project_id = "vlkcnndgtarduplyedyp"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+
+[db]
+port = 54322
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+
+# Configure the magento-sync function to use JWT verification for auth
+[functions.magento-sync]
+verify_jwt = true
+
+# Configure the magento-sync-cron function to use JWT verification for auth
+[functions.magento-sync-cron]
+verify_jwt = true

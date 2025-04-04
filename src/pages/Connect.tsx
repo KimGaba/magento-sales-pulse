@@ -9,6 +9,8 @@ import { CheckCircle, Database } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { addMagentoConnection } from '@/services/supabase';
+import { supabase } from '@/integrations/supabase/client';
+import { Progress } from '@/components/ui/progress';
 
 const Connect = () => {
   const { toast } = useToast();
@@ -18,6 +20,13 @@ const Connect = () => {
   const [apiKey, setApiKey] = useState('');
   const [connecting, setConnecting] = useState(false);
   const [step, setStep] = useState(1);
+  const [syncProgress, setSyncProgress] = useState(0);
+  const [syncStatus, setSyncStatus] = useState({
+    products: 'waiting',
+    orders: 'waiting',
+    customers: 'waiting',
+    statistics: 'waiting'
+  });
   
   const handleConnect = async () => {
     if (!url.trim() || !apiKey.trim() || !storeName.trim()) {
@@ -54,13 +63,44 @@ const Connect = () => {
       
       toast({
         title: "Forbindelse oprettet!",
-        description: "Din Magento-butik blev forbundet med succes",
+        description: "Din Magento-butik blev forbundet med succes. Starter synkronisering...",
       });
       
-      // Simulate sync process
+      // Set up simulated sync process with more realistic steps
+      updateSyncStatus('products', 'syncing');
+      setSyncProgress(10);
+      
       setTimeout(() => {
-        setStep(3);
-      }, 5000);
+        updateSyncStatus('products', 'completed');
+        updateSyncStatus('orders', 'syncing');
+        setSyncProgress(30);
+        
+        setTimeout(() => {
+          updateSyncStatus('orders', 'completed');
+          updateSyncStatus('customers', 'syncing');
+          setSyncProgress(60);
+          
+          setTimeout(() => {
+            updateSyncStatus('customers', 'completed');
+            updateSyncStatus('statistics', 'syncing');
+            setSyncProgress(80);
+            
+            setTimeout(() => {
+              updateSyncStatus('statistics', 'completed');
+              setSyncProgress(100);
+              
+              // Trigger the actual sync process in the background
+              triggerInitialSync();
+              
+              // Move to the final step
+              setTimeout(() => {
+                setStep(3);
+              }, 1000);
+            }, 1000);
+          }, 1500);
+        }, 1500);
+      }, 1500);
+      
     } catch (error) {
       console.error("Connection error:", error);
       toast({
@@ -68,8 +108,31 @@ const Connect = () => {
         description: "Der opstod en fejl ved forbindelse til Magento. Prøv igen senere.",
         variant: "destructive",
       });
-    } finally {
       setConnecting(false);
+    }
+  };
+  
+  const updateSyncStatus = (item, status) => {
+    setSyncStatus(prev => ({
+      ...prev,
+      [item]: status
+    }));
+  };
+  
+  const triggerInitialSync = async () => {
+    try {
+      // Call the Supabase Edge Function to trigger an initial sync
+      const { data, error } = await supabase.functions.invoke('magento-sync', {
+        body: { trigger: 'initial_connection' }
+      });
+      
+      if (error) {
+        console.error("Error triggering initial sync:", error);
+      } else {
+        console.log("Initial sync triggered:", data);
+      }
+    } catch (err) {
+      console.error("Failed to trigger sync:", err);
     }
   };
   
@@ -182,26 +245,50 @@ const Connect = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span>Produkter</span>
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  {syncStatus.products === 'completed' ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : syncStatus.products === 'syncing' ? (
+                    <div className="w-5 h-5 rounded-full border-2 border-magento-600 border-t-transparent animate-spin"></div>
+                  ) : (
+                    <span className="text-gray-400">Venter...</span>
+                  )}
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Ordrer</span>
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  {syncStatus.orders === 'completed' ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : syncStatus.orders === 'syncing' ? (
+                    <div className="w-5 h-5 rounded-full border-2 border-magento-600 border-t-transparent animate-spin"></div>
+                  ) : (
+                    <span className="text-gray-400">Venter...</span>
+                  )}
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Kunder</span>
-                  <div className="w-5 h-5 rounded-full border-2 border-magento-600 border-t-transparent animate-spin"></div>
+                  {syncStatus.customers === 'completed' ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : syncStatus.customers === 'syncing' ? (
+                    <div className="w-5 h-5 rounded-full border-2 border-magento-600 border-t-transparent animate-spin"></div>
+                  ) : (
+                    <span className="text-gray-400">Venter...</span>
+                  )}
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Salgstatistikker</span>
-                  <span className="text-gray-400">Venter...</span>
+                  {syncStatus.statistics === 'completed' ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : syncStatus.statistics === 'syncing' ? (
+                    <div className="w-5 h-5 rounded-full border-2 border-magento-600 border-t-transparent animate-spin"></div>
+                  ) : (
+                    <span className="text-gray-400">Venter...</span>
+                  )}
                 </div>
               </div>
               
-              <div className="mt-6 bg-gray-100 rounded-full h-2.5">
-                <div className="bg-magento-600 h-2.5 rounded-full w-1/2"></div>
+              <div className="mt-6">
+                <Progress value={syncProgress} className="h-2.5" />
               </div>
-              <p className="text-center mt-2 text-sm">50% fuldført</p>
+              <p className="text-center mt-2 text-sm">{syncProgress}% fuldført</p>
             </CardContent>
             <CardFooter className="flex justify-center">
               <p className="text-sm text-gray-500">

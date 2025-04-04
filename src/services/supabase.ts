@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 
@@ -223,6 +222,56 @@ export const updateUserProfile = async (
     return data;
   } catch (error) {
     console.error('Error updating user profile:', error);
+    throw error;
+  }
+};
+
+/**
+ * Manually triggers synchronization for Magento stores
+ */
+export const triggerMagentoSync = async () => {
+  try {
+    console.log('Manually triggering Magento synchronization');
+    
+    const { data, error } = await supabase.functions.invoke('magento-sync', {
+      body: { trigger: 'manual' }
+    });
+    
+    if (error) {
+      console.error('Error triggering Magento sync:', error);
+      throw error;
+    }
+    
+    console.log('Magento sync triggered successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Error triggering Magento sync:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches magento connections for a user
+ */
+export const fetchMagentoConnections = async (userId: string) => {
+  try {
+    console.log(`Fetching Magento connections for user ${userId}`);
+    
+    const { data, error } = await supabase
+      .from('magento_connections')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching Magento connections:', error);
+      throw error;
+    }
+    
+    console.log(`Fetched ${data?.length || 0} Magento connections`);
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching Magento connections:', error);
     throw error;
   }
 };
