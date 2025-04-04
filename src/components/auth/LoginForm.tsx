@@ -10,11 +10,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { TabsTrigger } from '@/components/ui/tabs';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 const LoginForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { login, loginWithGoogle } = useAuth();
+  const { translations } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +29,7 @@ const LoginForm = () => {
     setShowRegisterHint(false);
     
     if (!email || !password) {
-      setLoginError('Udfyld venligst både email og adgangskode');
+      setLoginError(translations.register.emptyFields);
       return;
     }
 
@@ -36,12 +38,12 @@ const LoginForm = () => {
     try {
       console.log("Handling email login submission for:", email);
       await login(email, password);
-      // Navigation håndteres automatisk i AuthContext
+      // Navigation handled automatically in AuthContext
     } catch (error: any) {
       console.error("Login form error:", error);
       
       if (error.message?.includes("Invalid login credentials")) {
-        setLoginError('Forkert email eller adgangskode');
+        setLoginError(translations.login.loginError);
         setShowRegisterHint(true);
       } else {
         setLoginError(error.message || 'Der opstod en fejl under login. Prøv igen senere.');
@@ -87,9 +89,9 @@ const LoginForm = () => {
           <Alert className="mb-4 bg-amber-50 border-amber-200">
             <UserPlus className="h-4 w-4 mr-2 text-amber-600" />
             <div>
-              <AlertTitle className="text-amber-800">Har du ikke en konto endnu?</AlertTitle>
+              <AlertTitle className="text-amber-800">{translations.login.newAccountHint}</AlertTitle>
               <AlertDescription className="text-amber-700">
-                Det ser ud til, at denne email ikke er registreret. Du skal oprette en konto først.
+                {translations.login.newAccountText}
               </AlertDescription>
             </div>
           </Alert>
@@ -98,7 +100,7 @@ const LoginForm = () => {
         <form onSubmit={handleEmailLogin}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{translations.login.email}</Label>
               <Input 
                 id="email" 
                 type="email" 
@@ -111,9 +113,9 @@ const LoginForm = () => {
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Adgangskode</Label>
+                <Label htmlFor="password">{translations.login.password}</Label>
                 <Button variant="link" size="sm" className="p-0 h-auto text-xs">
-                  Glemt adgangskode?
+                  {translations.login.forgotPassword}
                 </Button>
               </div>
               <Input 
@@ -133,10 +135,10 @@ const LoginForm = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Logger ind...
+                  {translations.login.loggingIn}
                 </>
               ) : (
-                'Log ind'
+                translations.login.loginButton
               )}
             </Button>
           </div>
@@ -147,7 +149,7 @@ const LoginForm = () => {
             <span className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-muted-foreground">Eller fortsæt med</span>
+            <span className="bg-white px-2 text-muted-foreground">{translations.login.continueWith}</span>
           </div>
         </div>
         
@@ -168,7 +170,7 @@ const LoginForm = () => {
             <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
             <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
           </svg>
-          Fortsæt med Google
+          {translations.login.googleButton}
         </Button>
       </CardContent>
       
@@ -183,7 +185,7 @@ const LoginForm = () => {
             }}
           >
             <UserPlus className="mr-2 h-4 w-4" />
-            Opret ny konto
+            {translations.login.createNewAccount}
           </Button>
         </CardFooter>
       )}

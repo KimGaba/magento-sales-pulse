@@ -9,11 +9,14 @@ import LoginForm from '@/components/auth/LoginForm';
 import RegisterForm from '@/components/auth/RegisterForm';
 import { InfoIcon } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useLanguage } from '@/i18n/LanguageContext';
+import LanguageSelector from '@/components/layout/LanguageSelector';
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { translations } = useLanguage();
   const [oauthError, setOauthError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('login');
 
@@ -45,20 +48,21 @@ const Login = () => {
               className="h-10"
             />
           </div>
-          <nav>
+          <div className="flex items-center gap-2">
+            <LanguageSelector />
             <Button variant="ghost" asChild>
-              <Link to="/">Tilbage til forsiden</Link>
+              <Link to="/">{translations.common.back}</Link>
             </Button>
-          </nav>
+          </div>
         </div>
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Log ind på platformen</CardTitle>
+            <CardTitle className="text-2xl">{translations.login.title}</CardTitle>
             <CardDescription>
-              Få adgang til din butiks indsigter
+              {translations.login.subtitle}
             </CardDescription>
           </CardHeader>
 
@@ -73,8 +77,8 @@ const Login = () => {
 
           <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login" data-value="login">Log ind</TabsTrigger>
-              <TabsTrigger value="register" data-value="register">Opret konto</TabsTrigger>
+              <TabsTrigger value="login" data-value="login">{translations.login.loginTab}</TabsTrigger>
+              <TabsTrigger value="register" data-value="register">{translations.login.registerTab}</TabsTrigger>
             </TabsList>
             <TabsContent value="login">
               <LoginForm />

@@ -5,56 +5,55 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CardContent } from '@/components/ui/card';
-import { CircleAlert, Loader2 } from 'lucide-react';
+import { CircleAlert, Loader2, Mail, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useLanguage } from '@/i18n/LanguageContext';
 
 const RegisterForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { loginWithGoogle } = useAuth();
+  const { loginWithGoogle, register } = useAuth();
+  const { translations } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [registerError, setRegisterError] = useState('');
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegisterError('');
     
     if (!email || !password || !confirmPassword) {
-      toast({
-        title: "Fejl ved registrering",
-        description: "Udfyld venligst alle felter",
-        variant: "destructive",
-      });
+      setRegisterError(translations.register.emptyFields);
       return;
     }
 
     if (password !== confirmPassword) {
-      toast({
-        title: "Fejl ved registrering",
-        description: "Adgangskoderne matcher ikke",
-        variant: "destructive",
-      });
+      setRegisterError(translations.register.passwordMismatch);
       return;
     }
     
     setIsLoading(true);
     
-    // Dette er en simuleret registreringsproces
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      console.log("Handling registration for:", email);
+      await register(email, password);
+      
+      setRegistrationSuccess(true);
       toast({
-        title: "Konto oprettet!",
-        description: "Du er nu registreret og logget ind.",
+        title: translations.register.accountCreated,
+        description: translations.auth.verifyEmailDesc,
       });
-      // I en rigtig implementation ville vi her gemme en auth token
-      localStorage.setItem("isLoggedIn", "true");
-      navigate('/dashboard');
-    }, 1500);
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      setRegisterError(error.message || 'Der opstod en fejl under registrering. Prøv igen senere.');
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const handleGoogleRegister = async () => {
@@ -79,6 +78,30 @@ const RegisterForm = () => {
     }
   };
 
+  if (registrationSuccess) {
+    return (
+      <CardContent className="space-y-4 py-6">
+        <div className="text-center">
+          <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle className="h-6 w-6 text-green-600" />
+          </div>
+          <h3 className="text-xl font-medium mb-2">{translations.auth.verifyEmail}</h3>
+          <p className="text-gray-600 mb-6">
+            {translations.auth.verifyEmailDesc}
+          </p>
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={() => navigate('/login')}
+          >
+            <Mail className="mr-2 h-4 w-4" />
+            {translations.auth.checkEmail}
+          </Button>
+        </div>
+      </CardContent>
+    );
+  }
+
   return (
     <>
       <CardContent className="space-y-4 pt-4">
@@ -92,7 +115,7 @@ const RegisterForm = () => {
         <form onSubmit={handleRegister}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="register-email">Email</Label>
+              <Label htmlFor="register-email">{translations.register.email}</Label>
               <Input 
                 id="register-email" 
                 type="email" 
@@ -104,7 +127,7 @@ const RegisterForm = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="register-password">Adgangskode</Label>
+              <Label htmlFor="register-password">{translations.register.password}</Label>
               <Input 
                 id="register-password" 
                 type="password"
@@ -115,7 +138,7 @@ const RegisterForm = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm-password">Bekræft adgangskode</Label>
+              <Label htmlFor="confirm-password">{translations.register.confirmPassword}</Label>
               <Input 
                 id="confirm-password" 
                 type="password"
@@ -133,10 +156,10 @@ const RegisterForm = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Opretter konto...
+                  {translations.register.registering}
                 </>
               ) : (
-                'Opret konto'
+                translations.register.registerButton
               )}
             </Button>
           </div>
@@ -147,7 +170,7 @@ const RegisterForm = () => {
             <span className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-muted-foreground">Eller fortsæt med</span>
+            <span className="bg-white px-2 text-muted-foreground">{translations.register.continueWith}</span>
           </div>
         </div>
         
@@ -168,7 +191,7 @@ const RegisterForm = () => {
             <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
             <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
           </svg>
-          Fortsæt med Google
+          {translations.register.googleButton}
         </Button>
       </CardContent>
     </>

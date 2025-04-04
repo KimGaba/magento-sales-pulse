@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -17,6 +18,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  register: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -25,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   login: async () => {},
   loginWithGoogle: async () => {},
+  register: async () => {},
   logout: () => {}
 });
 
@@ -39,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Check if we're on the login page or index page (public pages)
+  // Check if we're on the login page, index page, or other public pages
   const isPublicPage = location.pathname === '/login' || location.pathname === '/';
   
   console.log("AuthContext initialized, current path:", location.pathname);
@@ -155,6 +158,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const register = async (email: string, password: string) => {
+    try {
+      console.log("Attempting registration with:", email);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        }
+      });
+
+      if (error) throw error;
+      
+      console.log("Registration successful:", data);
+      // Don't navigate or set authenticated state yet - wait for email verification
+      return data;
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      toast.error(`Registration fejlede: ${error.message}`);
+      throw error;
+    }
+  };
+
   const loginWithGoogle = async () => {
     try {
       console.log("Starting Google login...");
@@ -197,7 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, loginWithGoogle, register, logout }}>
       {children}
       <Dialog open={showConfigError} onOpenChange={setShowConfigError}>
         <DialogContent className="sm:max-w-md">

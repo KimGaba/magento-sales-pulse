@@ -5,7 +5,9 @@ import { NavigationMenu } from './NavigationMenu';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/i18n/LanguageContext';
 import FilterSelectors from './FilterSelectors';
+import LanguageSelector from './LanguageSelector';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,6 +15,7 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { logout } = useAuth();
+  const { translations } = useLanguage();
 
   return (
     <SidebarProvider>
@@ -35,10 +38,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
             </div>
             <FilterSelectors />
-            <div>
+            <div className="flex items-center gap-2">
+              <LanguageSelector />
               <Button variant="ghost" size="sm" onClick={logout} className="flex items-center">
                 <LogOut className="mr-2 h-4 w-4" />
-                Log ud
+                {translations.common.logOut}
               </Button>
             </div>
           </header>
