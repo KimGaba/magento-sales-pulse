@@ -10,7 +10,6 @@ import {
 } from '../types/magento';
 import { toast } from 'sonner';
 import { supabase as configuredSupabase } from '@/integrations/supabase/client';
-import { PostgrestQueryBuilder } from '@supabase/supabase-js';
 
 // Initialize Supabase client - brug den forudkonfigurerede klient
 export const supabase = configuredSupabase;
