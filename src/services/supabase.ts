@@ -1,5 +1,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { Database } from '@/integrations/supabase/types';
+
+type Tables = Database['public']['Tables'];
 
 /**
  * Fetches all transaction data for the given date range

@@ -11,10 +11,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
+import { Session, User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: any;
+  user: User | null;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => void;
@@ -32,63 +33,81 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [showConfigError, setShowConfigError] = useState<boolean>(false);
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Check if we're on the login page
+  const isLoginPage = location.pathname === '/login';
+
   useEffect(() => {
-    // Check if user is already logged in via Supabase session
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      console.log("Initial session check:", data.session);
-      if (data.session) {
-        setIsAuthenticated(true);
-        setUser(data.session.user);
-        
-        // Only redirect if on login page
-        if (location.pathname === '/login') {
-          navigate('/dashboard');
-        }
-      }
-    };
-
-    checkSession();
-
-    // Set up auth state change listener
+    // Set up auth state change listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("Auth state changed:", event, session);
+      (event, currentSession) => {
+        console.log("Auth state changed:", event, currentSession);
         
-        if (event === 'SIGNED_IN' && session) {
+        if (event === 'SIGNED_IN' && currentSession) {
           setIsAuthenticated(true);
-          setUser(session.user);
+          setUser(currentSession.user);
+          setSession(currentSession);
           
-          // Use setTimeout to avoid potential state update conflicts
+          console.log("Signed in, current path:", location.pathname);
+          
+          // Use setTimeout to avoid immediate navigation which can cause issues
           setTimeout(() => {
-            if (location.pathname === '/login' || location.pathname === '/') {
-              navigate('/dashboard');
+            if (isLoginPage) {
+              console.log("On login page, redirecting to dashboard");
+              navigate('/dashboard', { replace: true });
             }
           }, 0);
         } else if (event === 'SIGNED_OUT') {
           setIsAuthenticated(false);
           setUser(null);
-          navigate('/');
-        } else if (event === 'TOKEN_REFRESHED') {
+          setSession(null);
+          navigate('/login', { replace: true });
+        } else if (event === 'TOKEN_REFRESHED' && currentSession) {
           // Update local state when token is refreshed to maintain session
           setIsAuthenticated(true);
-          setUser(session?.user || null);
+          setUser(currentSession.user);
+          setSession(currentSession);
         }
       }
     );
 
+    // THEN check for existing session
+    const checkSession = async () => {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      console.log("Session check:", currentSession);
+      
+      if (currentSession) {
+        setIsAuthenticated(true);
+        setUser(currentSession.user);
+        setSession(currentSession);
+        
+        // Only redirect if on login page
+        if (isLoginPage) {
+          console.log("Already authenticated, redirecting from login to dashboard");
+          navigate('/dashboard', { replace: true });
+        }
+      } else if (!isLoginPage) {
+        // If not authenticated and not on login page, redirect to login
+        console.log("Not authenticated, redirecting to login");
+        navigate('/login', { replace: true });
+      }
+    };
+
+    checkSession();
+
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, location.pathname]);
+  }, [navigate, isLoginPage]);
 
   const login = async (email: string, password: string) => {
     try {
+      console.log("Attempting email login with:", email);
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -134,7 +153,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setIsAuthenticated(false);
       setUser(null);
-      navigate('/');
+      setSession(null);
+      navigate('/login', { replace: true });
       toast.success('Logget ud');
     } catch (error: any) {
       toast.error(`Logout fejlede: ${error.message}`);
