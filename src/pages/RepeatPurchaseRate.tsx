@@ -14,6 +14,7 @@ import CustomersPieChart from '@/components/repeat-purchase/CustomersPieChart';
 import TopCustomersTable from '@/components/repeat-purchase/TopCustomersTable';
 import { calculateRepeatPurchaseRate, Transaction } from '@/utils/repeatPurchaseCalculator';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { toast } from '@/components/ui/use-toast';
 
 const RepeatPurchaseRate = () => {
   const { translations } = useLanguage();
@@ -29,8 +30,18 @@ const RepeatPurchaseRate = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['transactions', fromDate, toDate],
     queryFn: async () => {
-      const result = await fetchTransactionData(fromDate, toDate);
-      return result;
+      try {
+        const result = await fetchTransactionData(fromDate, toDate);
+        return result;
+      } catch (fetchError) {
+        console.error('Error in transaction query:', fetchError);
+        toast({
+          title: "Error loading data",
+          description: "Failed to load transaction data. Please try again.",
+          variant: "destructive"
+        });
+        return [];
+      }
     },
   });
 

@@ -14,20 +14,29 @@ export const fetchTransactionData = async (
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate} for stores:`, storeIds);
     
-    // Use simple select without any dot notation or prefixes
+    // Select specific columns with explicit table reference
     let query = supabase
       .from('transactions')
-      .select('*')
-      .gte('transaction_date', fromDate)
-      .lte('transaction_date', toDate);
+      .select(`
+        transactions.id,
+        transactions.transaction_date,
+        transactions.amount,
+        transactions.customer_id,
+        transactions.external_id,
+        transactions.created_at,
+        transactions.product_id,
+        transactions.store_id
+      `)
+      .gte('transactions.transaction_date', fromDate)
+      .lte('transactions.transaction_date', toDate);
     
     if (storeIds && storeIds.length > 0) {
       console.log('Filtering on store_ids:', storeIds);
-      query = query.in('store_id', storeIds);
+      query = query.in('transactions.store_id', storeIds);
     }
     
-    // Apply simple ordering without prefixes
-    query = query.order('transaction_date', { ascending: false });
+    // Apply ordering with explicit table reference
+    query = query.order('transactions.transaction_date', { ascending: false });
     
     const { data, error } = await query;
     
