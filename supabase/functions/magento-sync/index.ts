@@ -1,4 +1,3 @@
-
 // Follow Deno and Supabase Edge runtime conventions
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.21.0";
@@ -91,7 +90,10 @@ async function synchronizeMagentoData() {
       // 5. Store individual transactions
       await storeTransactions(salesData, storeId);
       
-      // 6. Update connection status and last sync time
+      // 6. Fetch and store product data, including images
+      await fetchAndStoreProductData(connection, storeId);
+      
+      // 7. Update connection status and last sync time
       await supabase
         .from('magento_connections')
         .update({ 
@@ -305,6 +307,121 @@ async function storeTransactions(salesData: any[], storeId: string) {
     
   } catch (error) {
     console.error(`Error storing transactions: ${error.message}`);
+    throw error;
+  }
+}
+
+// New function to fetch and store product data including images
+async function fetchAndStoreProductData(connection: any, storeId: string) {
+  try {
+    console.log(`Fetching product data for store ${connection.store_name}`);
+    
+    // In a real implementation, this would be an actual API call to Magento
+    // For demonstration, we'll simulate fetching products with image URLs
+    await new Promise(resolve => setTimeout(resolve, 800)); // Simulate API delay
+    
+    // Generate sample product data
+    const sampleProducts = [];
+    const productTypes = ['simple', 'configurable', 'bundle', 'virtual'];
+    const productStatuses = ['enabled', 'disabled'];
+    const storeViews = ['dk', 'se', 'no', 'fi'];
+    const productCount = Math.floor(Math.random() * 10) + 5; // 5-15 products
+    
+    // Sample image URLs (in real implementation, these would come from Magento)
+    const sampleImageUrls = [
+      'https://example.com/images/product1.jpg',
+      'https://example.com/images/product2.jpg',
+      'https://example.com/images/product3.jpg',
+      'https://example.com/images/product4.jpg',
+      'https://example.com/images/product5.jpg',
+      null, // Some products might not have images
+    ];
+    
+    for (let i = 0; i < productCount; i++) {
+      const productType = productTypes[Math.floor(Math.random() * productTypes.length)];
+      const status = productStatuses[Math.floor(Math.random() * productStatuses.length)];
+      const storeView = storeViews[Math.floor(Math.random() * storeViews.length)];
+      const price = Math.floor(Math.random() * 10000) / 100; // Random price
+      const imageUrl = sampleImageUrls[Math.floor(Math.random() * sampleImageUrls.length)];
+      
+      sampleProducts.push({
+        external_id: `prod-${i + 1000}`,
+        sku: `SKU-${1000 + i}`,
+        name: `Sample Product ${i + 1}`,
+        price: price,
+        special_price: Math.random() > 0.7 ? price * 0.8 : null, // 30% chance of special price
+        description: `This is a sample ${productType} product for demonstration purposes.`,
+        image_url: imageUrl,
+        in_stock: Math.random() > 0.2, // 80% chance of being in stock
+        status: status,
+        type: productType,
+        store_view: storeView
+      });
+    }
+    
+    console.log(`Generated ${sampleProducts.length} sample products`);
+    
+    // Store or update each product in the database
+    for (const product of sampleProducts) {
+      // Check if product already exists (by external_id)
+      const { data: existingProduct, error: checkError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('external_id', product.external_id)
+        .maybeSingle();
+        
+      if (checkError) {
+        console.error(`Error checking for existing product: ${checkError.message}`);
+        continue;
+      }
+      
+      if (existingProduct) {
+        // Update existing product
+        const { error: updateError } = await supabase
+          .from('products')
+          .update({
+            name: product.name,
+            sku: product.sku,
+            price: product.price,
+            description: product.description,
+            image_url: product.image_url, // Store the image URL
+            in_stock: product.in_stock,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingProduct.id);
+          
+        if (updateError) {
+          console.error(`Error updating product ${product.name}: ${updateError.message}`);
+        } else {
+          console.log(`Updated product ${product.name}`);
+        }
+      } else {
+        // Insert new product
+        const { error: insertError } = await supabase
+          .from('products')
+          .insert({
+            store_id: storeId,
+            external_id: product.external_id,
+            name: product.name,
+            sku: product.sku,
+            price: product.price,
+            description: product.description,
+            image_url: product.image_url, // Store the image URL
+            in_stock: product.in_stock
+          });
+          
+        if (insertError) {
+          console.error(`Error inserting product ${product.name}: ${insertError.message}`);
+        } else {
+          console.log(`Inserted product ${product.name}`);
+        }
+      }
+    }
+    
+    return sampleProducts;
+  } catch (error) {
+    console.error(`Error fetching/storing product data: ${error.message}`);
     throw error;
   }
 }

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 
@@ -275,6 +274,73 @@ export const fetchMagentoConnections = async (userId: string) => {
     return data || [];
   } catch (error) {
     console.error('Error fetching Magento connections:', error);
+    throw error;
+  }
+};
+
+/**
+ * Updates a Magento store connection
+ */
+export const updateMagentoConnection = async (
+  connectionId: string,
+  updates: {
+    store_url?: string;
+    access_token?: string;
+    store_name?: string;
+    status?: string;
+    order_statuses?: string[];
+  }
+) => {
+  try {
+    console.log(`Updating Magento connection ${connectionId}:`, updates);
+    
+    const { data, error } = await supabase
+      .from('magento_connections')
+      .update(updates)
+      .eq('id', connectionId)
+      .select();
+    
+    if (error) {
+      console.error('Error updating Magento connection:', error);
+      throw error;
+    }
+    
+    console.log('Successfully updated Magento connection:', data);
+    return data;
+  } catch (error) {
+    console.error('Error updating Magento connection:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches product data with image URLs
+ */
+export const fetchProductsWithImages = async (storeIds: string[] = []) => {
+  try {
+    console.log('Fetching products with images for stores:', storeIds);
+    
+    let query = supabase
+      .from('products')
+      .select('*')
+      .not('image_url', 'is', null)  // Only get products with images
+      .order('name');
+    
+    if (storeIds && storeIds.length > 0) {
+      query = query.in('store_id', storeIds);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching products with images:', error);
+      throw error;
+    }
+    
+    console.log(`Fetched ${data?.length || 0} products with images`);
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching products with images:', error);
     throw error;
   }
 };

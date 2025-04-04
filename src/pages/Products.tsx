@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
@@ -28,82 +28,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-// Sample product data
-const products = [
-  {
-    id: 1,
-    name: "Premium T-shirt",
-    sku: "TS-001",
-    price: 299,
-    stock: 45,
-    sold: 120,
-    trend: "up",
-    image: "/placeholder.svg",
-    storeView: "DK Website",
-    customerGroup: "Retail"
-  },
-  {
-    id: 2,
-    name: "Denim Jeans",
-    sku: "DJ-002",
-    price: 599,
-    stock: 28,
-    sold: 98,
-    trend: "up",
-    image: "/placeholder.svg",
-    storeView: "SE Website",
-    customerGroup: "Wholesale"
-  },
-  {
-    id: 3,
-    name: "Leather Jacket",
-    sku: "LJ-003",
-    price: 1299,
-    stock: 12,
-    sold: 86,
-    trend: "down",
-    image: "/placeholder.svg",
-    storeView: "NO Website",
-    customerGroup: "Retail"
-  },
-  {
-    id: 4,
-    name: "Running Shoes",
-    sku: "RS-004",
-    price: 899,
-    stock: 32,
-    sold: 75,
-    trend: "down",
-    image: "/placeholder.svg",
-    storeView: "DK Website",
-    customerGroup: "VIP"
-  },
-  {
-    id: 5,
-    name: "Backpack",
-    sku: "BP-005",
-    price: 499,
-    stock: 50,
-    sold: 65,
-    trend: "up",
-    image: "/placeholder.svg",
-    storeView: "SE Website",
-    customerGroup: "Retail"
-  },
-  {
-    id: 6,
-    name: "Sunglasses",
-    sku: "SG-006",
-    price: 349,
-    stock: 60,
-    sold: 55,
-    trend: "down",
-    image: "/placeholder.svg",
-    storeView: "NO Website",
-    customerGroup: "Wholesale"
-  }
-];
+import { fetchProductData } from '@/services/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 // Define available store views and customer groups
 const storeViews = ["Alle", "DK Website", "SE Website", "NO Website"];
@@ -115,6 +41,45 @@ const Products = () => {
   const [sortColumn, setSortColumn] = useState("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [searchQuery, setSearchQuery] = useState("");
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setIsLoading(true);
+        const data = await fetchProductData();
+        
+        // Transform the data to match our UI format
+        const formattedProducts = data.map(product => ({
+          id: product.id,
+          name: product.name,
+          sku: product.sku || 'N/A',
+          price: product.price || 0,
+          stock: product.in_stock ? 'In Stock' : 'Out of Stock',
+          sold: Math.floor(Math.random() * 150), // Placeholder for now
+          trend: Math.random() > 0.5 ? 'up' : 'down', // Placeholder for now
+          image: product.image_url || '/placeholder.svg',
+          storeView: "DK Website", // Placeholder for now
+          customerGroup: "Retail" // Placeholder for now
+        }));
+        
+        setProducts(formattedProducts);
+      } catch (error) {
+        console.error('Error loading products:', error);
+        toast({
+          title: "Error loading products",
+          description: "There was an problem loading the product data.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadProducts();
+  }, [toast]);
 
   // Filter products based on selected filters and search query
   const filteredProducts = products.filter(product => {
@@ -196,7 +161,7 @@ const Products = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Totale produkter</p>
-                <p className="text-2xl font-semibold">487</p>
+                <p className="text-2xl font-semibold">{products.length}</p>
               </div>
             </div>
 
@@ -206,7 +171,9 @@ const Products = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Bedst performende</p>
-                <p className="text-2xl font-semibold">122</p>
+                <p className="text-2xl font-semibold">
+                  {products.filter(p => p.trend === 'up').length}
+                </p>
               </div>
             </div>
 
@@ -216,7 +183,9 @@ const Products = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Lav beholdning</p>
-                <p className="text-2xl font-semibold">35</p>
+                <p className="text-2xl font-semibold">
+                  {products.filter(p => p.stock === 'Out of Stock').length}
+                </p>
               </div>
             </div>
           </div>
@@ -272,81 +241,94 @@ const Products = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
-                    <div className="flex items-center">
-                      Produkt {renderSortIndicator("name")}
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort("sku")}>
-                    <div className="flex items-center">
-                      SKU {renderSortIndicator("sku")}
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort("price")}>
-                    <div className="flex items-center">
-                      Pris {renderSortIndicator("price")}
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort("stock")}>
-                    <div className="flex items-center">
-                      Lager {renderSortIndicator("stock")}
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort("sold")}>
-                    <div className="flex items-center">
-                      Solgt {renderSortIndicator("sold")}
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort("storeView")}>
-                    <div className="flex items-center">
-                      Website {renderSortIndicator("storeView")}
-                    </div>
-                  </TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => handleSort("customerGroup")}>
-                    <div className="flex items-center">
-                      Kundegruppe {renderSortIndicator("customerGroup")}
-                    </div>
-                  </TableHead>
-                  <TableHead>Trend</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedProducts.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <p>Loading products...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
                       <div className="flex items-center">
-                        <div className="h-10 w-10 mr-3 bg-gray-200 rounded flex-shrink-0">
-                          <img src={product.image} alt={product.name} className="h-10 w-10 object-cover rounded" />
-                        </div>
-                        <span className="font-medium">{product.name}</span>
+                        Produkt {renderSortIndicator("name")}
                       </div>
-                    </TableCell>
-                    <TableCell>{product.sku}</TableCell>
-                    <TableCell>{product.price} kr</TableCell>
-                    <TableCell>{product.stock}</TableCell>
-                    <TableCell>{product.sold}</TableCell>
-                    <TableCell>{product.storeView}</TableCell>
-                    <TableCell>{product.customerGroup}</TableCell>
-                    <TableCell>
-                      {product.trend === "up" ? (
-                        <span className="flex items-center text-green-600">
-                          <TrendingUp className="h-4 w-4 mr-1" /> Opadgående
-                        </span>
-                      ) : (
-                        <span className="flex items-center text-red-600">
-                          <TrendingDown className="h-4 w-4 mr-1" /> Nedadgående
-                        </span>
-                      )}
-                    </TableCell>
+                    </TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("sku")}>
+                      <div className="flex items-center">
+                        SKU {renderSortIndicator("sku")}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("price")}>
+                      <div className="flex items-center">
+                        Pris {renderSortIndicator("price")}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("stock")}>
+                      <div className="flex items-center">
+                        Lager {renderSortIndicator("stock")}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("sold")}>
+                      <div className="flex items-center">
+                        Solgt {renderSortIndicator("sold")}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("storeView")}>
+                      <div className="flex items-center">
+                        Website {renderSortIndicator("storeView")}
+                      </div>
+                    </TableHead>
+                    <TableHead className="cursor-pointer" onClick={() => handleSort("customerGroup")}>
+                      <div className="flex items-center">
+                        Kundegruppe {renderSortIndicator("customerGroup")}
+                      </div>
+                    </TableHead>
+                    <TableHead>Trend</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {sortedProducts.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 mr-3 bg-gray-200 rounded flex-shrink-0">
+                            <img 
+                              src={product.image} 
+                              alt={product.name} 
+                              className="h-10 w-10 object-cover rounded" 
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/placeholder.svg';
+                              }}
+                            />
+                          </div>
+                          <span className="font-medium">{product.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{product.sku}</TableCell>
+                      <TableCell>{product.price} kr</TableCell>
+                      <TableCell>{product.stock}</TableCell>
+                      <TableCell>{product.sold}</TableCell>
+                      <TableCell>{product.storeView}</TableCell>
+                      <TableCell>{product.customerGroup}</TableCell>
+                      <TableCell>
+                        {product.trend === "up" ? (
+                          <span className="flex items-center text-green-600">
+                            <TrendingUp className="h-4 w-4 mr-1" /> Opadgående
+                          </span>
+                        ) : (
+                          <span className="flex items-center text-red-600">
+                            <TrendingDown className="h-4 w-4 mr-1" /> Nedadgående
+                          </span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
           <div className="flex justify-between items-center mt-6">
             <p className="text-sm text-gray-500">Viser {sortedProducts.length} af {products.length} produkter</p>
             <div className="flex space-x-2">

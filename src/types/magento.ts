@@ -32,6 +32,7 @@ export interface MagentoProduct {
   visibility: string;
   type: string; // 'simple', 'configurable', etc.
   store_view: string; // e.g. 'dk', 'se', 'no', 'fi'
+  image_url: string | null; // Product image URL
   created_at: string;
   updated_at: string;
 }
@@ -57,6 +58,7 @@ export interface MagentoProductSale {
   revenue: number;
   store_view: string;
   customer_group: string;
+  image_url: string | null; // Product image URL
 }
 
 export type StoreView = 'alle' | 'dk' | 'se' | 'no' | 'fi';
