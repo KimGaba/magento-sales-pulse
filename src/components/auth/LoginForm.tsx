@@ -8,7 +8,7 @@ import { CardContent } from '@/components/ui/card';
 import { Mail, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { isUsingFallbackConfig } from '../services/supabase';
+import { isUsingFallbackConfig } from '../../services/supabase';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const LoginForm = () => {
