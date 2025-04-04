@@ -4,21 +4,25 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CardContent, CardFooter } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Mail, Loader2 } from 'lucide-react';
+import { CardContent } from '@/components/ui/card';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const RegisterForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { loginWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [registerError, setRegisterError] = useState('');
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setRegisterError('');
     
     if (!email || !password || !confirmPassword) {
       toast({
@@ -53,25 +57,38 @@ const RegisterForm = () => {
     }, 1500);
   };
   
-  const handleGoogleRegister = () => {
+  const handleGoogleRegister = async () => {
     setIsLoading(true);
+    setRegisterError('');
     
-    // Dette er en simuleret Google registreringsproces
-    setTimeout(() => {
+    try {
+      await loginWithGoogle();
+      // No navigate here - the page will redirect via OAuth flow
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      
+      if (error.message?.includes("provider is not enabled")) {
+        setRegisterError("Google login er ikke aktiveret. Kontakt venligst administratoren for at aktivere Google-integration i Supabase Console under Authentication > Providers.");
+      } else if (error.message?.includes("invalid site_url")) {
+        setRegisterError("URL konfiguration mangler. Kontakt venligst administratoren for at konfigurere Site URL og Redirect URLs i Supabase Console under Authentication > URL Configuration.");
+      } else {
+        setRegisterError(error.message || 'Der opstod en fejl ved Google login. Prøv igen senere.');
+      }
+    } finally {
       setIsLoading(false);
-      toast({
-        title: "Konto oprettet med Google!",
-        description: "Du er nu registreret og logget ind med din Google-konto.",
-      });
-      // I en rigtig implementation ville vi her gemme en auth token
-      localStorage.setItem("isLoggedIn", "true");
-      navigate('/dashboard');
-    }, 1500);
+    }
   };
 
   return (
     <>
       <CardContent className="space-y-4 pt-4">
+        {registerError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{registerError}</AlertDescription>
+          </Alert>
+        )}
+        
         <form onSubmit={handleRegister}>
           <div className="space-y-4">
             <div className="space-y-2">

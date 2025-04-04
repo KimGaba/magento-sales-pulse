@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import LoginForm from '@/components/auth/LoginForm';
 import RegisterForm from '@/components/auth/RegisterForm';
+import { InfoCircle } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -53,8 +54,15 @@ const Login = () => {
           </Tabs>
 
           <div className="p-4 text-center text-sm text-muted-foreground">
-            <p>Brug knappen "Fortsæt med Google" for at logge ind med Google.</p>
-            <p className="mt-2">Bemærk: Google-login skal være aktiveret i Supabase projektet.</p>
+            <div className="flex items-center justify-center mb-2">
+              <InfoCircle className="h-4 w-4 mr-1" />
+              <p>For at aktivere Google login:</p>
+            </div>
+            <ol className="text-left list-decimal ml-6 text-xs">
+              <li>Konfigurer OAuth i Google Cloud Console</li>
+              <li>Tilføj OAuth-oplysninger i Supabase under Authentication > Providers > Google</li>
+              <li>Konfigurer Site URL og Redirect URLs i Supabase under Authentication > URL Configuration</li>
+            </ol>
           </div>
         </Card>
       </main>
