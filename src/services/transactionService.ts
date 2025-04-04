@@ -11,10 +11,10 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
   try {
     console.log('Testing basic database connectivity...');
     
-    // Most basic query possible
+    // Most basic query possible - specify the table explicitly to avoid ambiguity
     const { data, error, status, statusText } = await supabase
       .from('transactions')
-      .select('*')
+      .select('transactions.*')
       .limit(1);
     
     // Log everything to help diagnose the issue
@@ -52,10 +52,10 @@ export const getTransactionCount = async (): Promise<number> => {
   try {
     console.log('Simple database check: counting transactions');
     
-    // Most basic count query possible
+    // Most basic count query possible - specify the table explicitly
     const { count, error } = await supabase
       .from('transactions')
-      .select('*', { count: 'exact' });
+      .select('transactions.*', { count: 'exact' });
     
     if (error) {
       console.error('Database error:', error);
@@ -92,8 +92,8 @@ export const fetchTransactionData = async (
   try {
     console.log(`Simple fetch: transactions from ${fromDate} to ${toDate}`);
     
-    // Start with absolutely minimal query
-    let query = supabase.from('transactions').select('*');
+    // Start with absolutely minimal query - explicitly specify table to avoid ambiguity
+    let query = supabase.from('transactions').select('transactions.*');
     
     // Apply date filters
     if (fromDate) {
@@ -104,9 +104,9 @@ export const fetchTransactionData = async (
       query = query.lte('transaction_date', toDate);
     }
     
-    // Apply store filter if provided, using exact column name
+    // Apply store filter if provided, using fully qualified column name
     if (storeIds && storeIds.length > 0) {
-      query = query.in('store_id', storeIds);
+      query = query.in('transactions.store_id', storeIds);
     }
     
     // Execute the query
