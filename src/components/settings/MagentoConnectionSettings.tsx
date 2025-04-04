@@ -99,9 +99,9 @@ const MagentoConnectionSettings: React.FC<MagentoConnectionSettingsProps> = ({ u
         <div className="space-y-6">
           {connections.map(connection => (
             <div key={connection.id} className="space-y-4 pb-4 border-b last:border-b-0">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                 <h3 className="font-medium">{connection.store_name}</h3>
-                <span className={`px-2 py-1 rounded-full text-xs ${
+                <span className={`px-2 py-1 rounded-full text-xs w-fit ${
                   connection.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
                 }`}>
                   {connection.status === 'active' ? 'Aktiv' : 'Afventer'}

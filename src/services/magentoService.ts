@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { MagentoConnection } from '@/types/magento';
 
@@ -77,32 +76,16 @@ export const fetchMagentoConnections = async (userId: string): Promise<MagentoCo
 /**
  * Updates a Magento store connection
  */
-export const updateMagentoConnection = async (
-  connectionId: string,
-  updates: {
-    store_url?: string;
-    access_token?: string;
-    store_name?: string;
-    status?: string;
-    order_statuses?: string[];
-  }
-) => {
+export const updateMagentoConnection = async (connectionId: string, data: { order_statuses?: string[] }) => {
   try {
-    console.log(`Updating Magento connection ${connectionId}:`, updates);
-    
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('magento_connections')
-      .update(updates)
-      .eq('id', connectionId)
-      .select();
+      .update(data)
+      .eq('id', connectionId);
+      
+    if (error) throw error;
     
-    if (error) {
-      console.error('Error updating Magento connection:', error);
-      throw error;
-    }
-    
-    console.log('Successfully updated Magento connection:', data);
-    return data;
+    return true;
   } catch (error) {
     console.error('Error updating Magento connection:', error);
     throw error;

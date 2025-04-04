@@ -68,7 +68,7 @@ const InvoiceInfoCard: React.FC<InvoiceInfoCardProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="city">{translations.settings?.city || "City"}</Label>
               <Input
@@ -98,12 +98,12 @@ const InvoiceInfoCard: React.FC<InvoiceInfoCardProps> = ({
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button variant="outline" type="button" onClick={handleLogoutClick}>
+        <CardFooter className="flex flex-col sm:flex-row justify-between gap-3">
+          <Button variant="outline" type="button" onClick={handleLogoutClick} className="w-full sm:w-auto">
             <LogOut className="mr-2 h-4 w-4" />
             {translations.settings?.logOutButton || translations.common?.logOut || "Log Out"}
           </Button>
-          <Button type="button" onClick={onSubmit}>
+          <Button type="button" onClick={onSubmit} className="w-full sm:w-auto">
             <Save className="mr-2 h-4 w-4" />
             {translations.settings?.save || "Save Changes"}
           </Button>
@@ -120,8 +120,8 @@ const InvoiceInfoCard: React.FC<InvoiceInfoCardProps> = ({
               {translations.settings?.logoutConfirmMessage || "Are you sure you want to log out? Any unsaved changes will be lost."}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>
+          <AlertDialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+            <AlertDialogCancel className="mt-2 sm:mt-0">
               {translations.common?.cancel || "Cancel"}
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmLogout}>
