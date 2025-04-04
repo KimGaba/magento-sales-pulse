@@ -14,11 +14,11 @@ export const fetchTransactionData = async (
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate} for stores:`, storeIds);
     
-    // Build the query step by step
-    let query = supabase.from('transactions');
-    
-    // First get all the data
-    query = query.select('*');
+    // Build the query with the correct chain order
+    // Start with from() and then select() before applying filters
+    let query = supabase
+      .from('transactions')
+      .select('*');
     
     // Then apply date filters
     query = query.gte('transaction_date', fromDate);
@@ -30,7 +30,7 @@ export const fetchTransactionData = async (
       query = query.in('store_id', storeIds);
     }
     
-    // Get the data
+    // Execute the query
     const { data, error } = await query;
     
     if (error) {
