@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import { Transaction } from '@/utils/repeatPurchaseCalculator';
@@ -14,25 +13,18 @@ export const fetchTransactionData = async (
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate} for stores:`, storeIds);
     
-    // Build the query starting with select() to get the correct types for filter methods
-    let query = supabase
-      .from('transactions')
-      .select(`
-        id,
-        external_id,
-        customer_id,
-        amount,
-        transaction_date,
-        created_at,
-        product_id,
-        store_id
-      `);
+    // Build the base query
+    let query = supabase.from('transactions').select();
     
-    // Apply date filters
-    query = query.gte('transaction_date', fromDate)
-                 .lte('transaction_date', toDate);
+    // Apply filters after the select() call
+    if (fromDate) {
+      query = query.gte('transaction_date', fromDate);
+    }
     
-    // Apply store filter if needed
+    if (toDate) {
+      query = query.lte('transaction_date', toDate);
+    }
+    
     if (storeIds && storeIds.length > 0) {
       console.log('Filtering on store_ids:', storeIds);
       query = query.in('store_id', storeIds);
