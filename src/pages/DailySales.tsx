@@ -15,13 +15,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth, isSameMonth, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDailySalesData, fetchAvailableDataMonths } from '@/services/salesService';
 import { useToast } from '@/hooks/use-toast';
 import { useFilter } from '@/context/FilterContext';
-import ChartCard from '@/components/dashboard/ChartCard';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const formatDate = (dateString: string) => {
@@ -51,14 +50,14 @@ const DailySales = () => {
     queryFn: () => fetchAvailableDataMonths(selectedStoreIds),
   });
 
-  const { data: salesData, isLoading, error } = useQuery({
+  const { data: salesData = [], isLoading, error } = useQuery({
     queryKey: ['dailySales', fromDate, toDate, selectedStoreIds],
     queryFn: () => fetchDailySalesData(fromDate, toDate, selectedStoreIds),
     enabled: !!fromDate && !!toDate,
   });
 
   const dailySalesData = React.useMemo(() => {
-    if (!salesData) return [];
+    if (!salesData || salesData.length === 0) return [];
     
     return salesData.map(item => ({
       day: formatDate(item.date),
