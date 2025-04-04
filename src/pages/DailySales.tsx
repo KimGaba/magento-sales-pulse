@@ -1,8 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, TrendingUp, TrendingDown } from 'lucide-react';
+import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -16,50 +16,113 @@ import {
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
+import { format, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { fetchDailySalesData } from '@/services/salesService';
+import { useToast } from '@/hooks/use-toast';
+import { useFilterContext } from '@/context/FilterContext';
+import ChartCard from '@/components/dashboard/ChartCard';
 
-// Sample data for daily sales
-const dailySalesData = [
-  { day: '1', sales: 1200, orders: 15 },
-  { day: '2', sales: 1500, orders: 18 },
-  { day: '3', sales: 900, orders: 12 },
-  { day: '4', sales: 1100, orders: 14 },
-  { day: '5', sales: 2000, orders: 25 },
-  { day: '6', sales: 1700, orders: 20 },
-  { day: '7', sales: 800, orders: 10 },
-  { day: '8', sales: 1300, orders: 17 },
-  { day: '9', sales: 1600, orders: 19 },
-  { day: '10', sales: 1400, orders: 16 },
-  { day: '11', sales: 1800, orders: 22 },
-  { day: '12', sales: 1350, orders: 15 },
-  { day: '13', sales: 1250, orders: 14 },
-  { day: '14', sales: 950, orders: 11 },
-];
-
-const hourlyData = [
-  { hour: '00-02', sales: 200, orders: 2 },
-  { hour: '02-04', sales: 100, orders: 1 },
-  { hour: '04-06', sales: 50, orders: 1 },
-  { hour: '06-08', sales: 300, orders: 4 },
-  { hour: '08-10', sales: 700, orders: 8 },
-  { hour: '10-12', sales: 1200, orders: 15 },
-  { hour: '12-14', sales: 1500, orders: 18 },
-  { hour: '14-16', sales: 1300, orders: 16 },
-  { hour: '16-18', sales: 1100, orders: 14 },
-  { hour: '18-20', sales: 900, orders: 10 },
-  { hour: '20-22', sales: 600, orders: 7 },
-  { hour: '22-24', sales: 400, orders: 5 },
-];
-
-const topPerformers = [
-  { day: "Tirsdag", date: "5. apr", sales: 2000, change: "+35%" },
-  { day: "Søndag", date: "11. apr", sales: 1800, change: "+20%" },
-  { day: "Fredag", date: "6. apr", sales: 1700, change: "+15%" },
-];
+// For formatting the date from the database
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.getDate().toString();
+};
 
 const DailySales = () => {
-  const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const { toast } = useToast();
+  const { selectedStoreIds } = useFilterContext();
+  
+  // Calculate first and last day of the selected month
+  const fromDate = date ? format(startOfMonth(date), 'yyyy-MM-dd') : '';
+  const toDate = date ? format(endOfMonth(date), 'yyyy-MM-dd') : '';
+
+  // Fetch daily sales data
+  const { data: salesData, isLoading, error } = useQuery({
+    queryKey: ['dailySales', fromDate, toDate, selectedStoreIds],
+    queryFn: () => fetchDailySalesData(fromDate, toDate, selectedStoreIds),
+    enabled: !!fromDate && !!toDate,
+  });
+
+  // Format data for charts
+  const dailySalesData = React.useMemo(() => {
+    if (!salesData) return [];
+    
+    return salesData.map(item => ({
+      day: formatDate(item.date),
+      sales: item.total_sales,
+      orders: item.order_count,
+      date: item.date
+    })).sort((a, b) => parseInt(a.day) - parseInt(b.day));
+  }, [salesData]);
+
+  // Calculate hourly data (mock for now, as we don't have this in the database)
+  const hourlyData = [
+    { hour: '00-02', sales: 200, orders: 2 },
+    { hour: '02-04', sales: 100, orders: 1 },
+    { hour: '04-06', sales: 50, orders: 1 },
+    { hour: '06-08', sales: 300, orders: 4 },
+    { hour: '08-10', sales: 700, orders: 8 },
+    { hour: '10-12', sales: 1200, orders: 15 },
+    { hour: '12-14', sales: 1500, orders: 18 },
+    { hour: '14-16', sales: 1300, orders: 16 },
+    { hour: '16-18', sales: 1100, orders: 14 },
+    { hour: '18-20', sales: 900, orders: 10 },
+    { hour: '20-22', sales: 600, orders: 7 },
+    { hour: '22-24', sales: 400, orders: 5 },
+  ];
+
+  // Calculate top performers
+  const topPerformers = React.useMemo(() => {
+    if (!dailySalesData.length) return [];
+    
+    const sortedData = [...dailySalesData].sort((a, b) => b.sales - a.sales).slice(0, 3);
+    
+    return sortedData.map(day => {
+      const dayDate = new Date(day.date);
+      const dayName = format(dayDate, 'EEEE');
+      const formattedDate = format(dayDate, 'd. MMM');
+      
+      // Calculate change (mock for now)
+      const change = "+15%"; 
+      
+      return {
+        day: dayName,
+        date: formattedDate,
+        sales: day.sales,
+        change
+      };
+    });
+  }, [dailySalesData]);
+
+  // Calculate metrics
+  const metrics = React.useMemo(() => {
+    if (!dailySalesData.length) return { avgSales: 0, avgOrders: 0, bestDay: { day: '', date: '', sales: 0 } };
+    
+    const totalSales = dailySalesData.reduce((sum, day) => sum + day.sales, 0);
+    const totalOrders = dailySalesData.reduce((sum, day) => sum + day.orders, 0);
+    const bestDay = [...dailySalesData].sort((a, b) => b.sales - a.sales)[0];
+    
+    return {
+      avgSales: totalSales / dailySalesData.length,
+      avgOrders: totalOrders / dailySalesData.length,
+      bestDay: {
+        day: format(new Date(bestDay.date), 'EEEE'),
+        date: format(new Date(bestDay.date), 'd'),
+        sales: bestDay.sales
+      }
+    };
+  }, [dailySalesData]);
+
+  if (error) {
+    toast({
+      title: "Error fetching sales data",
+      description: error instanceof Error ? error.message : "An unknown error occurred",
+      variant: "destructive"
+    });
+  }
 
   return (
     <Layout>
@@ -107,11 +170,20 @@ const DailySales = () => {
             <CalendarIcon className="h-4 w-4 text-magento-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1.289 kr</div>
-            <p className="text-xs flex items-center text-green-600">
-              <TrendingUp className="h-3 w-3 mr-1" /> 
-              +8.3% fra forrige måned
-            </p>
+            {isLoading ? (
+              <div className="flex items-center">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Indlæser...
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{metrics.avgSales.toFixed(0)} kr</div>
+                <p className="text-xs flex items-center text-green-600">
+                  <TrendingUp className="h-3 w-3 mr-1" /> 
+                  +8.3% fra forrige måned
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
         
@@ -121,11 +193,20 @@ const DailySales = () => {
             <CalendarIcon className="h-4 w-4 text-magento-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">15.5</div>
-            <p className="text-xs flex items-center text-green-600">
-              <TrendingUp className="h-3 w-3 mr-1" /> 
-              +4.2% fra forrige måned
-            </p>
+            {isLoading ? (
+              <div className="flex items-center">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Indlæser...
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{metrics.avgOrders.toFixed(1)}</div>
+                <p className="text-xs flex items-center text-green-600">
+                  <TrendingUp className="h-3 w-3 mr-1" /> 
+                  +4.2% fra forrige måned
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
         
@@ -135,11 +216,20 @@ const DailySales = () => {
             <CalendarIcon className="h-4 w-4 text-magento-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Tirsdag 5.</div>
-            <p className="text-xs flex items-center text-green-600">
-              <TrendingUp className="h-3 w-3 mr-1" /> 
-              2.000 kr i omsætning
-            </p>
+            {isLoading ? (
+              <div className="flex items-center">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Indlæser...
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{metrics.bestDay.day} {metrics.bestDay.date}.</div>
+                <p className="text-xs flex items-center text-green-600">
+                  <TrendingUp className="h-3 w-3 mr-1" /> 
+                  {metrics.bestDay.sales} kr i omsætning
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -148,22 +238,34 @@ const DailySales = () => {
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Daglig omsætning</CardTitle>
-          <CardDescription>Daglig omsætning for april 2025</CardDescription>
+          <CardDescription>
+            Daglig omsætning for {date ? format(date, 'MMMM yyyy') : ''}
+          </CardDescription>
         </CardHeader>
         <CardContent className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dailySalesData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="day" label={{ value: 'Dato i April', position: 'bottom', offset: 0 }} />
-              <YAxis />
-              <Tooltip formatter={(value: number) => [`${value} kr`, 'Omsætning']} />
-              <Bar dataKey="sales" fill="#0F52BA">
-                {dailySalesData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.sales > 1500 ? '#0F52BA' : '#8EB9FF'} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-8 w-8 animate-spin text-magento-600" />
+            </div>
+          ) : dailySalesData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full">
+              <p className="text-gray-500">Ingen data for den valgte periode</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dailySalesData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="day" label={{ value: 'Dato i måneden', position: 'bottom', offset: 0 }} />
+                <YAxis />
+                <Tooltip formatter={(value: number) => [`${value} kr`, 'Omsætning']} />
+                <Bar dataKey="sales" fill="#0F52BA">
+                  {dailySalesData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.sales > 1500 ? '#0F52BA' : '#8EB9FF'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
       
@@ -193,36 +295,49 @@ const DailySales = () => {
             <CardDescription>De dage med højeste omsætning i måneden</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
-              {topPerformers.map((day, index) => (
-                <div key={index} className="flex items-center">
-                  <div className={cn(
-                    "w-2 h-12 rounded-full mr-4",
-                    index === 0 ? "bg-magento-600" : index === 1 ? "bg-magento-400" : "bg-magento-300"
-                  )} />
-                  <div className="flex-1">
-                    <div className="flex justify-between">
-                      <p className="font-semibold">{day.day}, {day.date}</p>
-                      <p className="font-bold">{day.sales} kr</p>
-                    </div>
-                    <div className="flex justify-between mt-1">
-                      <p className="text-sm text-gray-500">Omsætning</p>
-                      <p className="text-sm text-green-600 flex items-center">
-                        <TrendingUp className="h-3 w-3 mr-1" /> 
-                        {day.change}
-                      </p>
+            {isLoading ? (
+              <div className="flex items-center justify-center h-40">
+                <Loader2 className="h-8 w-8 animate-spin text-magento-600" />
+              </div>
+            ) : topPerformers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-40">
+                <p className="text-gray-500">Ingen data for den valgte periode</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {topPerformers.map((day, index) => (
+                  <div key={index} className="flex items-center">
+                    <div className={cn(
+                      "w-2 h-12 rounded-full mr-4",
+                      index === 0 ? "bg-magento-600" : index === 1 ? "bg-magento-400" : "bg-magento-300"
+                    )} />
+                    <div className="flex-1">
+                      <div className="flex justify-between">
+                        <p className="font-semibold">{day.day}, {day.date}</p>
+                        <p className="font-bold">{day.sales} kr</p>
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <p className="text-sm text-gray-500">Omsætning</p>
+                        <p className="text-sm text-green-600 flex items-center">
+                          <TrendingUp className="h-3 w-3 mr-1" /> 
+                          {day.change}
+                        </p>
+                      </div>
                     </div>
                   </div>
+                ))}
+                
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-gray-500">Indsigt:</p>
+                  <p className="text-sm mt-1">
+                    {topPerformers.length > 0 ? 
+                      `${topPerformers[0].day} og ${topPerformers[1]?.day || '?'} er dine bedste salgsdage. Overvej at øge markedsføringsindsatsen og lagerbeholdningen på disse dage for at maksimere omsætningen.` :
+                      'Ingen data for at generere indsigter.'
+                    }
+                  </p>
                 </div>
-              ))}
-              
-              <div className="pt-4 border-t">
-                <p className="text-sm text-gray-500">Indsigt:</p>
-                <p className="text-sm mt-1">
-                  Tirsdag og søndag er dine bedste salgsdage. Overvej at øge markedsføringsindsatsen og lagerbeholdningen på disse dage for at maksimere omsætningen.
-                </p>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -234,44 +349,58 @@ const DailySales = () => {
           <CardDescription>Detaljeret overblik over salg per dag</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-semibold text-sm">Dag</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm">Ordrer</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm">Omsætning</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm">Gns. ordreværdi</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm">Tendens</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dailySalesData.map((day, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4 font-medium">April {day.day}</td>
-                    <td className="py-3 px-4">{day.orders}</td>
-                    <td className="py-3 px-4">{day.sales} kr</td>
-                    <td className="py-3 px-4">{Math.round(day.sales / day.orders)} kr</td>
-                    <td className="py-3 px-4">
-                      {index > 0 && day.sales > dailySalesData[index - 1].sales ? (
-                        <span className="flex items-center text-green-600">
-                          <TrendingUp className="h-4 w-4 mr-1" /> Stigende
-                        </span>
-                      ) : index > 0 ? (
-                        <span className="flex items-center text-red-600">
-                          <TrendingDown className="h-4 w-4 mr-1" /> Faldende
-                        </span>
-                      ) : (
-                        <span className="flex items-center text-gray-600">
-                          - Baseline
-                        </span>
-                      )}
-                    </td>
+          {isLoading ? (
+            <div className="flex items-center justify-center h-40">
+              <Loader2 className="h-8 w-8 animate-spin text-magento-600" />
+            </div>
+          ) : dailySalesData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-40">
+              <p className="text-gray-500">Ingen data for den valgte periode</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-semibold text-sm">Dag</th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm">Ordrer</th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm">Omsætning</th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm">Gns. ordreværdi</th>
+                    <th className="text-left py-3 px-4 font-semibold text-sm">Tendens</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {dailySalesData.map((day, index) => (
+                    <tr key={index} className="border-b hover:bg-gray-50">
+                      <td className="py-3 px-4 font-medium">
+                        {format(new Date(day.date), 'd. MMM')}
+                      </td>
+                      <td className="py-3 px-4">{day.orders}</td>
+                      <td className="py-3 px-4">{day.sales} kr</td>
+                      <td className="py-3 px-4">
+                        {day.orders > 0 ? Math.round(day.sales / day.orders) : 0} kr
+                      </td>
+                      <td className="py-3 px-4">
+                        {index > 0 && day.sales > dailySalesData[index - 1].sales ? (
+                          <span className="flex items-center text-green-600">
+                            <TrendingUp className="h-4 w-4 mr-1" /> Stigende
+                          </span>
+                        ) : index > 0 ? (
+                          <span className="flex items-center text-red-600">
+                            <TrendingDown className="h-4 w-4 mr-1" /> Faldende
+                          </span>
+                        ) : (
+                          <span className="flex items-center text-gray-600">
+                            - Baseline
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </Layout>

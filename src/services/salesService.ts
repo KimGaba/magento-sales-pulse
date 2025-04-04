@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 /**
  * Fetches daily sales data
@@ -27,13 +28,23 @@ export const fetchDailySalesData = async (
     
     if (error) {
       console.error('Error fetching daily sales data:', error);
-      throw error;
+      toast({
+        title: "Error fetching daily sales data",
+        description: error.message,
+        variant: "destructive"
+      });
+      return [];
     }
     
     console.log(`Fetched ${data?.length || 0} daily sales records`);
     return data || [];
   } catch (error) {
     console.error('Error fetching daily sales data:', error);
-    throw error;
+    toast({
+      title: "Error fetching daily sales data",
+      description: error instanceof Error ? error.message : "An unknown error occurred",
+      variant: "destructive"
+    });
+    return [];
   }
 };
