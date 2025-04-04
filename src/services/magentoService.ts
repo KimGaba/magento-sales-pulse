@@ -88,12 +88,15 @@ export const updateMagentoConnection = async (connectionId: string, data: Partia
 /**
  * Manually triggers synchronization for Magento stores
  */
-export const triggerMagentoSync = async () => {
+export const triggerMagentoSync = async (syncType: 'full' | 'changes_only' = 'full') => {
   try {
-    console.log('Manually triggering Magento synchronization');
+    console.log(`Manually triggering Magento synchronization (type: ${syncType})`);
     
     const { data, error } = await supabase.functions.invoke('magento-sync', {
-      body: { trigger: 'manual' }
+      body: { 
+        trigger: 'manual',
+        syncType: syncType
+      }
     });
     
     if (error) {

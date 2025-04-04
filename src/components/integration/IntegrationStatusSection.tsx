@@ -6,13 +6,14 @@ import { fetchMagentoConnections, triggerMagentoSync } from '@/services/magentoS
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { MagentoConnection } from '@/types/magento';
-import { CircleCheck, CircleX, RefreshCw, Clock } from 'lucide-react';
+import { CircleCheck, CircleX, RefreshCw, Clock, Download } from 'lucide-react';
 
 const IntegrationStatusSection = () => {
   const { user } = useAuth();
   const [connections, setConnections] = useState<MagentoConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [fetchingChanges, setFetchingChanges] = useState(false);
   
   useEffect(() => {
     if (user) {
@@ -50,6 +51,24 @@ const IntegrationStatusSection = () => {
       toast.error("Der opstod en fejl ved start af synkronisering.");
     } finally {
       setSyncing(false);
+    }
+  };
+  
+  const handleFetchChanges = async () => {
+    setFetchingChanges(true);
+    try {
+      await triggerMagentoSync('changes_only');
+      toast.success("Henter ændringer fra din butik. Dette vil blive opdateret om et øjeblik.");
+      
+      // Refresh connections after a short delay to show updated status
+      setTimeout(() => {
+        loadConnections();
+      }, 3000);
+    } catch (error) {
+      console.error("Error fetching changes:", error);
+      toast.error("Der opstod en fejl ved hentning af ændringer.");
+    } finally {
+      setFetchingChanges(false);
     }
   };
   
@@ -110,24 +129,45 @@ const IntegrationStatusSection = () => {
     <Card className="mb-6">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle>Aktuel status</CardTitle>
-        <Button 
-          onClick={handleManualSync} 
-          size="sm" 
-          disabled={syncing}
-          className="flex items-center gap-1"
-        >
-          {syncing ? (
-            <>
-              <RefreshCw className="h-4 w-4 animate-spin" />
-              <span>Synkroniserer...</span>
-            </>
-          ) : (
-            <>
-              <RefreshCw className="h-4 w-4" />
-              <span>Synkroniser nu</span>
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleFetchChanges} 
+            size="sm" 
+            variant="outline"
+            disabled={fetchingChanges}
+            className="flex items-center gap-1"
+          >
+            {fetchingChanges ? (
+              <>
+                <Download className="h-4 w-4 animate-spin" />
+                <span>Henter ændringer...</span>
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4" />
+                <span>Hent ændringer</span>
+              </>
+            )}
+          </Button>
+          <Button 
+            onClick={handleManualSync} 
+            size="sm" 
+            disabled={syncing}
+            className="flex items-center gap-1"
+          >
+            {syncing ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span>Synkroniserer...</span>
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4" />
+                <span>Synkroniser nu</span>
+              </>
+            )}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
