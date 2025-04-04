@@ -14,33 +14,32 @@ export const fetchTransactionData = async (
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate} for stores:`, storeIds);
     
-    // Simple select without table prefix to avoid ambiguous column references
-    let query = supabase
-      .from('transactions')
-      .select()
-      .gte('transaction_date', fromDate)
-      .lte('transaction_date', toDate);
+    // Build the query step by step
+    let query = supabase.from('transactions');
     
+    // First get all the data
+    query = query.select('*');
+    
+    // Then apply date filters
+    query = query.gte('transaction_date', fromDate);
+    query = query.lte('transaction_date', toDate);
+    
+    // Apply store filter if needed
     if (storeIds && storeIds.length > 0) {
       console.log('Filtering on store_ids:', storeIds);
       query = query.in('store_id', storeIds);
     }
     
-    // Apply ordering
-    query = query.order('transaction_date', { ascending: false });
-    
+    // Get the data
     const { data, error } = await query;
     
     if (error) {
       console.error('Error fetching transaction data:', error);
-      
-      // Show toast with error
       toast({
         title: "Error fetching transactions",
         description: error.message,
         variant: "destructive"
       });
-      
       return [];
     }
     
@@ -49,7 +48,7 @@ export const fetchTransactionData = async (
       return [];
     }
     
-    // Map the data to ensure it conforms to the Transaction type
+    // Map the data to the Transaction type
     const transactions: Transaction[] = data.map(item => ({
       customer_id: item.customer_id,
       amount: item.amount,
@@ -61,10 +60,21 @@ export const fetchTransactionData = async (
       store_id: item.store_id
     }));
     
+    // Sort the data in memory instead of in the database query
+    // This avoids SQL parsing errors with order clauses
+    transactions.sort((a, b) => {
+      return new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime();
+    });
+    
     console.log(`Fetched ${transactions.length} transactions`);
     return transactions;
   } catch (error) {
     console.error('Error in fetchTransactionData:', error);
+    toast({
+      title: "Error fetching transactions",
+      description: error instanceof Error ? error.message : "An unknown error occurred",
+      variant: "destructive"
+    });
     return [];
   }
 };

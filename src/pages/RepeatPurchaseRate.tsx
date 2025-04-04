@@ -27,7 +27,7 @@ const RepeatPurchaseRate = () => {
   const fromDate = format(subMonths(today, parseInt(activeTab)), 'yyyy-MM-dd');
   const toDate = format(today, 'yyyy-MM-dd');
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['transactions', fromDate, toDate],
     queryFn: async () => {
       try {
@@ -43,6 +43,7 @@ const RepeatPurchaseRate = () => {
         return [];
       }
     },
+    retry: 1, // Only retry once to avoid spamming the server with failed requests
   });
 
   // Ensure we always have an array of transactions
@@ -59,6 +60,10 @@ const RepeatPurchaseRate = () => {
   ];
   
   const tableDescription = `${t.months3.toLowerCase().replace('sidste', '').trim()} ${t.months6.split(' ')[1].toLowerCase()}`;
+  
+  const handleRetry = () => {
+    refetch();
+  };
   
   return (
     <Layout>
@@ -87,8 +92,16 @@ const RepeatPurchaseRate = () => {
                   <Skeleton className="h-[200px] w-full" />
                 </div>
               ) : error ? (
-                <div className="text-center p-4 md:p-6 text-red-500">
-                  {translations.common.error}: {error.message}
+                <div className="text-center p-4 md:p-6">
+                  <div className="text-red-500 mb-4">
+                    {error instanceof Error ? error.message : "An error occurred while fetching data"}
+                  </div>
+                  <button 
+                    onClick={handleRetry}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  >
+                    Try Again
+                  </button>
                 </div>
               ) : transactions?.length === 0 ? (
                 <div className="text-center p-4 md:p-6 text-gray-500">
