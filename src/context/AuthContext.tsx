@@ -173,7 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log("Registration successful:", data);
       // Don't navigate or set authenticated state yet - wait for email verification
-      return data;
+      return; // Explicitly return void to satisfy the Promise<void> type
     } catch (error: any) {
       console.error("Registration error:", error);
       toast.error(`Registration fejlede: ${error.message}`);
