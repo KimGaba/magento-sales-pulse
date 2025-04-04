@@ -14,7 +14,7 @@ import Trends from "./pages/Trends";
 import DailySales from "./pages/DailySales";
 import Connect from "./pages/Connect";
 import NotFound from "./pages/NotFound";
-import { TooltipProvider } from "@radix-ui/react-tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const queryClient = new QueryClient();
 

@@ -14,7 +14,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
 
   useEffect(() => {
     if (!isAuthenticated && location.pathname !== '/login') {
-      navigate('/login');
+      console.log("Not authenticated, redirecting to login");
+      navigate('/login', { replace: true });
     }
   }, [isAuthenticated, navigate, location.pathname]);
 

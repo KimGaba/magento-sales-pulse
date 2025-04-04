@@ -11,7 +11,7 @@ export const fetchTransactionData = async (
 ) => {
   try {
     let query = supabase
-      .from('transactions' as any)
+      .from('transactions')
       .select('*')
       .gte('transaction_date', fromDate)
       .lte('transaction_date', toDate)
@@ -37,7 +37,7 @@ export const fetchTransactionData = async (
 export const fetchProductData = async (storeIds: string[] = []) => {
   try {
     let query = supabase
-      .from('products' as any)
+      .from('products')
       .select('*')
       .order('name');
     
@@ -61,7 +61,7 @@ export const fetchProductData = async (storeIds: string[] = []) => {
 export const fetchStoreData = async () => {
   try {
     const { data, error } = await supabase
-      .from('stores' as any)
+      .from('stores')
       .select('*')
       .order('name');
     
@@ -83,7 +83,7 @@ export const fetchDailySalesData = async (
 ) => {
   try {
     let query = supabase
-      .from('daily_sales' as any)
+      .from('daily_sales')
       .select('*')
       .gte('date', fromDate)
       .lte('date', toDate)
@@ -114,7 +114,7 @@ export const addMagentoConnection = async (
 ) => {
   try {
     const { data, error } = await supabase
-      .from('magento_connections' as any)
+      .from('magento_connections')
       .insert([
         {
           user_id: userId,

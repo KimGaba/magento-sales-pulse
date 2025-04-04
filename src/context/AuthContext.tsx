@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -35,14 +35,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<any>(null);
   const [showConfigError, setShowConfigError] = useState<boolean>(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     // Check if user is already logged in via Supabase session
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
+      console.log("Initial session check:", data.session);
       if (data.session) {
         setIsAuthenticated(true);
         setUser(data.session.user);
+        
+        // Only redirect if on login page
+        if (location.pathname === '/login') {
+          navigate('/dashboard');
+        }
       }
     };
 
@@ -50,15 +57,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log("Auth state changed:", event, session);
+        
         if (event === 'SIGNED_IN' && session) {
           setIsAuthenticated(true);
           setUser(session.user);
-          navigate('/dashboard');
+          
+          // Use setTimeout to avoid potential state update conflicts
+          setTimeout(() => {
+            if (location.pathname === '/login' || location.pathname === '/') {
+              navigate('/dashboard');
+            }
+          }, 0);
         } else if (event === 'SIGNED_OUT') {
           setIsAuthenticated(false);
           setUser(null);
+          navigate('/');
+        } else if (event === 'TOKEN_REFRESHED') {
+          // Update local state when token is refreshed to maintain session
+          setIsAuthenticated(true);
+          setUser(session?.user || null);
         }
       }
     );
@@ -66,7 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   const login = async (email: string, password: string) => {
     try {
