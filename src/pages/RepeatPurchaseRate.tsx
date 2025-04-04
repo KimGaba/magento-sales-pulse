@@ -46,7 +46,7 @@ const RepeatPurchaseRate = () => {
 
   // Function to calculate repeat purchase rate
   const calculateRepeatPurchaseRate = (months: number): RepeatPurchaseData => {
-    if (!transactions || transactions.length ===, 0) {
+    if (!transactions || transactions.length === 0) {
       return {
         period: months,
         repeatCustomers: 0,
