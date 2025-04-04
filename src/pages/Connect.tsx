@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from '@/i18n/LanguageContext';
 import { addMagentoConnection, fetchMagentoConnections, triggerMagentoSync } from '@/services/supabase';
+import { useSyncProcess } from '@/hooks/useSyncProcess';
 
-// Import our new components
+// Import our components
 import ConnectionsList from '@/components/connect/ConnectionsList';
 import ConnectionForm from '@/components/connect/ConnectionForm';
 import SyncProgress from '@/components/connect/SyncProgress';
@@ -21,7 +22,6 @@ interface StoreConnection {
   store_name: string;
   store_url: string;
   status: string;
-  order_statuses?: string[];
 }
 
 interface ConnectFormValues {
@@ -44,15 +44,16 @@ const Connect = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { t } = useTranslation();
-  const [connecting, setConnecting] = useState(false);
-  const [step, setStep] = useState(1);
-  const [syncProgress, setSyncProgress] = useState(0);
-  const [syncStatus, setSyncStatus] = useState({
-    products: 'waiting',
-    orders: 'waiting',
-    customers: 'waiting',
-    statistics: 'waiting'
-  });
+  const { 
+    step, 
+    syncProgress, 
+    syncStatus, 
+    connecting, 
+    setConnecting, 
+    startSyncProcess, 
+    resetSyncProcess 
+  } = useSyncProcess();
+  
   const [connections, setConnections] = useState<StoreConnection[]>([]);
   const [loadingConnections, setLoadingConnections] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -105,10 +106,6 @@ const Connect = () => {
     setConnecting(true);
     
     try {
-      const selectedStatuses = Object.entries(values.orderStatuses)
-        .filter(([_, isSelected]) => isSelected)
-        .map(([status]) => status);
-      
       await addMagentoConnection(
         user.id,
         values.url,
@@ -116,45 +113,9 @@ const Connect = () => {
         values.storeName
       );
       
-      setStep(2);
+      startSyncProcess();
       
-      toast({
-        title: "Forbindelse oprettet!",
-        description: "Din Magento-butik blev forbundet med succes. Starter synkronisering...",
-      });
-      
-      updateSyncStatus('products', 'syncing');
-      setSyncProgress(10);
-      
-      setTimeout(() => {
-        updateSyncStatus('products', 'completed');
-        updateSyncStatus('orders', 'syncing');
-        setSyncProgress(30);
-        
-        setTimeout(() => {
-          updateSyncStatus('orders', 'completed');
-          updateSyncStatus('customers', 'syncing');
-          setSyncProgress(60);
-          
-          setTimeout(() => {
-            updateSyncStatus('customers', 'completed');
-            updateSyncStatus('statistics', 'syncing');
-            setSyncProgress(80);
-            
-            setTimeout(() => {
-              updateSyncStatus('statistics', 'completed');
-              setSyncProgress(100);
-              
-              triggerInitialSync();
-              
-              setTimeout(() => {
-                setStep(3);
-                loadConnections();
-              }, 1000);
-            }, 1000);
-          }, 1500);
-        }, 1500);
-      }, 1500);
+      // We'll call loadConnections after sync completes in step 3
       
     } catch (error) {
       console.error("Connection error:", error);
@@ -167,39 +128,9 @@ const Connect = () => {
     }
   };
   
-  const updateSyncStatus = (item, status) => {
-    setSyncStatus(prev => ({
-      ...prev,
-      [item]: status
-    }));
-  };
-  
-  const triggerInitialSync = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('magento-sync', {
-        body: { trigger: 'initial_connection' }
-      });
-      
-      if (error) {
-        console.error("Error triggering initial sync:", error);
-      } else {
-        console.log("Initial sync triggered:", data);
-      }
-    } catch (err) {
-      console.error("Failed to trigger sync:", err);
-    }
-  };
-  
   const handleFinish = () => {
-    setStep(1);
-    setSyncProgress(0);
-    setSyncStatus({
-      products: 'waiting',
-      orders: 'waiting',
-      customers: 'waiting',
-      statistics: 'waiting'
-    });
-    setConnecting(false);
+    resetSyncProcess();
+    loadConnections();
   };
 
   const handleDisconnect = (connection: StoreConnection) => {
