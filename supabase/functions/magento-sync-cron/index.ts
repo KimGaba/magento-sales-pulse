@@ -1,12 +1,7 @@
 
 // Follow Deno and Supabase Edge runtime conventions
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-// Configure CORS headers
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { corsHeaders, createCorsResponse } from "../_shared/cors_utils.ts";
 
 // Handle HTTP requests
 serve(async (req) => {
@@ -34,22 +29,13 @@ serve(async (req) => {
       const result = await response.json();
       console.log('Scheduled Magento sync job completed:', result);
       
-      return new Response(JSON.stringify({ success: true, message: 'Scheduled sync completed', result }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      });
+      return createCorsResponse({ success: true, message: 'Scheduled sync completed', result });
     } catch (error) {
       console.error('Error running scheduled Magento sync:', error);
-      return new Response(JSON.stringify({ success: false, error: error.message }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
-      });
+      return createCorsResponse({ success: false, error: error.message }, 500);
     }
   }
   
   // Handle unauthorized or incorrect methods
-  return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    status: 405
-  });
+  return createCorsResponse({ error: 'Method not allowed' }, 405);
 });
