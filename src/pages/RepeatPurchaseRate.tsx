@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format, subMonths } from 'date-fns';
 import Layout from '@/components/layout/Layout';
@@ -22,31 +21,30 @@ const RepeatPurchaseRate = () => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   
-  // Calculate date ranges for the query
   const today = new Date();
   const fromDate = format(subMonths(today, parseInt(activeTab)), 'yyyy-MM-dd');
   const toDate = format(today, 'yyyy-MM-dd');
 
-  // Fetch transaction data
-  const { data: transactions, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['transactions', fromDate, toDate],
-    queryFn: () => fetchTransactionData(fromDate, toDate),
+    queryFn: async () => {
+      const result = await fetchTransactionData(fromDate, toDate);
+      return result;
+    },
   });
 
-  // Calculate data for current active tab
-  // Process transaction data safely with proper typing
+  const transactions: Transaction[] = data || [];
+  
   const currentPeriodData = calculateRepeatPurchaseRate(
-    transactions || [], 
+    transactions, 
     parseInt(activeTab)
   );
   
-  // Prepare data for pie chart
   const pieChartData = [
     { name: t.customersWithRepeat, value: currentPeriodData.repeatCustomers },
     { name: t.totalCustomers, value: currentPeriodData.totalCustomers - currentPeriodData.repeatCustomers }
   ];
   
-  // Description for top customers table
   const tableDescription = `${t.months3.toLowerCase().replace('sidste', '').trim()} ${t.months6.split(' ')[1].toLowerCase()}`;
   
   return (

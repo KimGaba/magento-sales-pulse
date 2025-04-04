@@ -14,19 +14,10 @@ export const fetchTransactionData = async (
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate} for stores:`, storeIds);
     
-    // Create a query with explicit table prefix for store_id to avoid ambiguity
+    // Create a simpler query without table prefixes
     let query = supabase
       .from('transactions')
-      .select(`
-        id,
-        transaction_date,
-        amount,
-        customer_id,
-        external_id,
-        created_at,
-        product_id,
-        store_id
-      `)
+      .select('*')
       .gte('transaction_date', fromDate)
       .lte('transaction_date', toDate);
     
@@ -35,7 +26,7 @@ export const fetchTransactionData = async (
       query = query.in('store_id', storeIds);
     }
     
-    // Apply ordering with explicit table name
+    // Apply ordering
     query = query.order('transaction_date', { ascending: false });
     
     const { data, error } = await query;
@@ -50,18 +41,25 @@ export const fetchTransactionData = async (
         variant: "destructive"
       });
       
-      // Return empty array instead of throwing an error, ensuring type safety
       return [];
     }
     
-    // Ensure the data returned matches the Transaction type
-    // Use type assertion to ensure proper type conversion from any Supabase data
-    const transactions = (data || []) as Transaction[];
+    // Map the data to ensure it conforms to the Transaction type
+    const transactions = (data || []).map(item => ({
+      customer_id: item.customer_id,
+      amount: item.amount,
+      transaction_date: item.transaction_date,
+      id: item.id,
+      external_id: item.external_id,
+      created_at: item.created_at,
+      product_id: item.product_id,
+      store_id: item.store_id
+    })) as Transaction[];
+    
     console.log(`Fetched ${transactions.length} transactions`);
     return transactions;
   } catch (error) {
     console.error('Error in fetchTransactionData:', error);
-    // Return empty array instead of throwing an error when catching exceptions
     return [];
   }
 };
