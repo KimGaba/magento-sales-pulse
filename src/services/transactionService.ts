@@ -14,8 +14,8 @@ export const fetchTransactionData = async (
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate} for stores:`, storeIds);
     
-    // Explicitly select the table columns to avoid ambiguous column references
-    const query = supabase
+    // Base query with explicit column selection from the transactions table
+    let query = supabase
       .from('transactions')
       .select(`
         id,
@@ -33,24 +33,11 @@ export const fetchTransactionData = async (
     // Apply store filter if needed
     if (storeIds && storeIds.length > 0) {
       console.log('Filtering on store_ids:', storeIds);
-      // Explicitly specify the transactions table for store_id column
-      const filteredQuery = query.in('transactions.store_id', storeIds);
-      const { data, error } = await filteredQuery;
-      
-      if (error) {
-        console.error('Error fetching transaction data:', error);
-        toast({
-          title: "Error fetching transactions",
-          description: error.message,
-          variant: "destructive"
-        });
-        return [];
-      }
-      
-      return mapTransactionsData(data || []);
+      // Use store_id without table prefix since we've explicitly selected columns
+      query = query.in('store_id', storeIds);
     }
     
-    // Execute the query without store filtering
+    // Execute the query
     const { data, error } = await query;
     
     if (error) {
