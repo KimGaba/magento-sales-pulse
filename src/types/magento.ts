@@ -1,3 +1,4 @@
+
 export interface MagentoConnection {
   id: string;
   user_id: string;
