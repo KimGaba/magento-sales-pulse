@@ -1,13 +1,16 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createClient } from '@supabase/supabase-js';
 import { toast } from 'sonner';
-
-// Initialize Supabase client with fallback to prevent runtime errors
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder-url.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase, isUsingFallbackConfig } from '../services/supabase';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from '@/components/ui/button';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -30,9 +33,16 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<any>(null);
+  const [showConfigError, setShowConfigError] = useState<boolean>(isUsingFallbackConfig);
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check for configuration errors
+    if (isUsingFallbackConfig) {
+      setShowConfigError(true);
+      return;
+    }
+
     // Check if user is already logged in via Supabase session
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
@@ -63,6 +73,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
+    if (isUsingFallbackConfig) {
+      toast.error('Supabase er ikke korrekt konfigureret. Kontakt venligst systemadministratoren.');
+      setShowConfigError(true);
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -73,12 +89,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       toast.success('Login successful!');
     } catch (error: any) {
-      toast.error(`Login failed: ${error.message}`);
+      toast.error(`Login fejlede: ${error.message}`);
       throw error;
     }
   };
 
   const loginWithGoogle = async () => {
+    if (isUsingFallbackConfig) {
+      toast.error('Supabase er ikke korrekt konfigureret. Kontakt venligst systemadministratoren.');
+      setShowConfigError(true);
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -89,12 +111,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
     } catch (error: any) {
-      toast.error(`Google login failed: ${error.message}`);
+      toast.error(`Google login fejlede: ${error.message}`);
       throw error;
     }
   };
 
   const logout = async () => {
+    if (isUsingFallbackConfig) {
+      toast.error('Supabase er ikke korrekt konfigureret. Kontakt venligst systemadministratoren.');
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
@@ -102,15 +129,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(false);
       setUser(null);
       navigate('/');
-      toast.success('Logged out successfully');
+      toast.success('Logget ud');
     } catch (error: any) {
-      toast.error(`Logout failed: ${error.message}`);
+      toast.error(`Logout fejlede: ${error.message}`);
     }
+  };
+
+  const closeConfigError = () => {
+    setShowConfigError(false);
   };
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, user, login, loginWithGoogle, logout }}>
       {children}
+      <Dialog open={showConfigError} onOpenChange={closeConfigError}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Konfigurationsfejl</DialogTitle>
+            <DialogDescription>
+              Supabase er ikke korrekt konfigureret i denne applikation. Dette forhindrer login og adgang til data.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p>
+              For at løse dette problem skal VITE_SUPABASE_URL og VITE_SUPABASE_ANON_KEY miljøvariable være korrekt konfigureret.
+            </p>
+            <p>
+              Kontakt venligst systemadministratoren for at få dette løst.
+            </p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={closeConfigError}>Luk</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AuthContext.Provider>
   );
 };

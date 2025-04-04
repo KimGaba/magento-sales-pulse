@@ -1,12 +1,15 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CardContent } from '@/components/ui/card';
-import { Mail, Loader2 } from 'lucide-react';
+import { Mail, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
+import { isUsingFallbackConfig } from '../services/supabase';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const LoginForm = () => {
   const navigate = useNavigate();
@@ -15,9 +18,11 @@ const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError('');
     
     if (!email || !password) {
       toast({
@@ -28,25 +33,39 @@ const LoginForm = () => {
       return;
     }
     
+    if (isUsingFallbackConfig) {
+      setLoginError('Supabase forbindelsen er ikke korrekt konfigureret. Kontakt venligst administratoren.');
+      return;
+    }
+
     setIsLoading(true);
     
     try {
       await login(email, password);
       navigate('/dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      setLoginError(error.message || 'Der opstod en fejl under login. Prøv igen senere.');
     } finally {
       setIsLoading(false);
     }
   };
   
   const handleGoogleLogin = async () => {
+    setLoginError('');
+
+    if (isUsingFallbackConfig) {
+      setLoginError('Supabase forbindelsen er ikke korrekt konfigureret. Kontakt venligst administratoren.');
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
       await loginWithGoogle();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      setLoginError(error.message || 'Der opstod en fejl under Google login. Prøv igen senere.');
     } finally {
       setIsLoading(false);
     }
@@ -55,6 +74,13 @@ const LoginForm = () => {
   return (
     <>
       <CardContent className="space-y-4 pt-4">
+        {loginError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{loginError}</AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={handleEmailLogin}>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -65,7 +91,7 @@ const LoginForm = () => {
                 placeholder="din@email.dk"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
+                disabled={isLoading || isUsingFallbackConfig}
                 required
               />
             </div>
@@ -81,14 +107,14 @@ const LoginForm = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)} 
-                disabled={isLoading}
+                disabled={isLoading || isUsingFallbackConfig}
                 required
               />
             </div>
             <Button 
               type="submit" 
-              className="w-full bg-magento-600 hover:bg-magento-700" 
-              disabled={isLoading}
+              className="w-full"
+              disabled={isLoading || isUsingFallbackConfig}
             >
               {isLoading ? (
                 <>
@@ -115,7 +141,7 @@ const LoginForm = () => {
           type="button" 
           variant="outline" 
           onClick={handleGoogleLogin}
-          disabled={isLoading}
+          disabled={isLoading || isUsingFallbackConfig}
           className="w-full"
         >
           <svg 
