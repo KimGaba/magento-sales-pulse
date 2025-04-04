@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -22,6 +23,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from '@/i18n/LanguageContext';
+import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormDescription
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
 interface StoreConnection {
   id: string;
@@ -29,15 +40,29 @@ interface StoreConnection {
   store_name: string;
   store_url: string;
   status: string;
+  order_statuses?: string[];
 }
+
+interface ConnectFormValues {
+  storeName: string;
+  url: string;
+  apiKey: string;
+  orderStatuses: Record<string, boolean>;
+}
+
+const defaultOrderStatuses = {
+  "pending": false,
+  "processing": true,
+  "complete": true,
+  "closed": false,
+  "canceled": false,
+  "holded": false
+};
 
 const Connect = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { t } = useTranslation();
-  const [storeName, setStoreName] = useState('');
-  const [url, setUrl] = useState('');
-  const [apiKey, setApiKey] = useState('');
   const [connecting, setConnecting] = useState(false);
   const [step, setStep] = useState(1);
   const [syncProgress, setSyncProgress] = useState(0);
@@ -51,6 +76,15 @@ const Connect = () => {
   const [loadingConnections, setLoadingConnections] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [storeToDelete, setStoreToDelete] = useState<StoreConnection | null>(null);
+  
+  const form = useForm<ConnectFormValues>({
+    defaultValues: {
+      storeName: '',
+      url: '',
+      apiKey: '',
+      orderStatuses: defaultOrderStatuses
+    }
+  });
   
   useEffect(() => {
     if (user) {
@@ -77,8 +111,8 @@ const Connect = () => {
     }
   };
   
-  const handleConnect = async () => {
-    if (!url.trim() || !apiKey.trim() || !storeName.trim()) {
+  const handleConnect = async (values: ConnectFormValues) => {
+    if (!values.url.trim() || !values.apiKey.trim() || !values.storeName.trim()) {
       toast({
         title: "Fejl ved forbindelse",
         description: "Venligst udfyld både butiksnavn, URL og API-nøgle",
@@ -99,11 +133,17 @@ const Connect = () => {
     setConnecting(true);
     
     try {
+      // Convert orderStatuses object to array of selected statuses
+      const selectedStatuses = Object.entries(values.orderStatuses)
+        .filter(([_, isSelected]) => isSelected)
+        .map(([status]) => status);
+      
       await addMagentoConnection(
         user.id,
-        url,
-        apiKey,
-        storeName
+        values.url,
+        values.apiKey,
+        values.storeName,
+        selectedStatuses
       );
       
       setStep(2);
@@ -116,6 +156,7 @@ const Connect = () => {
       updateSyncStatus('products', 'syncing');
       setSyncProgress(10);
       
+      // Simulate sync progress (this would be replaced by real progress in production)
       setTimeout(() => {
         updateSyncStatus('products', 'completed');
         updateSyncStatus('orders', 'syncing');
@@ -181,9 +222,7 @@ const Connect = () => {
   };
   
   const handleFinish = () => {
-    setStoreName('');
-    setUrl('');
-    setApiKey('');
+    form.reset();
     setStep(1);
     setSyncProgress(0);
     setSyncStatus({
@@ -281,6 +320,12 @@ const Connect = () => {
                       {connection.status === 'active' ? 'Aktiv' : 'Afventer'}
                     </span>
                   </div>
+                  {connection.order_statuses && connection.order_statuses.length > 0 && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      <span>Synkroniserer ordrer med status: </span>
+                      <span className="font-medium">{connection.order_statuses.join(', ')}</span>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Button 
@@ -328,54 +373,110 @@ const Connect = () => {
                     Indtast din Magento butiksadresse og API-nøgle
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="store-name">Butiksnavn</Label>
-                    <Input 
-                      id="store-name" 
-                      placeholder="Min Butik" 
-                      value={storeName}
-                      onChange={(e) => setStoreName(e.target.value)}
-                    />
-                    <p className="text-xs text-gray-500">Et navn til at identificere din butik i systemet</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="store-url">Magento URL</Label>
-                    <Input 
-                      id="store-url" 
-                      placeholder="https://dinbutik.dk" 
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                    />
-                    <p className="text-xs text-gray-500">F.eks. https://dinbutik.dk</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="api-key">API-nøgle</Label>
-                    <Input 
-                      id="api-key" 
-                      type="password" 
-                      placeholder="Din Magento API-nøgle" 
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                    />
-                    <p className="text-xs text-gray-500">
-                      <a href="#" className="text-magento-600 hover:underline">
-                        Hvor finder jeg min API-nøgle?
-                      </a>
-                    </p>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button 
-                    className="w-full bg-magento-600 hover:bg-magento-700"
-                    onClick={handleConnect}
-                    disabled={connecting}
-                  >
-                    {connecting ? "Forbinder..." : "Forbind butik"}
-                  </Button>
-                </CardFooter>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(handleConnect)}>
+                    <CardContent className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="storeName"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel>Butiksnavn</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="Min Butik"
+                              />
+                            </FormControl>
+                            <FormDescription className="text-xs text-gray-500">
+                              Et navn til at identificere din butik i systemet
+                            </FormDescription>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="url"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel>Magento URL</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="https://dinbutik.dk"
+                              />
+                            </FormControl>
+                            <FormDescription className="text-xs text-gray-500">
+                              F.eks. https://dinbutik.dk
+                            </FormDescription>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="apiKey"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel>API-nøgle</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="password"
+                                placeholder="Din Magento API-nøgle"
+                              />
+                            </FormControl>
+                            <FormDescription className="text-xs text-gray-500">
+                              <a href="#" className="text-magento-600 hover:underline">
+                                Hvor finder jeg min API-nøgle?
+                              </a>
+                            </FormDescription>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <div className="space-y-3 pt-2">
+                        <div className="text-sm font-medium">Synkroniser ordrer med status</div>
+                        <div className="text-xs text-gray-500 mb-2">
+                          Vælg hvilke ordre-statusser der skal synkroniseres fra Magento
+                        </div>
+                        
+                        {Object.entries(defaultOrderStatuses).map(([status, defaultValue]) => (
+                          <FormField
+                            key={status}
+                            control={form.control}
+                            name={`orderStatuses.${status}` as any}
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                  <FormLabel className="text-sm capitalize">
+                                    {status}
+                                  </FormLabel>
+                                </div>
+                              </FormItem>
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button 
+                        type="submit"
+                        className="w-full bg-magento-600 hover:bg-magento-700"
+                        disabled={connecting}
+                      >
+                        {connecting ? "Forbinder..." : "Forbind butik"}
+                      </Button>
+                    </CardFooter>
+                  </form>
+                </Form>
               </Card>
             )}
 

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 
@@ -140,7 +141,8 @@ export const addMagentoConnection = async (
   userId: string,
   storeUrl: string,
   accessToken: string,
-  storeName: string
+  storeName: string,
+  orderStatuses: string[] = ["processing", "complete"]
 ) => {
   try {
     console.log(`Adding Magento connection for user ${userId} to store ${storeName}`);
@@ -153,7 +155,8 @@ export const addMagentoConnection = async (
           store_url: storeUrl,
           access_token: accessToken,
           store_name: storeName,
-          status: 'active'
+          status: 'active',
+          order_statuses: orderStatuses
         }
       ])
       .select();

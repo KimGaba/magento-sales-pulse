@@ -72,7 +72,11 @@ async function synchronizeMagentoData() {
       }
       
       // 3. Fetch sales data from Magento
-      const salesData = await fetchMagentoSalesData(connection);
+      // Get order statuses to sync from connection settings
+      const orderStatuses = connection.order_statuses || ["processing", "complete"];
+      console.log(`Using order statuses for sync: ${orderStatuses.join(', ')}`);
+      
+      const salesData = await fetchMagentoSalesData(connection, orderStatuses);
       
       if (!salesData || !salesData.length) {
         console.log(`No sales data fetched for store ${connection.store_name}`);
@@ -114,7 +118,7 @@ async function synchronizeMagentoData() {
 }
 
 // Function to fetch sales data from Magento API
-async function fetchMagentoSalesData(connection: any) {
+async function fetchMagentoSalesData(connection: any, orderStatuses: string[]) {
   try {
     console.log(`Connecting to Magento API at ${connection.store_url}`);
     
@@ -128,6 +132,7 @@ async function fetchMagentoSalesData(connection: any) {
     const sampleOrders = [];
     const storeViews = ['dk', 'se', 'no', 'fi'];
     const customerGroups = ['retail', 'wholesale', 'vip'];
+    const possibleStatuses = ["pending", "processing", "complete", "closed", "canceled", "holded"];
     const orderCount = Math.floor(Math.random() * 10) + 5; // 5-15 orders
     
     const today = new Date();
@@ -139,20 +144,24 @@ async function fetchMagentoSalesData(connection: any) {
       const storeView = storeViews[Math.floor(Math.random() * storeViews.length)];
       const customerGroup = customerGroups[Math.floor(Math.random() * customerGroups.length)];
       const amount = Math.floor(Math.random() * 10000) / 100; // Random amount between 0-100
+      const status = possibleStatuses[Math.floor(Math.random() * possibleStatuses.length)];
       
-      sampleOrders.push({
-        increment_id: `10000${Math.floor(Math.random() * 1000)}`,
-        created_at: orderDate.toISOString(),
-        customer_email: `customer${i}@example.com`,
-        customer_name: `Customer ${i}`,
-        grand_total: amount,
-        store_view: storeView,
-        customer_group: customerGroup,
-        status: 'complete'
-      });
+      // Only include orders with the selected statuses
+      if (orderStatuses.includes(status)) {
+        sampleOrders.push({
+          increment_id: `10000${Math.floor(Math.random() * 1000)}`,
+          created_at: orderDate.toISOString(),
+          customer_email: `customer${i}@example.com`,
+          customer_name: `Customer ${i}`,
+          grand_total: amount,
+          store_view: storeView,
+          customer_group: customerGroup,
+          status: status
+        });
+      }
     }
     
-    console.log(`Generated ${sampleOrders.length} sample orders`);
+    console.log(`Generated ${sampleOrders.length} sample orders with statuses: ${orderStatuses.join(', ')}`);
     return sampleOrders;
     
   } catch (error) {
@@ -271,7 +280,8 @@ async function storeTransactions(salesData: any[], storeId: string) {
       // Add metadata including store_view and customer_group
       const metadata = {
         store_view: order.store_view,
-        customer_group: order.customer_group
+        customer_group: order.customer_group,
+        status: order.status
       };
       
       // Insert the transaction
