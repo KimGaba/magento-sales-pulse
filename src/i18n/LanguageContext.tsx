@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import en from './locales/en';
 import da from './locales/da';
@@ -27,7 +26,7 @@ const LanguageContext = createContext<LanguageContextType>({
 
 export const useLanguage = () => useContext(LanguageContext);
 
-// Add the useTranslation hook
+// Add the useTranslation hook (ensure it's properly exported)
 export const useTranslation = () => {
   const { translations } = useLanguage();
   return { t: translations };
