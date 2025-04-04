@@ -4,6 +4,47 @@ import { toast } from '@/hooks/use-toast';
 import { Transaction } from '@/utils/repeatPurchaseCalculator';
 
 /**
+ * Basic test to check database connectivity
+ * Simply logs the raw response to help diagnose issues
+ */
+export const testDatabaseConnection = async (): Promise<boolean> => {
+  try {
+    console.log('Testing basic database connectivity...');
+    
+    // Most basic query possible
+    const { data, error, status, statusText } = await supabase
+      .from('transactions')
+      .select('*')
+      .limit(1);
+    
+    // Log everything to help diagnose the issue
+    console.log('Supabase response status:', status, statusText);
+    console.log('Data:', data);
+    
+    if (error) {
+      console.error('Database connection error:', error);
+      toast({
+        title: "Database connection error",
+        description: error.message,
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    console.log('Database connection successful');
+    return true;
+  } catch (error) {
+    console.error('Exception in testDatabaseConnection:', error);
+    toast({
+      title: "Error checking database",
+      description: error instanceof Error ? error.message : "An unknown error occurred",
+      variant: "destructive"
+    });
+    return false;
+  }
+};
+
+/**
  * Extremely simple function to check database connectivity
  * No filters, no joins, just a basic count
  */

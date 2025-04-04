@@ -2,8 +2,15 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Transaction } from '@/utils/repeatPurchaseCalculator';
-import { fetchTransactionData, getTransactionCount } from './transactionService';
+import { fetchTransactionData, getTransactionCount, testDatabaseConnection } from './transactionService';
 import { format, parseISO } from 'date-fns';
+
+/**
+ * Tests if the database connection is working
+ */
+export const testDatabase = async () => {
+  return await testDatabaseConnection();
+};
 
 /**
  * Fetches daily sales data from transactions

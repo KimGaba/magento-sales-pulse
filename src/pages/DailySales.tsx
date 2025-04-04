@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Loader2, Info, Database } from 'lucide-react';
+import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Loader2, Info, Database, AlertTriangle } from 'lucide-react';
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -18,7 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format, startOfMonth, endOfMonth, isSameMonth, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { fetchDailySalesData, fetchAvailableDataMonths, fetchTransactionCount } from '@/services/salesService';
+import { fetchDailySalesData, fetchAvailableDataMonths, fetchTransactionCount, testDatabase } from '@/services/salesService';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -33,6 +34,12 @@ const DailySales = () => {
   
   const fromDate = date ? format(startOfMonth(date), 'yyyy-MM-dd') : '';
   const toDate = date ? format(endOfMonth(date), 'yyyy-MM-dd') : '';
+
+  // Add DB connection test
+  const { data: isConnected = false, isLoading: isTestingConnection } = useQuery({
+    queryKey: ['databaseTest'],
+    queryFn: () => testDatabase(),
+  });
 
   const { data: transactionCount = 0, isLoading: isCountLoading } = useQuery({
     queryKey: ['transactionCount'],
@@ -136,29 +143,54 @@ const DailySales = () => {
       
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-md font-medium">Database Check</CardTitle>
+          <CardTitle className="text-md font-medium">Database Diagnostic</CardTitle>
           <Database className="h-5 w-5 text-magento-600" />
         </CardHeader>
         <CardContent>
-          {isCountLoading ? (
+          {isTestingConnection ? (
             <div className="flex items-center">
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Checking database...
+              Testing database connection...
             </div>
           ) : (
             <div>
-              <p className="text-lg">
-                Total transactions in database: <span className="font-bold">{transactionCount}</span>
-              </p>
-              {transactionCount === 0 && (
-                <p className="text-sm text-red-500 mt-2">
-                  No transactions found in the database. Please check your database connection or import some data.
+              <div className="flex items-center mb-4">
+                <div className={`h-3 w-3 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <p className="font-medium">
+                  {isConnected ? 'Database connection successful' : 'Database connection issue'}
                 </p>
-              )}
-              {transactionCount > 0 && (
-                <p className="text-sm text-green-500 mt-2">
-                  Database connection is working and transactions are available!
-                </p>
+              </div>
+              
+              {isCountLoading ? (
+                <div className="flex items-center">
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Checking transactions...
+                </div>
+              ) : (
+                <div>
+                  <p className="text-lg">
+                    Total transactions in database: <span className="font-bold">{transactionCount}</span>
+                  </p>
+                  {transactionCount === 0 && (
+                    <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-md">
+                      <div className="flex items-start">
+                        <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 mr-2" />
+                        <div>
+                          <p className="font-semibold text-amber-700">No transactions found</p>
+                          <p className="text-sm text-amber-600 mt-1">
+                            This could be due to:
+                          </p>
+                          <ul className="text-sm text-amber-600 mt-1 list-disc list-inside">
+                            <li>The transactions table might be empty</li>
+                            <li>There might be a permissions issue with the database</li>
+                            <li>The database connection might be correct but RLS policies preventing access</li>
+                            <li>Check if the Supabase API key has the right permissions</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
