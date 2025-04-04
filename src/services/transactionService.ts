@@ -15,14 +15,14 @@ export const fetchTransactionData = async (
     let query = supabase
       .from('transactions')
       .select('*')
-      .gte('transactions.transaction_date', fromDate)
-      .lte('transactions.transaction_date', toDate);
+      .gte('transaction_date', fromDate)
+      .lte('transaction_date', toDate);
     
     if (storeIds && storeIds.length > 0) {
-      query = query.in('transactions.store_id', storeIds);
+      query = query.in('store_id', storeIds);
     }
     
-    // Fix the order syntax - remove the table prefix for the order parameter
+    // Apply ordering without table prefix
     query = query.order('transaction_date', { ascending: false });
     
     const { data, error } = await query;
