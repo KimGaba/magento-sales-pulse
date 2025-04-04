@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -38,7 +38,9 @@ const Login = () => {
             />
           </div>
           <nav>
-            <Button variant="ghost" onClick={() => navigate('/')}>Tilbage til forsiden</Button>
+            <Button variant="ghost" asChild>
+              <Link to="/">Tilbage til forsiden</Link>
+            </Button>
           </nav>
         </div>
       </header>
