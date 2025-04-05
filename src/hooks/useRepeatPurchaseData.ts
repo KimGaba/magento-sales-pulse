@@ -1,0 +1,84 @@
+
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { format, subMonths } from 'date-fns';
+import { fetchTransactionData } from '@/services/transactionService';
+import { calculateRepeatPurchaseRate, calculateMonthlyRepeatRates, Transaction as CalcTransaction } from '@/utils/repeatPurchaseCalculator';
+import { Transaction } from '@/types/database';
+import { toast } from '@/hooks/use-toast';
+
+export const useRepeatPurchaseData = (selectedMonths: string) => {
+  // Calculate dates for the long-term data (24 months)
+  const today = new Date();
+  const twoYearsAgo = format(subMonths(today, 24), 'yyyy-MM-dd');
+  const fromDate = format(subMonths(today, parseInt(selectedMonths)), 'yyyy-MM-dd');
+  const toDate = format(today, 'yyyy-MM-dd');
+
+  // Main query for all transaction data (we'll use this for the trend chart)
+  const { data: allTransactionsData, isLoading: isAllDataLoading, error: allDataError } = useQuery({
+    queryKey: ['all-transactions', twoYearsAgo, toDate],
+    queryFn: async () => {
+      try {
+        const result = await fetchTransactionData(twoYearsAgo, toDate);
+        return result;
+      } catch (fetchError) {
+        console.error('Error in transaction query:', fetchError);
+        toast({
+          title: "Error loading data",
+          description: "Failed to load all transaction data. Please try again.",
+          variant: "destructive"
+        });
+        return [];
+      }
+    },
+    retry: 1,
+  });
+
+  // Query for selected period data (for current view)
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['transactions', fromDate, toDate],
+    queryFn: async () => {
+      try {
+        const result = await fetchTransactionData(fromDate, toDate);
+        return result;
+      } catch (fetchError) {
+        console.error('Error in transaction query:', fetchError);
+        toast({
+          title: "Error loading data",
+          description: "Failed to load transaction data. Please try again.",
+          variant: "destructive"
+        });
+        return [];
+      }
+    },
+    retry: 1, // Only retry once to avoid spamming the server with failed requests
+  });
+
+  // Ensure we always have an array of transactions
+  const transactions: Transaction[] = data || [];
+  const allTransactions: Transaction[] = allTransactionsData || [];
+  
+  // Calculate current period data
+  const currentPeriodData = calculateRepeatPurchaseRate(
+    transactions as unknown as CalcTransaction[], // Type casting to match the calculator's expected type
+    parseInt(selectedMonths)
+  );
+  
+  // Calculate monthly trend data
+  const monthlyTrendData = calculateMonthlyRepeatRates(allTransactions as unknown as CalcTransaction[], 12);
+
+  const handleRetry = () => {
+    refetch();
+  };
+
+  return {
+    currentPeriodData,
+    monthlyTrendData,
+    isLoading,
+    error,
+    isAllDataLoading,
+    allDataError,
+    handleRetry,
+    transactions
+  };
+};

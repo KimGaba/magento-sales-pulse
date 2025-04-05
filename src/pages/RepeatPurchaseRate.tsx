@@ -1,98 +1,33 @@
 
 import React, { useState } from 'react';
-import { format, subMonths } from 'date-fns';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { fetchTransactionData } from '@/services/transactionService';
-import { Skeleton } from '@/components/ui/skeleton';
-import RepeatRateCard from '@/components/repeat-purchase/RepeatRateCard';
-import CustomersPieChart from '@/components/repeat-purchase/CustomersPieChart';
 import TopCustomersTable from '@/components/repeat-purchase/TopCustomersTable';
 import RepeatPurchaseTrendChart from '@/components/repeat-purchase/RepeatPurchaseTrendChart';
-import { calculateRepeatPurchaseRate, calculateMonthlyRepeatRates, Transaction as CalcTransaction } from '@/utils/repeatPurchaseCalculator';
-import { Transaction } from '@/types/database';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { toast } from '@/hooks/use-toast';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import PeriodSelector from '@/components/repeat-purchase/PeriodSelector';
+import LoadingErrorContent from '@/components/repeat-purchase/LoadingErrorContent';
+import RepeatPurchaseOverview from '@/components/repeat-purchase/RepeatPurchaseOverview';
+import { useRepeatPurchaseData } from '@/hooks/useRepeatPurchaseData';
 
 const RepeatPurchaseRate = () => {
   const { translations } = useLanguage();
   const t = translations.repeatPurchase;
   const [selectedMonths, setSelectedMonths] = useState("3");
   const { user } = useAuth();
-  const isMobile = useIsMobile();
   
-  // Calculate dates for the long-term data (24 months)
-  const today = new Date();
-  const twoYearsAgo = format(subMonths(today, 24), 'yyyy-MM-dd');
-  const fromDate = format(subMonths(today, parseInt(selectedMonths)), 'yyyy-MM-dd');
-  const toDate = format(today, 'yyyy-MM-dd');
-
-  // Main query for all transaction data (we'll use this for the trend chart)
-  const { data: allTransactionsData, isLoading: isAllDataLoading, error: allDataError } = useQuery({
-    queryKey: ['all-transactions', twoYearsAgo, toDate],
-    queryFn: async () => {
-      try {
-        const result = await fetchTransactionData(twoYearsAgo, toDate);
-        return result;
-      } catch (fetchError) {
-        console.error('Error in transaction query:', fetchError);
-        toast({
-          title: "Error loading data",
-          description: "Failed to load all transaction data. Please try again.",
-          variant: "destructive"
-        });
-        return [];
-      }
-    },
-    retry: 1,
-  });
-
-  // Query for selected period data (for current view)
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['transactions', fromDate, toDate],
-    queryFn: async () => {
-      try {
-        const result = await fetchTransactionData(fromDate, toDate);
-        return result;
-      } catch (fetchError) {
-        console.error('Error in transaction query:', fetchError);
-        toast({
-          title: "Error loading data",
-          description: "Failed to load transaction data. Please try again.",
-          variant: "destructive"
-        });
-        return [];
-      }
-    },
-    retry: 1, // Only retry once to avoid spamming the server with failed requests
-  });
-
-  // Ensure we always have an array of transactions
-  const transactions: Transaction[] = data || [];
-  const allTransactions: Transaction[] = allTransactionsData || [];
-  
-  const currentPeriodData = calculateRepeatPurchaseRate(
-    transactions as unknown as CalcTransaction[], // Type casting to match the calculator's expected type
-    parseInt(selectedMonths)
-  );
-  
-  const pieChartData = [
-    { name: t.customersWithRepeat, value: currentPeriodData.repeatCustomers },
-    { name: t.totalCustomers, value: currentPeriodData.totalCustomers - currentPeriodData.repeatCustomers }
-  ];
-  
-  const tableDescription = `${t.months3.toLowerCase().replace('sidste', '').trim()} ${t.months6.split(' ')[1].toLowerCase()}`;
-  
-  // Calculate monthly trend data
-  const monthlyTrendData = calculateMonthlyRepeatRates(allTransactions as unknown as CalcTransaction[], 12);
-  
-  const handleRetry = () => {
-    refetch();
-  };
+  // Use our custom hook to fetch and process data
+  const {
+    currentPeriodData,
+    monthlyTrendData,
+    isLoading,
+    error,
+    isAllDataLoading,
+    allDataError,
+    handleRetry,
+    transactions
+  } = useRepeatPurchaseData(selectedMonths);
 
   // Create month options for the dropdown
   const monthOptions = [
@@ -102,6 +37,8 @@ const RepeatPurchaseRate = () => {
     { value: "18", label: t.months18 },
     { value: "24", label: t.months24 },
   ];
+  
+  const tableDescription = `${t.months3.toLowerCase().replace('sidste', '').trim()} ${t.months6.split(' ')[1].toLowerCase()}`;
   
   return (
     <Layout>
@@ -115,67 +52,46 @@ const RepeatPurchaseRate = () => {
           <CardTitle className="text-xl md:text-2xl">{t.description}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="w-full max-w-xs mb-6">
-            <Select value={selectedMonths} onValueChange={setSelectedMonths}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select period" />
-              </SelectTrigger>
-              <SelectContent>
-                {monthOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <PeriodSelector
+            selectedMonths={selectedMonths}
+            setSelectedMonths={setSelectedMonths}
+            monthOptions={monthOptions}
+          />
           
           {isLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-[200px] w-full" />
-            </div>
+            <LoadingErrorContent 
+              isLoading={isLoading} 
+              error={error} 
+              handleRetry={handleRetry} 
+              noDataMessage={t.noData} 
+            />
           ) : error ? (
-            <div className="text-center p-4 md:p-6">
-              <div className="text-red-500 mb-4">
-                {error instanceof Error ? error.message : "An error occurred while fetching data"}
-              </div>
-              <button 
-                onClick={handleRetry}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
+            <LoadingErrorContent 
+              isLoading={isLoading} 
+              error={error} 
+              handleRetry={handleRetry} 
+              noDataMessage={t.noData} 
+            />
           ) : transactions?.length === 0 ? (
             <div className="text-center p-4 md:p-6 text-gray-500">
               {t.noData}
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:gap-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                <div className="md:col-span-1">
-                  <RepeatRateCard
-                    repeatRate={currentPeriodData.repeatRate}
-                    repeatCustomers={currentPeriodData.repeatCustomers}
-                    totalCustomers={currentPeriodData.totalCustomers}
-                    title={t.repeatRate}
-                    customersWithRepeatLabel={t.customersWithRepeat}
-                  />
-                </div>
-                
-                <div className="md:col-span-2">
-                  <CustomersPieChart
-                    chartData={pieChartData}
-                    title={t.customersWithRepeat}
-                  />
-                </div>
-              </div>
+              <RepeatPurchaseOverview
+                repeatRate={currentPeriodData.repeatRate}
+                repeatCustomers={currentPeriodData.repeatCustomers}
+                totalCustomers={currentPeriodData.totalCustomers}
+                title={t.repeatRate}
+                customersWithRepeatLabel={t.customersWithRepeat}
+                totalCustomersLabel={t.totalCustomers}
+              />
             </div>
           )}
         </CardContent>
       </Card>
       
-      {!isAllDataLoading && !allDataError && allTransactions?.length > 0 && (
+      {!isAllDataLoading && !allDataError && monthlyTrendData?.length > 0 && (
         <div className="mb-6">
           <RepeatPurchaseTrendChart 
             data={monthlyTrendData}

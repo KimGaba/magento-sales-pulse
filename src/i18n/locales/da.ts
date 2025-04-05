@@ -143,24 +143,26 @@ const da = {
     pendingStatus: "Afventer"
   },
   repeatPurchase: {
-    title: "Gentaget Købsrate",
-    subtitle: "Analysér hvor ofte kunder vender tilbage for at foretage yderligere køb",
-    description: "Gentaget købsrate viser procentdelen af kunder, der har foretaget mere end ét køb inden for en specifik tidsperiode.",
-    months3: "Sidste 3 Måneder",
-    months6: "Sidste 6 Måneder",
-    months12: "Sidste 12 Måneder",
-    months18: "Sidste 18 Måneder",
-    months24: "Sidste 24 Måneder",
-    noData: "Ingen data tilgængelig for den valgte periode",
-    customersWithRepeat: "Kunder med gentagne køb",
-    totalCustomers: "Samlede kunder",
-    repeatRate: "Gentagelsesrate",
-    topReturningCustomers: "Bedste tilbagevendende kunder",
+    title: "Genkøbsfrekvens",
+    subtitle: "Se genkøbsmetrikker og trends",
+    description: "Vælg en periode for at se genkøbsmetrikker",
+    months3: "Sidste 3 måneder",
+    months6: "Sidste 6 måneder",
+    months12: "Sidste 12 måneder",
+    months18: "Sidste 18 måneder",
+    months24: "Sidste 24 måneder",
+    noData: "Ikke nok data til at vise metrikker",
+    customersWithRepeat: "Kunder med genkøb",
+    totalCustomers: "Total antal unikke kunder",
+    repeatRate: "Genkøbsfrekvens",
+    topReturningCustomers: "Top Tilbagevendende Kunder",
     customerEmail: "Kunde Email",
     purchaseCount: "Antal køb",
-    totalSpent: "Samlet brugt",
+    totalSpent: "Total brugt",
     lastPurchase: "Seneste køb",
-    viewDetails: "Se detaljer"
+    viewDetails: "Se detaljer",
+    trendChartTitle: "Genkøbsfrekvens Trend",
+    trendChartDescription: "Månedlig genkøbsfrekvens beregnet over 12 måneder periode"
   }
 };
 

@@ -1,4 +1,3 @@
-
 const en = {
   common: {
     back: "Back",
@@ -140,17 +139,17 @@ const en = {
   },
   repeatPurchase: {
     title: "Repeat Purchase Rate",
-    subtitle: "Analyze how often customers return to make additional purchases",
-    description: "The repeat purchase rate shows the percentage of customers who have made more than one purchase within a specific time period.",
-    months3: "Last 3 Months",
-    months6: "Last 6 Months",
-    months12: "Last 12 Months",
-    months18: "Last 18 Months",
-    months24: "Last 24 Months",
-    noData: "No data available for the selected period",
+    subtitle: "View repeat purchase metrics and trends",
+    description: "Select a period to view repeat purchase metrics",
+    months3: "Last 3 months",
+    months6: "Last 6 months",
+    months12: "Last 12 months",
+    months18: "Last 18 months",
+    months24: "Last 24 months",
+    noData: "Not enough data to display metrics",
     customersWithRepeat: "Customers with repeat purchases",
-    totalCustomers: "Total customers",
-    repeatRate: "Repeat rate",
+    totalCustomers: "Total unique customers",
+    repeatRate: "Repeat Purchase Rate",
     topReturningCustomers: "Top Returning Customers",
     customerEmail: "Customer Email",
     purchaseCount: "Purchases",

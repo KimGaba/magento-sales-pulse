@@ -1,3 +1,4 @@
+
 // Type definitions
 export type RepeatPurchaseData = {
   period: number; // Number of months
@@ -114,6 +115,8 @@ export const calculateRepeatPurchaseRate = (
 };
 
 // New function to calculate monthly repeat purchase rates
+import { format } from 'date-fns';
+
 export const calculateMonthlyRepeatRates = (
   transactions: Transaction[] | undefined,
   numberOfMonths: number = 12
@@ -121,9 +124,6 @@ export const calculateMonthlyRepeatRates = (
   if (!transactions || transactions.length === 0) {
     return [];
   }
-
-  // Import format from date-fns
-  import { format } from 'date-fns';
 
   // Sort transactions by date (oldest first)
   const sortedTransactions = [...transactions].sort(
