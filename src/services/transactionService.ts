@@ -1,140 +1,120 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import { Transaction } from '@/utils/repeatPurchaseCalculator';
+import { Transaction } from '@/types/database';
 
 /**
- * Basic test to check database connectivity
- * Simply logs the raw response to help diagnose issues
+ * Tests basic database connectivity to Supabase
  */
 export const testDatabaseConnection = async (): Promise<boolean> => {
   try {
-    console.log('Testing basic database connectivity...');
+    console.log('Testing database connection...');
     
-    // Use most basic query possible to avoid ambiguity
-    const { data, error, status, statusText } = await supabase
+    // Just check if we can reach Supabase with a simple query
+    const { data, error } = await supabase
       .from('transactions')
       .select('id')
       .limit(1);
     
-    // Log everything to help diagnose the issue
-    console.log('Supabase response status:', status, statusText);
-    console.log('Data:', data);
-    
     if (error) {
-      console.error('Database connection error:', error);
-      toast({
-        title: "Database connection error",
-        description: error.message,
-        variant: "destructive"
-      });
+      console.error('Database connection test failed:', error);
       return false;
     }
     
-    console.log('Database connection successful');
+    console.log('Database connection test succeeded');
     return true;
   } catch (error) {
-    console.error('Exception in testDatabaseConnection:', error);
-    toast({
-      title: "Error checking database",
-      description: error instanceof Error ? error.message : "An unknown error occurred",
-      variant: "destructive"
-    });
+    console.error('Exception in database connection test:', error);
     return false;
   }
 };
 
 /**
- * Extremely simple function to check database connectivity
- * No filters, no joins, just a basic count
+ * Gets the count of transactions
  */
 export const getTransactionCount = async (): Promise<number> => {
   try {
-    console.log('Simple database check: counting transactions');
+    console.log('Getting transaction count...');
     
-    // Only use a simple count operation
     const { count, error } = await supabase
       .from('transactions')
-      .select('*', { count: 'exact', head: true });
+      .select('id', { count: 'exact', head: true });
     
     if (error) {
-      console.error('Database error:', error);
-      toast({
-        title: "Database error",
-        description: error.message,
-        variant: "destructive"
-      });
-      return 0;
+      console.error('Error getting transaction count:', error);
+      throw error;
     }
     
     console.log(`Found ${count} transactions`);
     return count || 0;
   } catch (error) {
     console.error('Exception in getTransactionCount:', error);
-    toast({
-      title: "Error checking database",
-      description: error instanceof Error ? error.message : "An unknown error occurred",
-      variant: "destructive"
-    });
-    return 0;
+    throw error;
   }
 };
 
 /**
- * Simplified transaction fetching with only essential filtering
- * No joins, only simple field selection
+ * Fetches transaction data within a date range
  */
 export const fetchTransactionData = async (
-  fromDate: string, 
+  fromDate: string,
   toDate: string
 ): Promise<Transaction[]> => {
   try {
-    console.log(`Simple fetch: transactions from ${fromDate} to ${toDate}`);
+    console.log(`Fetching transactions from ${fromDate} to ${toDate}`);
     
-    // Use simple column selection without table prefixes to avoid type issues
-    let query = supabase
+    // Select only the specific fields we need, avoiding table name prefixes
+    const { data, error } = await supabase
       .from('transactions')
-      .select('id, transaction_date, amount, customer_id, external_id, product_id, created_at');
-    
-    // Apply date filters
-    if (fromDate) {
-      query = query.gte('transaction_date', fromDate);
-    }
-    
-    if (toDate) {
-      query = query.lte('transaction_date', toDate);
-    }
-    
-    // Execute the query
-    const { data, error } = await query;
+      .select('id, amount, transaction_date, customer_id, external_id, created_at')
+      .gte('transaction_date', fromDate)
+      .lte('transaction_date', toDate)
+      .order('transaction_date', { ascending: false });
     
     if (error) {
-      console.error('Database error in fetchTransactionData:', error);
-      toast({
-        title: "Error fetching transactions",
-        description: error.message,
-        variant: "destructive"
-      });
-      return [];
+      console.error('Error fetching transaction data:', error);
+      throw error;
     }
     
-    console.log(`Retrieved ${data?.length || 0} transactions`);
-    return data as Transaction[] || [];
+    console.log(`Fetched ${data?.length || 0} transactions`);
+    return data || [];
   } catch (error) {
     console.error('Exception in fetchTransactionData:', error);
-    toast({
-      title: "Error fetching transactions",
-      description: error instanceof Error ? error.message : "An unknown error occurred",
-      variant: "destructive"
-    });
-    return [];
+    throw error;
   }
 };
 
 /**
- * Maps the raw data from Supabase to the Transaction type
- * Simplified to just return the data as is, with minimal processing
+ * Fetches transaction data for specific stores within a date range
  */
-const mapTransactionsData = (data: any[]): Transaction[] => {
-  return data;
+export const fetchStoreTransactionData = async (
+  fromDate: string, 
+  toDate: string,
+  storeIds: string[]
+): Promise<Transaction[]> => {
+  try {
+    console.log(`Fetching transactions for stores [${storeIds.join(', ')}] from ${fromDate} to ${toDate}`);
+    
+    let query = supabase
+      .from('transactions')
+      .select('id, amount, transaction_date, customer_id, external_id, created_at, transactions.store_id')
+      .gte('transaction_date', fromDate)
+      .lte('transaction_date', toDate);
+    
+    if (storeIds && storeIds.length > 0) {
+      query = query.in('transactions.store_id', storeIds);
+    }
+    
+    const { data, error } = await query.order('transaction_date', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching transaction data for stores:', error);
+      throw error;
+    }
+    
+    console.log(`Fetched ${data?.length || 0} transactions for selected stores`);
+    return data || [];
+  } catch (error) {
+    console.error('Exception in fetchStoreTransactionData:', error);
+    throw error;
+  }
 };

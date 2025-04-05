@@ -38,7 +38,7 @@ export const useDatabaseTests = () => {
       
       console.log('Executing raw Supabase query...');
       
-      // Avoid using any field that might be in multiple tables
+      // Explicitly select only the id field to avoid any ambiguity
       const { data, error, status, statusText } = await supabase
         .from('transactions')
         .select('id', { count: 'exact', head: true });
@@ -174,7 +174,7 @@ export const useDatabaseTests = () => {
       const toDate = new Date().toISOString().split('T')[0];
       
       console.log(`Fetching transactions from ${fromDate} to ${toDate}...`);
-      // Pass only fromDate and toDate, omit storeIds
+      // Using the updated function signature without storeIds
       const transactions = await fetchTransactionData(fromDate, toDate);
       console.log(`Retrieved ${transactions.length} transactions`);
       
@@ -217,7 +217,7 @@ export const useDatabaseTests = () => {
         message: 'Checking if transactions table exists...' 
       }]);
       
-      // Use explicit id field to avoid store_id ambiguity
+      // Only select the id field to avoid any column ambiguity
       const { data, error } = await supabase
         .from('transactions')
         .select('id', { count: 'exact', head: true });

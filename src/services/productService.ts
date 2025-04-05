@@ -10,11 +10,11 @@ export const fetchProductData = async (storeIds: string[] = []) => {
     
     let query = supabase
       .from('products')
-      .select('*')
+      .select('id, name, price, description, image_url, in_stock, products.store_id, external_id, sku, created_at, updated_at')
       .order('name');
     
     if (storeIds && storeIds.length > 0) {
-      query = query.in('store_id', storeIds);
+      query = query.in('products.store_id', storeIds);
     }
     
     const { data, error } = await query;
@@ -41,12 +41,12 @@ export const fetchProductsWithImages = async (storeIds: string[] = []) => {
     
     let query = supabase
       .from('products')
-      .select('*')
+      .select('id, name, price, description, image_url, in_stock, products.store_id, external_id, sku, created_at, updated_at')
       .not('image_url', 'is', null)  // Only get products with images
       .order('name');
     
     if (storeIds && storeIds.length > 0) {
-      query = query.in('store_id', storeIds);
+      query = query.in('products.store_id', storeIds);
     }
     
     const { data, error } = await query;

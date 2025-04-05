@@ -10,7 +10,7 @@ export const fetchStoreData = async () => {
     
     const { data, error } = await supabase
       .from('stores')
-      .select('*')
+      .select('id, name, url, created_at, updated_at')
       .order('name');
     
     if (error) {
