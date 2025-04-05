@@ -35,6 +35,21 @@ def test_db_connection():
         print(f"❌ Error connecting to Supabase: {str(e)}")
         return False
 
+def test_connection_details():
+    """Test detailed connection information"""
+    print("\nTesting detailed connection information...")
+    
+    try:
+        # Try getting the server version to verify connection works
+        response = supabase.rpc('version').execute()
+        print(f"Database version info: {response}")
+        print("✅ Successfully retrieved database version!")
+        return True
+            
+    except Exception as e:
+        print(f"❌ Error getting database details: {str(e)}")
+        return False
+
 def test_transaction_count():
     """Test getting transaction count"""
     print("\nTesting transaction count...")
@@ -52,6 +67,28 @@ def test_transaction_count():
             
     except Exception as e:
         print(f"❌ Error getting transaction count: {str(e)}")
+        return False
+
+def test_table_structure():
+    """Test querying the table structure"""
+    print("\nTesting table structure...")
+    
+    try:
+        # Information schema query to see column definitions
+        # Note: This requires higher privileges and might not work with anon key
+        response = supabase.from('information_schema.columns').select('*').eq('table_name', 'transactions').execute()
+        
+        # Check response
+        data = response.data
+        if data:
+            print(f"Column information: {data}")
+            print("✅ Successfully retrieved table structure!")
+        else:
+            print("No column information returned (might need higher privileges)")
+        return True
+            
+    except Exception as e:
+        print(f"❌ Error querying table structure: {str(e)}")
         return False
 
 def test_fetch_transactions():
@@ -92,7 +129,10 @@ def test_fetch_transactions():
 
 if __name__ == "__main__":
     print("===== SUPABASE CONNECTION TEST =====")
+    print(f"Testing connection to: {SUPABASE_URL}")
     test_db_connection()
+    test_connection_details()
     test_transaction_count()
+    test_table_structure()
     test_fetch_transactions()
     print("===================================")
