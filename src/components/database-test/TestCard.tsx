@@ -24,7 +24,7 @@ const TestCard = ({ result }: TestCardProps) => {
       <p className="text-sm text-gray-600">{result.message}</p>
       {result.details && (
         <div className="mt-2 p-2 bg-gray-50 rounded text-xs font-mono overflow-x-auto">
-          {result.details}
+          <pre className="whitespace-pre-wrap break-all">{result.details}</pre>
         </div>
       )}
     </div>
