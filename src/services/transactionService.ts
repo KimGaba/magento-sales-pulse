@@ -11,10 +11,10 @@ export const testDatabaseConnection = async (): Promise<boolean> => {
   try {
     console.log('Testing basic database connectivity...');
     
-    // Most basic query possible - use explicit table alias to avoid ambiguity
+    // Force using a specific schema and table to avoid ambiguity
     const { data, error, status, statusText } = await supabase
       .from('transactions')
-      .select('id, store_id, transaction_date, amount, product_id, created_at, external_id, customer_id')
+      .select('id')
       .limit(1);
     
     // Log everything to help diagnose the issue
@@ -52,10 +52,10 @@ export const getTransactionCount = async (): Promise<number> => {
   try {
     console.log('Simple database check: counting transactions');
     
-    // Use explicit count syntax without column qualifiers
+    // Simplify by using count only - no joins, no ambiguity
     const { count, error } = await supabase
       .from('transactions')
-      .select('id', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true });
     
     if (error) {
       console.error('Database error:', error);
@@ -92,10 +92,10 @@ export const fetchTransactionData = async (
   try {
     console.log(`Simple fetch: transactions from ${fromDate} to ${toDate}`);
     
-    // Use simple column names without table qualifiers to avoid parsing errors
+    // Avoid using table aliases or table qualifiers to prevent ambiguity
     let query = supabase
       .from('transactions')
-      .select('id, store_id, transaction_date, amount, product_id, created_at, external_id, customer_id');
+      .select('*');
     
     // Apply date filters
     if (fromDate) {
