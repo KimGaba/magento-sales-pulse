@@ -87,16 +87,15 @@ export const useConnectionTest = () => {
       // Using direct URL string
       const supabaseURL = "https://vlkcnndgtarduplyedyp.supabase.co";
       
-      // Try a simple health check
+      // Try a simple health check (don't use _http_response which doesn't exist)
       const { data, error } = await supabase
-        .from('_http_response')
-        .select('*')
-        .limit(1)
-        .maybeSingle();
+        .from('transactions')
+        .select('id')
+        .limit(1);
         
       console.log('Connection test response:', { data, error });
       
-      // Fallback to fetch API if the above fails
+      // Check if we got a connection error
       if (error) {
         // Try a direct health check using fetch
         const response = await fetch(`${supabaseURL}/rest/v1/`);
