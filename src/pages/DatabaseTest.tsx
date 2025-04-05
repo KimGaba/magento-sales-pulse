@@ -1,7 +1,7 @@
 
 import React from 'react';
 import Layout from '@/components/layout/Layout';
-import { useDatabaseTests } from '@/hooks/useDatabaseTests';
+import { useDatabaseTests } from '@/hooks/database-tests/useDatabaseTests';
 import TestRunner from '@/components/database-test/TestRunner';
 import TestResultsList from '@/components/database-test/TestResultsList';
 
