@@ -10,6 +10,8 @@ export type RepeatPurchaseData = {
     purchases: number;
     totalSpent: number;
     lastPurchase: string;
+    averageOrderValue?: number;
+    firstPurchase?: string;
   }[];
 };
 
@@ -43,6 +45,7 @@ export const calculateRepeatPurchaseRate = (
         purchases: 0,
         totalSpent: 0,
         lastPurchase: '',
+        firstPurchase: '',
         transactions: []
       };
     }
@@ -50,10 +53,17 @@ export const calculateRepeatPurchaseRate = (
     acc[customerId].purchases += 1;
     acc[customerId].totalSpent += transaction.amount;
     
-    // Track last purchase date
+    // Track purchase dates
     const txDate = new Date(transaction.transaction_date);
+    
+    // Update last purchase date
     if (!acc[customerId].lastPurchase || txDate > new Date(acc[customerId].lastPurchase)) {
       acc[customerId].lastPurchase = transaction.transaction_date;
+    }
+    
+    // Update first purchase date
+    if (!acc[customerId].firstPurchase || txDate < new Date(acc[customerId].firstPurchase)) {
+      acc[customerId].firstPurchase = transaction.transaction_date;
     }
     
     acc[customerId].transactions.push(transaction);
@@ -63,6 +73,7 @@ export const calculateRepeatPurchaseRate = (
     purchases: number;
     totalSpent: number;
     lastPurchase: string;
+    firstPurchase: string;
     transactions: Transaction[];
   }>);
   
@@ -77,15 +88,22 @@ export const calculateRepeatPurchaseRate = (
   
   // Get top returning customers (sorted by purchase count)
   const topCustomers = Object.entries(customerPurchases)
-    .map(([customerId, data]) => ({
-      email: customerId === 'unknown' ? 'Guest Customer' : customerId,
-      purchases: data.purchases,
-      totalSpent: data.totalSpent,
-      lastPurchase: data.lastPurchase
-    }))
+    .map(([customerId, data]) => {
+      // Calculate average order value
+      const averageOrderValue = data.totalSpent / data.purchases;
+      
+      return {
+        email: customerId === 'unknown' ? 'Guest Customer' : customerId,
+        purchases: data.purchases,
+        totalSpent: data.totalSpent,
+        lastPurchase: data.lastPurchase,
+        firstPurchase: data.firstPurchase,
+        averageOrderValue
+      };
+    })
     .filter(customer => customer.purchases > 1)
     .sort((a, b) => b.purchases - a.purchases)
-    .slice(0, 5);
+    .slice(0, 10); // Increasing from 5 to 10 top customers
   
   return {
     period: months,

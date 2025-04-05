@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { format, subMonths } from 'date-fns';
 import Layout from '@/components/layout/Layout';
@@ -14,7 +15,7 @@ import TopCustomersTable from '@/components/repeat-purchase/TopCustomersTable';
 import { calculateRepeatPurchaseRate } from '@/utils/repeatPurchaseCalculator';
 import { Transaction } from '@/types/database';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 const RepeatPurchaseRate = () => {
   const { translations } = useLanguage();
