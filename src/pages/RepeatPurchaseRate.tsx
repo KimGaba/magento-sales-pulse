@@ -31,6 +31,7 @@ const RepeatPurchaseRate = () => {
     queryKey: ['transactions', fromDate, toDate],
     queryFn: async () => {
       try {
+        // Use the updated fetchTransactionData without storeIds parameter
         const result = await fetchTransactionData(fromDate, toDate);
         return result;
       } catch (fetchError) {

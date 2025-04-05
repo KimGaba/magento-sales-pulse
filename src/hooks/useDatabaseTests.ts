@@ -173,7 +173,7 @@ export const useDatabaseTests = () => {
       const toDate = new Date().toISOString().split('T')[0];
       
       console.log(`Fetching transactions from ${fromDate} to ${toDate}...`);
-      // Don't pass storeIds, making it optional
+      // Pass only fromDate and toDate, omit storeIds
       const transactions = await fetchTransactionData(fromDate, toDate);
       console.log(`Retrieved ${transactions.length} transactions`);
       

@@ -91,10 +91,10 @@ export const fetchTransactionData = async (
   try {
     console.log(`Simple fetch: transactions from ${fromDate} to ${toDate}`);
     
-    // Start with basic query without any table aliases or filters that might cause ambiguity
+    // Start with basic query explicitly referring to the transactions table to avoid ambiguity
     let query = supabase
       .from('transactions')
-      .select('*');
+      .select('transactions.id, transactions.transaction_date, transactions.amount, transactions.customer_id, transactions.external_id, transactions.product_id, transactions.created_at');
     
     // Apply date filters
     if (fromDate) {
