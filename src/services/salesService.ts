@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Transaction } from '@/utils/repeatPurchaseCalculator';
@@ -24,7 +23,8 @@ export const fetchDailySalesData = async (
     console.log(`Fetching daily sales from ${fromDate} to ${toDate}`);
     
     // Fetch transaction data using the simplified transactionService
-    const transactions = await fetchTransactionData(fromDate, toDate, storeIds);
+    // Note: storeIds filtering has been removed from fetchTransactionData
+    const transactions = await fetchTransactionData(fromDate, toDate);
     
     if (!transactions || transactions.length === 0) {
       return [];
@@ -90,7 +90,8 @@ export const fetchAvailableDataMonths = async (storeIds: string[] = []) => {
     const fromDate = format(new Date(new Date().setMonth(new Date().getMonth() - 24)), 'yyyy-MM-dd');
     const toDate = format(new Date(), 'yyyy-MM-dd');
     
-    const transactions = await fetchTransactionData(fromDate, toDate, storeIds);
+    // Note: storeIds filtering has been removed from fetchTransactionData
+    const transactions = await fetchTransactionData(fromDate, toDate);
     
     if (!transactions || transactions.length === 0) {
       return [];
