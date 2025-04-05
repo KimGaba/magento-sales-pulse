@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,9 +18,7 @@ const DatabaseTest = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [supabaseInfo, setSupabaseInfo] = useState<string>('');
 
-  // Get Supabase configuration info to verify it's correctly set up
   useEffect(() => {
-    // Use the URL from the client config file which is publicly accessible
     const url = "https://vlkcnndgtarduplyedyp.supabase.co";
     setSupabaseInfo(`Connected to: ${url}`);
   }, []);
@@ -30,16 +27,12 @@ const DatabaseTest = () => {
     setIsRunning(true);
     setResults([]);
     
-    // Test Supabase raw query - most direct test possible
     await runRawQueryTest();
     
-    // Basic connection test
     await runBasicConnectionTest();
     
-    // Transaction count test
     await runTransactionCountTest();
     
-    // Fetch transactions test
     await runFetchTransactionsTest();
     
     setIsRunning(false);
@@ -55,7 +48,6 @@ const DatabaseTest = () => {
       
       console.log('Executing raw Supabase query...');
       
-      // Most basic query possible to test connection
       const { data, error, status, statusText } = await supabase
         .from('transactions')
         .select('count(*)', { count: 'exact', head: true });
@@ -184,7 +176,6 @@ const DatabaseTest = () => {
       
       console.log('Running fetch transactions test...');
       
-      // Fetch transactions from the last 2 years
       const twoYearsAgo = new Date();
       twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
       
@@ -234,9 +225,7 @@ const DatabaseTest = () => {
         message: 'Checking if transactions table exists...' 
       }]);
       
-      // Use the custom RPC function using the more permissive generic approach
-      // to avoid TypeScript errors with functions not in the generated types
-      const { data, error } = await supabase.rpc<boolean>(
+      const { data, error } = await supabase.rpc<boolean, { table_name: string }>(
         'check_table_exists',
         { table_name: 'transactions' }
       );
