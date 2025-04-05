@@ -20,11 +20,29 @@ export const fetchDailySalesData = async (
   storeIds: string[] = []
 ) => {
   try {
-    console.log(`Fetching daily sales from ${fromDate} to ${toDate}`);
+    console.log(`Fetching daily sales from ${fromDate} to ${toDate}, storeIds:`, storeIds);
     
-    // Fetch transaction data using the simplified transactionService
-    // Note: storeIds filtering has been removed from fetchTransactionData
-    const transactions = await fetchTransactionData(fromDate, toDate);
+    // Directly use the Supabase client for fetching transactions to bypass any service abstraction issues
+    let query = supabase
+      .from('transactions')
+      .select('id, store_id, amount, transaction_date, customer_id, external_id, created_at, product_id')
+      .gte('transaction_date', fromDate)
+      .lte('transaction_date', toDate);
+    
+    // Apply store_id filter if needed
+    if (storeIds && storeIds.length > 0) {
+      console.log('Filtering by store IDs:', storeIds);
+      query = query.in('store_id', storeIds);
+    }
+    
+    const { data: transactions, error } = await query.order('transaction_date', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching transaction data for daily sales:', error);
+      throw error;
+    }
+    
+    console.log(`Fetched ${transactions?.length || 0} transactions for daily sales calculation`);
     
     if (!transactions || transactions.length === 0) {
       return [];
@@ -73,7 +91,22 @@ export const fetchDailySalesData = async (
  * A simple function to check if we can access any data
  */
 export const fetchTransactionCount = async () => {
-  return await getTransactionCount();
+  try {
+    // Direct Supabase query to bypass potential abstraction issues
+    const { count, error } = await supabase
+      .from('transactions')
+      .select('*', { count: 'exact', head: true });
+      
+    if (error) {
+      console.error('Error getting transaction count:', error);
+      throw error;
+    }
+    
+    return count || 0;
+  } catch (error) {
+    console.error('Exception in fetchTransactionCount:', error);
+    return 0; // Return 0 instead of throwing to avoid breaking the UI
+  }
 };
 
 /**
@@ -82,16 +115,31 @@ export const fetchTransactionCount = async () => {
  */
 export const fetchAvailableDataMonths = async (storeIds: string[] = []) => {
   try {
-    console.log('Fetching available data months');
+    console.log('Fetching available data months, storeIds:', storeIds);
     
-    // Use the transactionService to get all transactions
     // We'll just get the past 24 months to keep the query small
-    // We'll ignore storeIds for now to simplify
     const fromDate = format(new Date(new Date().setMonth(new Date().getMonth() - 24)), 'yyyy-MM-dd');
     const toDate = format(new Date(), 'yyyy-MM-dd');
     
-    // Note: storeIds filtering has been removed from fetchTransactionData
-    const transactions = await fetchTransactionData(fromDate, toDate);
+    // Direct Supabase query
+    let query = supabase
+      .from('transactions')
+      .select('transaction_date')
+      .gte('transaction_date', fromDate)
+      .lte('transaction_date', toDate);
+      
+    // Apply store_id filter if needed
+    if (storeIds && storeIds.length > 0) {
+      console.log('Filtering months by store IDs:', storeIds);
+      query = query.in('store_id', storeIds);
+    }
+    
+    const { data: transactions, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching transaction dates:', error);
+      throw error;
+    }
     
     if (!transactions || transactions.length === 0) {
       return [];
@@ -101,7 +149,7 @@ export const fetchAvailableDataMonths = async (storeIds: string[] = []) => {
     const uniqueMonths = new Set<string>();
     transactions.forEach(transaction => {
       const date = new Date(transaction.transaction_date);
-      const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       uniqueMonths.add(monthKey);
     });
     
@@ -111,7 +159,8 @@ export const fetchAvailableDataMonths = async (storeIds: string[] = []) => {
       return new Date(parseInt(year), parseInt(month) - 1, 1);
     }).sort((a, b) => a.getTime() - b.getTime());
     
-    console.log(`Found ${monthsWithData.length} months with data`);
+    console.log(`Found ${monthsWithData.length} months with data:`, 
+      monthsWithData.map(d => format(d, 'MMM yyyy')).join(', '));
     return monthsWithData;
   } catch (error) {
     console.error('Error fetching available data months:', error);

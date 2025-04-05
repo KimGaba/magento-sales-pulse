@@ -17,7 +17,7 @@ export const useConnectionTest = () => {
       
       console.log('Executing raw Supabase query...');
       
-      // Use a simpler query without table prefixes to avoid parsing issues
+      // Simple query to test basic connectivity
       const { data, error, status, statusText } = await supabase
         .from('transactions')
         .select('id')
@@ -87,7 +87,7 @@ export const useConnectionTest = () => {
       // Using direct URL string
       const supabaseURL = "https://vlkcnndgtarduplyedyp.supabase.co";
       
-      // Try a simple health check (don't use _http_response which doesn't exist)
+      // Try a simple health check by querying for a transaction
       const { data, error } = await supabase
         .from('transactions')
         .select('id')
@@ -113,7 +113,7 @@ export const useConnectionTest = () => {
                   name: 'Database Connection Test', 
                   status: 'error', 
                   message: 'Failed to connect to Supabase',
-                  details: `Status: ${response.status} ${response.statusText}.\nYou may need to temporarily disable RLS or create a new Supabase project.`
+                  details: `Status: ${response.status} ${response.statusText}.\nYou may need to temporarily disable RLS.`
                 }
               : r
           ));
@@ -154,7 +154,7 @@ export const useConnectionTest = () => {
               name: 'Database Connection Test', 
               status: 'error', 
               message: `Exception: ${error instanceof Error ? error.message : String(error)}`,
-              details: `${errorDetails}\nYou may need to temporarily disable RLS or create a new Supabase project.`
+              details: `${errorDetails}\nYou may need to temporarily disable RLS.`
             }
           : r
       ));
@@ -188,7 +188,7 @@ export const useConnectionTest = () => {
         } else if (isTableMissing) {
           userGuidance = 'The transactions table does not exist in your database. You may need to create it.';
         } else {
-          userGuidance = 'You may need to check your Supabase project settings or create a new project.';
+          userGuidance = 'You may need to check your Supabase project settings.';
         }
         
         const errorDetails = JSON.stringify({
@@ -235,7 +235,7 @@ export const useConnectionTest = () => {
               name: 'Table Existence Test', 
               status: 'error', 
               message: `Exception: ${error instanceof Error ? error.message : String(error)}`,
-              details: `${errorDetails}\nYou may need to temporarily disable RLS or create a new Supabase project.`
+              details: `${errorDetails}\nYou may need to temporarily disable RLS.`
             }
           : r
       ));
