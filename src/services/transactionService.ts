@@ -106,7 +106,7 @@ export const fetchTransactionData = async (
       query = query.lte('transaction_date', toDate);
     }
     
-    // Apply store filter if provided
+    // Apply store filter if provided and not empty
     if (storeIds && storeIds.length > 0) {
       query = query.in('store_id', storeIds);
     }

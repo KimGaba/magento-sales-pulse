@@ -11,7 +11,7 @@ export const useDatabaseTests = () => {
 
   // Initialize Supabase info
   useState(() => {
-    const url = "https://vlkcnndgtarduplyedyp.supabase.co";
+    const url = supabase.supabaseUrl;
     setSupabaseInfo(`Connected to: ${url}`);
   });
 
@@ -172,6 +172,7 @@ export const useDatabaseTests = () => {
       const toDate = new Date().toISOString().split('T')[0];
       
       console.log(`Fetching transactions from ${fromDate} to ${toDate}...`);
+      // Don't pass storeIds, making it optional
       const transactions = await fetchTransactionData(fromDate, toDate);
       console.log(`Retrieved ${transactions.length} transactions`);
       
