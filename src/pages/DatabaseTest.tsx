@@ -234,10 +234,10 @@ const DatabaseTest = () => {
         message: 'Checking if transactions table exists...' 
       }]);
       
-      // Use a raw query approach rather than the typed client for schema queries
+      // Use the custom RPC function we created to check if the table exists
       const { data, error } = await supabase.rpc('check_table_exists', {
         table_name: 'transactions'
-      });
+      } as any); // Use type assertion to bypass TypeScript error until types are updated
       
       console.log('Table existence check:', { data, error });
       

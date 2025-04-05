@@ -260,6 +260,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_table_exists: {
+        Args: {
+          table_name: string
+        }
+        Returns: boolean
+      }
       delete_store_data: {
         Args: {
           target_store_id: string
