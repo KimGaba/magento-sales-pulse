@@ -225,10 +225,9 @@ const DatabaseTest = () => {
         message: 'Checking if transactions table exists...' 
       }]);
       
-      const { data, error } = await supabase.rpc<boolean, { table_name: string }>(
-        'check_table_exists',
-        { table_name: 'transactions' }
-      );
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*', { count: 'exact', head: true });
       
       console.log('Table existence check:', { data, error });
       
@@ -244,7 +243,7 @@ const DatabaseTest = () => {
             : r
         ));
       } else {
-        const tableExists = data;
+        const tableExists = data !== null;
         setResults(prev => prev.map(r => 
           r.name === 'Table Existence Test' 
             ? { 
