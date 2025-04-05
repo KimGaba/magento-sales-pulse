@@ -22,7 +22,7 @@ const DatabaseTest = () => {
     if (errorResults.length > 0) {
       toast({
         title: "Database Connection Issues",
-        description: "There are errors with your database connection. You may need to create a new Supabase project.",
+        description: "There are errors with your database connection. Try temporarily disabling RLS or creating a new Supabase project.",
         variant: "destructive"
       });
     }

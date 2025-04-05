@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, RefreshCw, ExternalLink } from 'lucide-react';
+import { AlertCircle, RefreshCw, ExternalLink, ShieldOff } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface TestRunnerProps {
@@ -21,6 +21,14 @@ const TestRunner = ({ isRunning, onRunAllTests, onCheckTableExistence, supabaseI
     });
   };
   
+  const handleDisableRLS = () => {
+    window.open('https://supabase.com/dashboard/project/vlkcnndgtarduplyedyp/auth/policies', '_blank');
+    toast({
+      title: "Opening RLS Policy Management",
+      description: "You can temporarily disable RLS on tables to test connectivity without authentication",
+    });
+  };
+  
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -35,9 +43,14 @@ const TestRunner = ({ isRunning, onRunAllTests, onCheckTableExistence, supabaseI
               <h4 className="font-medium text-amber-700">Connection Information</h4>
               <p className="text-sm text-amber-600 mt-1">{supabaseInfo}</p>
               <p className="text-sm text-amber-600 mt-1">
-                If you're experiencing 401 or 404 errors, your Supabase project may be inactive or the tables may not exist.
-                Consider creating a new Supabase project and updating the credentials.
+                If you're experiencing 401 or 404 errors, your project may have RLS (Row Level Security) enabled, 
+                which prevents unauthenticated access. You can:
               </p>
+              <ul className="list-disc pl-5 text-sm text-amber-600 mt-1">
+                <li>Temporarily disable RLS for testing purposes</li>
+                <li>Create a new Supabase project with more permissive settings</li>
+                <li>Check that your tables actually exist in your project</li>
+              </ul>
             </div>
           </div>
         </div>
@@ -68,6 +81,14 @@ const TestRunner = ({ isRunning, onRunAllTests, onCheckTableExistence, supabaseI
           >
             <ExternalLink className="w-4 h-4 mr-1" />
             Create New Supabase Project
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={handleDisableRLS}
+            className="flex items-center"
+          >
+            <ShieldOff className="w-4 h-4 mr-1" />
+            Manage RLS Policies
           </Button>
         </div>
       </CardContent>

@@ -17,7 +17,7 @@ export const useConnectionTest = () => {
       
       console.log('Executing raw Supabase query...');
       
-      // Test direct query capability - using proper select syntax
+      // Use a simpler query without table prefixes to avoid parsing issues
       const { data, error, status, statusText } = await supabase
         .from('transactions')
         .select('id')
@@ -84,28 +84,54 @@ export const useConnectionTest = () => {
       
       console.log('Testing basic database connectivity...');
       
-      // Using direct URL string instead of accessing supabaseUrl property
+      // Using direct URL string
       const supabaseURL = "https://vlkcnndgtarduplyedyp.supabase.co";
-      const connectionTestResult = await fetch(`${supabaseURL}/rest/v1/`);
       
-      console.log('Connection test response:', {
-        status: connectionTestResult.status,
-        statusText: connectionTestResult.statusText,
-        ok: connectionTestResult.ok
-      });
+      // Try a simple health check
+      const { data, error } = await supabase
+        .from('_http_response')
+        .select('*')
+        .limit(1)
+        .maybeSingle();
+        
+      console.log('Connection test response:', { data, error });
       
-      if (!connectionTestResult.ok) {
-        setConnectionResults(prev => prev.map(r => 
-          r.name === 'Database Connection Test' 
-            ? { 
-                name: 'Database Connection Test', 
-                status: 'error', 
-                message: 'Failed to connect to Supabase',
-                details: `Status: ${connectionTestResult.status} ${connectionTestResult.statusText}`
-              }
-            : r
-        ));
+      // Fallback to fetch API if the above fails
+      if (error) {
+        // Try a direct health check using fetch
+        const response = await fetch(`${supabaseURL}/rest/v1/`);
+        
+        console.log('Health check response:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok
+        });
+        
+        if (!response.ok) {
+          setConnectionResults(prev => prev.map(r => 
+            r.name === 'Database Connection Test' 
+              ? { 
+                  name: 'Database Connection Test', 
+                  status: 'error', 
+                  message: 'Failed to connect to Supabase',
+                  details: `Status: ${response.status} ${response.statusText}.\nYou may need to temporarily disable RLS or create a new Supabase project.`
+                }
+              : r
+          ));
+        } else {
+          setConnectionResults(prev => prev.map(r => 
+            r.name === 'Database Connection Test' 
+              ? { 
+                  name: 'Database Connection Test', 
+                  status: 'success', 
+                  message: 'Successfully connected to Supabase',
+                  details: `Connected to: ${supabaseURL}`
+                }
+              : r
+          ));
+        }
       } else {
+        // First query succeeded
         setConnectionResults(prev => prev.map(r => 
           r.name === 'Database Connection Test' 
             ? { 
@@ -129,7 +155,7 @@ export const useConnectionTest = () => {
               name: 'Database Connection Test', 
               status: 'error', 
               message: `Exception: ${error instanceof Error ? error.message : String(error)}`,
-              details: errorDetails
+              details: `${errorDetails}\nYou may need to temporarily disable RLS or create a new Supabase project.`
             }
           : r
       ));
@@ -144,7 +170,7 @@ export const useConnectionTest = () => {
         message: 'Checking if transactions table exists...' 
       }]);
       
-      // Use safer direct query without RPC function
+      // Use a simpler query to check if the table exists
       const { data, error } = await supabase
         .from('transactions')
         .select('id')
@@ -153,10 +179,24 @@ export const useConnectionTest = () => {
       console.log('Table existence check:', { data, error });
       
       if (error) {
+        // Check if the error is due to RLS or table not existing
+        const isRLSIssue = error.code === 'PGRST301' || error.message.includes('permission denied');
+        const isTableMissing = error.code === 'PGRST204' || error.message.includes('does not exist');
+        
+        let userGuidance = '';
+        if (isRLSIssue) {
+          userGuidance = 'This may be due to Row Level Security (RLS) policies. Consider temporarily disabling RLS for testing.';
+        } else if (isTableMissing) {
+          userGuidance = 'The transactions table does not exist in your database. You may need to create it.';
+        } else {
+          userGuidance = 'You may need to check your Supabase project settings or create a new project.';
+        }
+        
         const errorDetails = JSON.stringify({
           message: error.message,
           code: error.code,
-          details: error.details || {}
+          details: error.details || {},
+          guidance: userGuidance
         }, null, 2);
         
         setConnectionResults(prev => prev.map(r => 
@@ -196,7 +236,7 @@ export const useConnectionTest = () => {
               name: 'Table Existence Test', 
               status: 'error', 
               message: `Exception: ${error instanceof Error ? error.message : String(error)}`,
-              details: errorDetails
+              details: `${errorDetails}\nYou may need to temporarily disable RLS or create a new Supabase project.`
             }
           : r
       ));
