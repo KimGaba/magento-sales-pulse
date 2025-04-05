@@ -35,10 +35,10 @@ export const getTransactionCount = async (): Promise<number> => {
   try {
     console.log('Getting transaction count...');
     
-    // Use transactions.id to be explicit about the column we're selecting
+    // Use count parameter instead of selecting a specific column with count
     const { count, error } = await supabase
       .from('transactions')
-      .select('transactions.id', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true });
     
     if (error) {
       console.error('Error getting transaction count:', error);
@@ -63,13 +63,13 @@ export const fetchTransactionData = async (
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate}`);
     
-    // Be explicit with table.column naming to avoid ambiguity
+    // Use simple column names without table prefix
     const { data, error } = await supabase
       .from('transactions')
-      .select('transactions.id, transactions.store_id, transactions.amount, transactions.transaction_date, transactions.customer_id, transactions.external_id, transactions.created_at, transactions.product_id')
-      .gte('transactions.transaction_date', fromDate)
-      .lte('transactions.transaction_date', toDate)
-      .order('transactions.transaction_date', { ascending: false });
+      .select('id, store_id, amount, transaction_date, customer_id, external_id, created_at, product_id')
+      .gte('transaction_date', fromDate)
+      .lte('transaction_date', toDate)
+      .order('transaction_date', { ascending: false });
     
     if (error) {
       console.error('Error fetching transaction data:', error);
@@ -97,18 +97,18 @@ export const fetchStoreTransactionData = async (
     
     let query = supabase
       .from('transactions')
-      .select('transactions.id, transactions.store_id, transactions.amount, transactions.transaction_date, transactions.customer_id, transactions.external_id, transactions.created_at, transactions.product_id');
+      .select('id, store_id, amount, transaction_date, customer_id, external_id, created_at, product_id');
     
     // Apply date range filters
-    query = query.gte('transactions.transaction_date', fromDate)
-                .lte('transactions.transaction_date', toDate);
+    query = query.gte('transaction_date', fromDate)
+                .lte('transaction_date', toDate);
     
     // Apply store_id filter if needed
     if (storeIds && storeIds.length > 0) {
-      query = query.in('transactions.store_id', storeIds);
+      query = query.in('store_id', storeIds);
     }
     
-    const { data, error } = await query.order('transactions.transaction_date', { ascending: false });
+    const { data, error } = await query.order('transaction_date', { ascending: false });
     
     if (error) {
       console.error('Error fetching transaction data for stores:', error);

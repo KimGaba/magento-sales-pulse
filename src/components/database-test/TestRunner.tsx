@@ -2,8 +2,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, RefreshCw } from 'lucide-react';
-import { TestResult } from '@/types/database';
+import { AlertCircle, RefreshCw, ExternalLink } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface TestRunnerProps {
   isRunning: boolean;
@@ -13,11 +13,19 @@ interface TestRunnerProps {
 }
 
 const TestRunner = ({ isRunning, onRunAllTests, onCheckTableExistence, supabaseInfo }: TestRunnerProps) => {
+  const handleCreateProject = () => {
+    window.open('https://supabase.com/dashboard/projects', '_blank');
+    toast({
+      title: "Opening Supabase Dashboard",
+      description: "After creating a new project, update the credentials in your application",
+    });
+  };
+  
   return (
     <Card className="mb-6">
       <CardHeader>
-        <CardTitle>Test Options</CardTitle>
-        <CardDescription>Check if your database connection is working properly</CardDescription>
+        <CardTitle>Database Connection Tests</CardTitle>
+        <CardDescription>Check if your Supabase database connection is working properly</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="p-4 mb-4 border rounded-md bg-amber-50 border-amber-200">
@@ -27,7 +35,8 @@ const TestRunner = ({ isRunning, onRunAllTests, onCheckTableExistence, supabaseI
               <h4 className="font-medium text-amber-700">Connection Information</h4>
               <p className="text-sm text-amber-600 mt-1">{supabaseInfo}</p>
               <p className="text-sm text-amber-600 mt-1">
-                If you're experiencing connection issues, you may need to create a new Supabase project.
+                If you're experiencing 401 or 404 errors, your Supabase project may be inactive or the tables may not exist.
+                Consider creating a new Supabase project and updating the credentials.
               </p>
             </div>
           </div>
@@ -54,8 +63,10 @@ const TestRunner = ({ isRunning, onRunAllTests, onCheckTableExistence, supabaseI
           </Button>
           <Button 
             variant="outline"
-            onClick={() => window.open('https://supabase.com/dashboard/projects', '_blank')}
+            onClick={handleCreateProject}
+            className="flex items-center"
           >
+            <ExternalLink className="w-4 h-4 mr-1" />
             Create New Supabase Project
           </Button>
         </div>

@@ -17,10 +17,10 @@ export const useConnectionTest = () => {
       
       console.log('Executing raw Supabase query...');
       
-      // Test direct query capability
+      // Test direct query capability - using proper select syntax
       const { data, error, status, statusText } = await supabase
         .from('transactions')
-        .select('transactions.id')
+        .select('id')
         .limit(1);
       
       console.log('Raw query response:', { data, error, status, statusText });
@@ -84,8 +84,8 @@ export const useConnectionTest = () => {
       
       console.log('Testing basic database connectivity...');
       
-      // Check if we can connect using the Supabase URL
-      const supabaseURL = supabase.supabaseUrl;
+      // Using direct URL string instead of accessing supabaseUrl property
+      const supabaseURL = "https://vlkcnndgtarduplyedyp.supabase.co";
       const connectionTestResult = await fetch(`${supabaseURL}/rest/v1/`);
       
       console.log('Connection test response:', {
@@ -144,10 +144,11 @@ export const useConnectionTest = () => {
         message: 'Checking if transactions table exists...' 
       }]);
       
-      // Directly check if the table exists using a custom function
-      const { data, error } = await supabase.rpc('check_table_exists', {
-        table_name: 'transactions'
-      });
+      // Use safer direct query without RPC function
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('id')
+        .limit(1);
       
       console.log('Table existence check:', { data, error });
       
@@ -169,7 +170,7 @@ export const useConnectionTest = () => {
             : r
         ));
       } else {
-        const tableExists = data === true;
+        const tableExists = true; // If we got here without error, table exists
         setConnectionResults(prev => prev.map(r => 
           r.name === 'Table Existence Test' 
             ? { 

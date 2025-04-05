@@ -1,9 +1,11 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { useDatabaseTests } from '@/hooks/database-tests/useDatabaseTests';
 import TestRunner from '@/components/database-test/TestRunner';
 import TestResultsList from '@/components/database-test/TestResultsList';
+import { toast } from '@/hooks/use-toast';
+import { Toaster } from '@/components/ui/toaster';
 
 const DatabaseTest = () => {
   const { 
@@ -13,6 +15,18 @@ const DatabaseTest = () => {
     runAllTests, 
     testTableExistence 
   } = useDatabaseTests();
+
+  useEffect(() => {
+    // Check for error results and show a toast if there are any
+    const errorResults = results.filter(r => r.status === 'error');
+    if (errorResults.length > 0) {
+      toast({
+        title: "Database Connection Issues",
+        description: "There are errors with your database connection. You may need to create a new Supabase project.",
+        variant: "destructive"
+      });
+    }
+  }, [results]);
 
   return (
     <Layout>
@@ -32,6 +46,7 @@ const DatabaseTest = () => {
       />
       
       <TestResultsList results={results} />
+      <Toaster />
     </Layout>
   );
 };
