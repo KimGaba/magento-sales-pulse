@@ -38,9 +38,10 @@ export const useDatabaseTests = () => {
       
       console.log('Executing raw Supabase query...');
       
+      // Avoid using any field that might be in multiple tables
       const { data, error, status, statusText } = await supabase
         .from('transactions')
-        .select('count(*)', { count: 'exact', head: true });
+        .select('id', { count: 'exact', head: true });
       
       console.log('Raw query response:', { data, error, status, statusText });
       
@@ -216,9 +217,10 @@ export const useDatabaseTests = () => {
         message: 'Checking if transactions table exists...' 
       }]);
       
+      // Use explicit id field to avoid store_id ambiguity
       const { data, error } = await supabase
         .from('transactions')
-        .select('*', { count: 'exact', head: true });
+        .select('id', { count: 'exact', head: true });
       
       console.log('Table existence check:', { data, error });
       
