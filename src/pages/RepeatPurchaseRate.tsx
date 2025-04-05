@@ -11,7 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import RepeatRateCard from '@/components/repeat-purchase/RepeatRateCard';
 import CustomersPieChart from '@/components/repeat-purchase/CustomersPieChart';
 import TopCustomersTable from '@/components/repeat-purchase/TopCustomersTable';
-import { calculateRepeatPurchaseRate } from '@/utils/repeatPurchaseCalculator';
+import RepeatPurchaseTrendChart from '@/components/repeat-purchase/RepeatPurchaseTrendChart';
+import { calculateRepeatPurchaseRate, calculateMonthlyRepeatRates } from '@/utils/repeatPurchaseCalculator';
 import { Transaction } from '@/types/database';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from '@/hooks/use-toast';
@@ -24,10 +25,33 @@ const RepeatPurchaseRate = () => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   
+  // Calculate dates for the long-term data (24 months)
   const today = new Date();
+  const twoYearsAgo = format(subMonths(today, 24), 'yyyy-MM-dd');
   const fromDate = format(subMonths(today, parseInt(selectedMonths)), 'yyyy-MM-dd');
   const toDate = format(today, 'yyyy-MM-dd');
 
+  // Main query for all transaction data (we'll use this for the trend chart)
+  const { data: allTransactionsData, isLoading: isAllDataLoading, error: allDataError } = useQuery({
+    queryKey: ['all-transactions', twoYearsAgo, toDate],
+    queryFn: async () => {
+      try {
+        const result = await fetchTransactionData(twoYearsAgo, toDate);
+        return result;
+      } catch (fetchError) {
+        console.error('Error in transaction query:', fetchError);
+        toast({
+          title: "Error loading data",
+          description: "Failed to load all transaction data. Please try again.",
+          variant: "destructive"
+        });
+        return [];
+      }
+    },
+    retry: 1,
+  });
+
+  // Query for selected period data (for current view)
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['transactions', fromDate, toDate],
     queryFn: async () => {
@@ -49,6 +73,7 @@ const RepeatPurchaseRate = () => {
 
   // Ensure we always have an array of transactions
   const transactions: Transaction[] = data || [];
+  const allTransactions: Transaction[] = allTransactionsData || [];
   
   const currentPeriodData = calculateRepeatPurchaseRate(
     transactions as any, // Type casting here to satisfy the utility function
@@ -61,6 +86,9 @@ const RepeatPurchaseRate = () => {
   ];
   
   const tableDescription = `${t.months3.toLowerCase().replace('sidste', '').trim()} ${t.months6.split(' ')[1].toLowerCase()}`;
+  
+  // Calculate monthly trend data
+  const monthlyTrendData = calculateMonthlyRepeatRates(allTransactions, 12);
   
   const handleRetry = () => {
     refetch();
@@ -146,6 +174,16 @@ const RepeatPurchaseRate = () => {
           )}
         </CardContent>
       </Card>
+      
+      {!isAllDataLoading && !allDataError && allTransactions?.length > 0 && (
+        <div className="mb-6">
+          <RepeatPurchaseTrendChart 
+            data={monthlyTrendData}
+            title={t.trendTitle || "Genkøbsfrekvens Trend"}
+            description={t.trendDescription || "Månedlig genkøbsfrekvens beregnet over 12 måneder periode"}
+          />
+        </div>
+      )}
       
       {!isLoading && !error && transactions?.length > 0 && currentPeriodData.topCustomers.length > 0 && (
         <TopCustomersTable

@@ -113,3 +113,78 @@ export const calculateRepeatPurchaseRate = (
     topCustomers
   };
 };
+
+// New function to calculate monthly repeat purchase rates
+export const calculateMonthlyRepeatRates = (
+  transactions: Transaction[] | undefined,
+  numberOfMonths: number = 12
+): { month: string; displayMonth: string; repeatRate: number }[] => {
+  if (!transactions || transactions.length === 0) {
+    return [];
+  }
+
+  // Sort transactions by date (oldest first)
+  const sortedTransactions = [...transactions].sort(
+    (a, b) => new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime()
+  );
+
+  // Get date range
+  const oldestDate = new Date(sortedTransactions[0].transaction_date);
+  const newestDate = new Date(sortedTransactions[sortedTransactions.length - 1].transaction_date);
+  const today = new Date();
+
+  // Determine how many months we can show (minimum of 3 months of data needed)
+  const monthsAvailable = Math.floor(
+    (newestDate.getTime() - oldestDate.getTime()) / (30 * 24 * 60 * 60 * 1000)
+  );
+  
+  if (monthsAvailable < 3) {
+    return [];
+  }
+
+  // Calculate how many months to show in the chart (max 24 months)
+  const monthsToShow = Math.min(24, monthsAvailable);
+  const results = [];
+
+  // For each month, calculate the repeat purchase rate for the preceding 12 months
+  for (let i = 0; i < monthsToShow; i++) {
+    const endDate = new Date(newestDate);
+    endDate.setMonth(endDate.getMonth() - i);
+    
+    const startDate = new Date(endDate);
+    startDate.setMonth(startDate.getMonth() - numberOfMonths);
+
+    // Filter transactions for this 12-month period
+    const periodTransactions = sortedTransactions.filter(tx => {
+      const txDate = new Date(tx.transaction_date);
+      return txDate >= startDate && txDate <= endDate;
+    });
+
+    if (periodTransactions.length > 0) {
+      // Group by customer to calculate repeat purchase rate
+      const customerPurchases: Record<string, number> = {};
+      
+      periodTransactions.forEach(tx => {
+        const customerId = tx.customer_id || 'unknown';
+        customerPurchases[customerId] = (customerPurchases[customerId] || 0) + 1;
+      });
+      
+      const totalCustomers = Object.keys(customerPurchases).length;
+      const repeatCustomers = Object.values(customerPurchases).filter(count => count > 1).length;
+      const repeatRate = totalCustomers > 0 ? (repeatCustomers / totalCustomers) * 100 : 0;
+      
+      // Format the month for display
+      const monthISO = format(endDate, 'yyyy-MM');
+      const displayMonth = format(endDate, 'MMM yyyy');
+      
+      results.push({
+        month: monthISO,
+        displayMonth,
+        repeatRate
+      });
+    }
+  }
+
+  // Sort by date (oldest first)
+  return results.reverse();
+};
