@@ -86,13 +86,12 @@ export const getTransactionCount = async (): Promise<number> => {
  */
 export const fetchTransactionData = async (
   fromDate: string, 
-  toDate: string,
-  storeIds: string[] = []
+  toDate: string
 ): Promise<Transaction[]> => {
   try {
     console.log(`Simple fetch: transactions from ${fromDate} to ${toDate}`);
     
-    // Start with basic query without any table aliases
+    // Start with basic query without any table aliases or filters that might cause ambiguity
     let query = supabase
       .from('transactions')
       .select('*');
@@ -104,11 +103,6 @@ export const fetchTransactionData = async (
     
     if (toDate) {
       query = query.lte('transaction_date', toDate);
-    }
-    
-    // Apply store filter if provided and not empty
-    if (storeIds && storeIds.length > 0) {
-      query = query.in('transactions.store_id', storeIds); // Explicitly prefix with table name
     }
     
     // Execute the query
