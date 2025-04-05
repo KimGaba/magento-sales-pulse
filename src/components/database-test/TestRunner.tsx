@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle, RefreshCw, ExternalLink, ShieldOff } from 'lucide-react';
+import { AlertCircle, RefreshCw, ShieldOff } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface TestRunnerProps {
@@ -13,14 +13,6 @@ interface TestRunnerProps {
 }
 
 const TestRunner = ({ isRunning, onRunAllTests, onCheckTableExistence, supabaseInfo }: TestRunnerProps) => {
-  const handleCreateProject = () => {
-    window.open('https://supabase.com/dashboard/projects', '_blank');
-    toast({
-      title: "Opening Supabase Dashboard",
-      description: "After creating a new project, update the credentials in your application",
-    });
-  };
-  
   const handleDisableRLS = () => {
     window.open('https://supabase.com/dashboard/project/vlkcnndgtarduplyedyp/auth/policies', '_blank');
     toast({
@@ -48,7 +40,6 @@ const TestRunner = ({ isRunning, onRunAllTests, onCheckTableExistence, supabaseI
               </p>
               <ul className="list-disc pl-5 text-sm text-amber-600 mt-1">
                 <li>Temporarily disable RLS for testing purposes</li>
-                <li>Create a new Supabase project with more permissive settings</li>
                 <li>Check that your tables actually exist in your project</li>
               </ul>
             </div>
@@ -73,14 +64,6 @@ const TestRunner = ({ isRunning, onRunAllTests, onCheckTableExistence, supabaseI
             variant="outline"
           >
             Check Table Existence
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={handleCreateProject}
-            className="flex items-center"
-          >
-            <ExternalLink className="w-4 h-4 mr-1" />
-            Create New Supabase Project
           </Button>
           <Button 
             variant="outline"
