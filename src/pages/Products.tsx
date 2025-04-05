@@ -61,6 +61,7 @@ const Products = () => {
           sold: Math.floor(Math.random() * 150), // Placeholder for now
           trend: Math.random() > 0.5 ? 'up' : 'down', // Placeholder for now
           image: product.image_url || '/placeholder.svg',
+          storeId: product.store_id,
           storeView: "DK Website", // Placeholder for now
           customerGroup: "Retail" // Placeholder for now
         }));
