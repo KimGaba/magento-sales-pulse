@@ -21,8 +21,8 @@ const DatabaseTest = () => {
 
   // Get Supabase configuration info to verify it's correctly set up
   useEffect(() => {
-    // Extract and display only the base URL (not the full URL with key)
-    const url = supabase.supabaseUrl;
+    // Use the URL from the client config file which is publicly accessible
+    const url = "https://vlkcnndgtarduplyedyp.supabase.co";
     setSupabaseInfo(`Connected to: ${url}`);
   }, []);
 
@@ -234,12 +234,10 @@ const DatabaseTest = () => {
         message: 'Checking if transactions table exists...' 
       }]);
       
-      // Query the information schema to check if the table exists
-      const { data, error } = await supabase
-        .from('information_schema.tables')
-        .select('table_name')
-        .eq('table_schema', 'public')
-        .eq('table_name', 'transactions');
+      // Use a raw query approach rather than the typed client for schema queries
+      const { data, error } = await supabase.rpc('check_table_exists', {
+        table_name: 'transactions'
+      });
       
       console.log('Table existence check:', { data, error });
       
@@ -255,7 +253,7 @@ const DatabaseTest = () => {
             : r
         ));
       } else {
-        const tableExists = data && data.length > 0;
+        const tableExists = data;
         setResults(prev => prev.map(r => 
           r.name === 'Table Existence Test' 
             ? { 
@@ -264,7 +262,7 @@ const DatabaseTest = () => {
                 message: tableExists 
                   ? 'Transactions table exists' 
                   : 'Transactions table not found',
-                details: `Query returned ${data?.length || 0} results`
+                details: `Query result: ${JSON.stringify(data)}`
               }
             : r
         ));
