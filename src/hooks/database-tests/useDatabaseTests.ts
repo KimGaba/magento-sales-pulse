@@ -25,7 +25,6 @@ export const useDatabaseTests = () => {
 
   // Initialize Supabase info
   useEffect(() => {
-    // Use the URL string directly instead of the protected property
     const url = "https://vlkcnndgtarduplyedyp.supabase.co";
     setSupabaseInfo(`Connected to: ${url}`);
   }, []);

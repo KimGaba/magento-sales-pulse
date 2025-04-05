@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format, subMonths } from 'date-fns';
 import Layout from '@/components/layout/Layout';
@@ -12,7 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import RepeatRateCard from '@/components/repeat-purchase/RepeatRateCard';
 import CustomersPieChart from '@/components/repeat-purchase/CustomersPieChart';
 import TopCustomersTable from '@/components/repeat-purchase/TopCustomersTable';
-import { calculateRepeatPurchaseRate, Transaction } from '@/utils/repeatPurchaseCalculator';
+import { calculateRepeatPurchaseRate } from '@/utils/repeatPurchaseCalculator';
+import { Transaction } from '@/types/database';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from '@/components/ui/use-toast';
 
@@ -31,7 +31,6 @@ const RepeatPurchaseRate = () => {
     queryKey: ['transactions', fromDate, toDate],
     queryFn: async () => {
       try {
-        // Use the updated fetchTransactionData without storeIds parameter
         const result = await fetchTransactionData(fromDate, toDate);
         return result;
       } catch (fetchError) {
@@ -51,7 +50,7 @@ const RepeatPurchaseRate = () => {
   const transactions: Transaction[] = data || [];
   
   const currentPeriodData = calculateRepeatPurchaseRate(
-    transactions, 
+    transactions as any, // Type casting here to satisfy the utility function
     parseInt(activeTab)
   );
   

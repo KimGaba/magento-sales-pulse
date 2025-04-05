@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { TestResult } from '@/types/database';
+import { TestResult, Transaction } from '@/types/database';
 import { getTransactionCount, fetchTransactionData } from '@/services/transactionService';
 
 export const useTransactionTest = () => {

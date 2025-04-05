@@ -62,10 +62,10 @@ export const fetchTransactionData = async (
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate}`);
     
-    // Select only the specific fields we need, avoiding table name prefixes
+    // Explicitly select all fields we need, including store_id
     const { data, error } = await supabase
       .from('transactions')
-      .select('id, amount, transaction_date, customer_id, external_id, created_at')
+      .select('id, store_id, amount, transaction_date, customer_id, external_id, created_at, product_id')
       .gte('transaction_date', fromDate)
       .lte('transaction_date', toDate)
       .order('transaction_date', { ascending: false });
@@ -96,12 +96,15 @@ export const fetchStoreTransactionData = async (
     
     let query = supabase
       .from('transactions')
-      .select('id, amount, transaction_date, customer_id, external_id, created_at, transactions.store_id')
-      .gte('transaction_date', fromDate)
-      .lte('transaction_date', toDate);
+      .select('id, store_id, amount, transaction_date, customer_id, external_id, created_at, product_id');
     
+    // Apply date range filters
+    query = query.gte('transaction_date', fromDate)
+                .lte('transaction_date', toDate);
+    
+    // Apply store_id filter if needed
     if (storeIds && storeIds.length > 0) {
-      query = query.in('transactions.store_id', storeIds);
+      query = query.in('store_id', storeIds);
     }
     
     const { data, error } = await query.order('transaction_date', { ascending: false });
