@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   Legend
 } from 'recharts';
-import { format, subMonths, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 // Define the type for our data points
 interface MonthlyRepeatRateDataPoint {

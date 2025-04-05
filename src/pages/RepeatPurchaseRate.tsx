@@ -12,7 +12,7 @@ import RepeatRateCard from '@/components/repeat-purchase/RepeatRateCard';
 import CustomersPieChart from '@/components/repeat-purchase/CustomersPieChart';
 import TopCustomersTable from '@/components/repeat-purchase/TopCustomersTable';
 import RepeatPurchaseTrendChart from '@/components/repeat-purchase/RepeatPurchaseTrendChart';
-import { calculateRepeatPurchaseRate, calculateMonthlyRepeatRates } from '@/utils/repeatPurchaseCalculator';
+import { calculateRepeatPurchaseRate, calculateMonthlyRepeatRates, Transaction as CalcTransaction } from '@/utils/repeatPurchaseCalculator';
 import { Transaction } from '@/types/database';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from '@/hooks/use-toast';
@@ -76,7 +76,7 @@ const RepeatPurchaseRate = () => {
   const allTransactions: Transaction[] = allTransactionsData || [];
   
   const currentPeriodData = calculateRepeatPurchaseRate(
-    transactions as any, // Type casting here to satisfy the utility function
+    transactions as unknown as CalcTransaction[], // Type casting to match the calculator's expected type
     parseInt(selectedMonths)
   );
   
@@ -88,7 +88,7 @@ const RepeatPurchaseRate = () => {
   const tableDescription = `${t.months3.toLowerCase().replace('sidste', '').trim()} ${t.months6.split(' ')[1].toLowerCase()}`;
   
   // Calculate monthly trend data
-  const monthlyTrendData = calculateMonthlyRepeatRates(allTransactions, 12);
+  const monthlyTrendData = calculateMonthlyRepeatRates(allTransactions as unknown as CalcTransaction[], 12);
   
   const handleRetry = () => {
     refetch();
@@ -179,8 +179,8 @@ const RepeatPurchaseRate = () => {
         <div className="mb-6">
           <RepeatPurchaseTrendChart 
             data={monthlyTrendData}
-            title={t.trendTitle || "Genkøbsfrekvens Trend"}
-            description={t.trendDescription || "Månedlig genkøbsfrekvens beregnet over 12 måneder periode"}
+            title={t.trendChartTitle || "Genkøbsfrekvens Trend"}
+            description={t.trendChartDescription || "Månedlig genkøbsfrekvens beregnet over 12 måneder periode"}
           />
         </div>
       )}

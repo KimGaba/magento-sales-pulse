@@ -1,4 +1,3 @@
-
 // Type definitions
 export type RepeatPurchaseData = {
   period: number; // Number of months
@@ -17,7 +16,7 @@ export type RepeatPurchaseData = {
 
 // Define a type for transaction data
 export interface Transaction {
-  customer_id: string | null;
+  customer_id?: string | null;
   amount: number;
   transaction_date: string;
   [key: string]: any; // For any other properties
@@ -122,6 +121,9 @@ export const calculateMonthlyRepeatRates = (
   if (!transactions || transactions.length === 0) {
     return [];
   }
+
+  // Import format from date-fns
+  import { format } from 'date-fns';
 
   // Sort transactions by date (oldest first)
   const sortedTransactions = [...transactions].sort(

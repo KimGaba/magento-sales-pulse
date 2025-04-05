@@ -1,3 +1,4 @@
+
 const en = {
   common: {
     back: "Back",
@@ -155,7 +156,9 @@ const en = {
     purchaseCount: "Purchases",
     totalSpent: "Total Spent",
     lastPurchase: "Last Purchase",
-    viewDetails: "View Details"
+    viewDetails: "View Details",
+    trendChartTitle: "Repeat Purchase Trend",
+    trendChartDescription: "Monthly repeat purchase rate calculated over a 12-month period"
   }
 };
 
