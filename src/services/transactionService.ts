@@ -108,7 +108,7 @@ export const fetchTransactionData = async (
     
     // Apply store filter if provided and not empty
     if (storeIds && storeIds.length > 0) {
-      query = query.in('store_id', storeIds);
+      query = query.in('transactions.store_id', storeIds); // Explicitly prefix with table name
     }
     
     // Execute the query
