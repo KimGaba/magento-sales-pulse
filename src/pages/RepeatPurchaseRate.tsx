@@ -40,6 +40,11 @@ const RepeatPurchaseRate = () => {
   
   const tableDescription = `${t.months3.toLowerCase().replace('sidste', '').trim()} ${t.months6.split(' ')[1].toLowerCase()}`;
   
+  // Add debug logs to check data
+  console.log("Current monthly trend data:", monthlyTrendData);
+  console.log("Is all data loading:", isAllDataLoading);
+  console.log("All data error:", allDataError);
+  
   return (
     <Layout>
       <div className="mb-6 md:mb-8">
@@ -91,10 +96,11 @@ const RepeatPurchaseRate = () => {
         </CardContent>
       </Card>
       
-      {!isAllDataLoading && !allDataError && monthlyTrendData?.length > 0 && (
+      {/* TREND CHART SECTION - Even if not loading and has data */}
+      {!isLoading && !error && transactions?.length > 0 && (
         <div className="mb-6">
           <RepeatPurchaseTrendChart 
-            data={monthlyTrendData}
+            data={monthlyTrendData || []}
             title={t.trendChartTitle || "Genkøbsfrekvens Trend"}
             description={t.trendChartDescription || "Månedlig genkøbsfrekvens beregnet over 12 måneder periode"}
           />

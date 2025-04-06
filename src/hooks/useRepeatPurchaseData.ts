@@ -19,10 +19,12 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
     queryKey: ['all-transactions', twoYearsAgo, toDate],
     queryFn: async () => {
       try {
+        console.log(`Fetching all transactions from ${twoYearsAgo} to ${toDate} for trend chart`);
         const result = await fetchTransactionData(twoYearsAgo, toDate);
+        console.log(`Fetched ${result.length} transactions for trend data`);
         return result;
       } catch (fetchError) {
-        console.error('Error in transaction query:', fetchError);
+        console.error('Error in all transactions query:', fetchError);
         toast({
           title: "Error loading data",
           description: "Failed to load all transaction data. Please try again.",
@@ -39,7 +41,9 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
     queryKey: ['transactions', fromDate, toDate],
     queryFn: async () => {
       try {
+        console.log(`Fetching transactions from ${fromDate} to ${toDate} for current period`);
         const result = await fetchTransactionData(fromDate, toDate);
+        console.log(`Fetched ${result.length} transactions for current period`);
         return result;
       } catch (fetchError) {
         console.error('Error in transaction query:', fetchError);
@@ -66,6 +70,10 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
   
   // Calculate monthly trend data
   const monthlyTrendData = calculateMonthlyRepeatRates(allTransactions as unknown as CalcTransaction[], 12);
+  
+  // Log calculated data for debugging
+  console.log("Monthly trend data calculated:", monthlyTrendData);
+  console.log("Current period data calculated:", currentPeriodData);
 
   const handleRetry = () => {
     refetch();

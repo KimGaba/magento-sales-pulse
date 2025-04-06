@@ -31,6 +31,9 @@ const RepeatPurchaseTrendChart: React.FC<RepeatPurchaseTrendChartProps> = ({
   title,
   description
 }) => {
+  // Add console log to debug the data being passed to the chart
+  console.log("Trend chart data:", data);
+  
   if (!data || data.length === 0) {
     return (
       <Card>

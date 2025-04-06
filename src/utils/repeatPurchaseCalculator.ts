@@ -114,7 +114,7 @@ export const calculateRepeatPurchaseRate = (
   };
 };
 
-// New function to calculate monthly repeat purchase rates
+// Function to calculate monthly repeat purchase rates
 import { format } from 'date-fns';
 
 export const calculateMonthlyRepeatRates = (
@@ -122,6 +122,7 @@ export const calculateMonthlyRepeatRates = (
   numberOfMonths: number = 12
 ): { month: string; displayMonth: string; repeatRate: number }[] => {
   if (!transactions || transactions.length === 0) {
+    console.log("No transactions available for monthly rates calculation");
     return [];
   }
 
@@ -133,14 +134,19 @@ export const calculateMonthlyRepeatRates = (
   // Get date range
   const oldestDate = new Date(sortedTransactions[0].transaction_date);
   const newestDate = new Date(sortedTransactions[sortedTransactions.length - 1].transaction_date);
-  const today = new Date();
+  
+  console.log("Oldest transaction date:", oldestDate);
+  console.log("Newest transaction date:", newestDate);
 
   // Determine how many months we can show (minimum of 3 months of data needed)
   const monthsAvailable = Math.floor(
     (newestDate.getTime() - oldestDate.getTime()) / (30 * 24 * 60 * 60 * 1000)
   );
   
+  console.log("Months available in data:", monthsAvailable);
+  
   if (monthsAvailable < 3) {
+    console.log("Not enough months of data available (need at least 3)");
     return [];
   }
 
