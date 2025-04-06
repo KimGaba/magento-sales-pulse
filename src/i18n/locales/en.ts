@@ -65,7 +65,8 @@ const en = {
     dailySales: "Daily Sales",
     connect: "Connect",
     settings: "Settings",
-    repeatPurchase: "Repeat Purchase Rate"
+    repeatPurchase: "Repeat Purchase Rate",
+    basketOpeners: "Basket Openers"
   },
   languageSelector: {
     language: "Language",
@@ -158,6 +159,23 @@ const en = {
     viewDetails: "View Details",
     trendChartTitle: "Repeat Purchase Trend",
     trendChartDescription: "Monthly repeat purchase rate calculated over a 12-month period"
+  },
+  basketOpeners: {
+    title: "Basket Openers",
+    subtitle: "Analyze which products are most frequently added to cart first",
+    description: "Get insights into which products often start a purchase journey",
+    months3: "Last 3 months",
+    months6: "Last 6 months",
+    months12: "Last 12 months",
+    months18: "Last 18 months",
+    months24: "Last 24 months",
+    noData: "No data found for the selected period",
+    tableTitle: "Top Basket Openers",
+    tableDescription: "Products most frequently added to cart first",
+    productName: "Product",
+    openerScore: "Opener Score",
+    openerCount: "Times as Opener",
+    totalAppearances: "Total Appearances"
   }
 };
 

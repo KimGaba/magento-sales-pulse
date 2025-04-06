@@ -125,7 +125,7 @@ export const fetchBasketOpenerProducts = async (
   try {
     console.log(`Fetching basket opener products from ${fromDate} to ${toDate}`);
     
-    // Call the database function we created
+    // Using the rpc function we created in the database
     const { data, error } = await supabase
       .rpc('get_basket_opener_products', { 
         start_date: fromDate, 

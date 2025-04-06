@@ -69,7 +69,8 @@ const da = {
     dailySales: "Daglige Salg",
     connect: "Forbind",
     settings: "Indstillinger",
-    repeatPurchase: "Gentaget Købsrate"
+    repeatPurchase: "Gentaget Købsrate",
+    basketOpeners: "Kurv Åbnere"
   },
   languageSelector: {
     language: "Sprog",
@@ -163,6 +164,23 @@ const da = {
     viewDetails: "Se detaljer",
     trendChartTitle: "Genkøbsfrekvens Trend",
     trendChartDescription: "Månedlig genkøbsfrekvens beregnet over 12 måneder periode"
+  },
+  basketOpeners: {
+    title: "Kurv Åbnere",
+    subtitle: "Analyser hvilke produkter der oftest lægges først i kurven",
+    description: "Få indsigt i hvilke produkter der oftest starter en købsrejse",
+    months3: "Sidste 3 måneder",
+    months6: "Sidste 6 måneder",
+    months12: "Sidste 12 måneder",
+    months18: "Sidste 18 måneder",
+    months24: "Sidste 24 måneder",
+    noData: "Ingen data fundet for den valgte periode",
+    tableTitle: "Top Kurv Åbnere",
+    tableDescription: "Produkter der oftest lægges først i kurven",
+    productName: "Produkt",
+    openerScore: "Åbner Score",
+    openerCount: "Antal gange som åbner",
+    totalAppearances: "Total antal forekomster"
   }
 };
 
