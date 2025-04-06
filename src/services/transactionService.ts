@@ -120,20 +120,30 @@ export interface BasketOpenerProduct {
 export const fetchBasketOpenerProducts = async (
   fromDate: string,
   toDate: string,
-  storeIds: string[] = []
+  storeIds: string[] = [],
+  customerGroup: string = 'alle'
 ): Promise<BasketOpenerProduct[]> => {
   try {
     console.log(`Fetching basket opener products from ${fromDate} to ${toDate}`);
-    console.log('Store IDs filter:', storeIds);
+    console.log(`Store IDs filter:`, storeIds);
+    console.log(`Customer group filter: ${customerGroup}`);
     
     // Using the rpc function we created in the database
-    // Note: If our store IDs are UUIDs, we need to ensure we're passing them correctly
+    const params: Record<string, any> = { 
+      start_date: fromDate, 
+      end_date: toDate,
+      store_filter: storeIds.length > 0 ? storeIds : null
+    };
+    
+    // Add customer_group parameter if not 'alle'
+    if (customerGroup !== 'alle') {
+      params.customer_group = customerGroup;
+    }
+    
+    console.log('RPC params:', params);
+    
     const { data, error } = await supabase
-      .rpc('get_basket_opener_products', { 
-        start_date: fromDate, 
-        end_date: toDate,
-        store_filter: storeIds.length > 0 ? storeIds : null
-      });
+      .rpc('get_basket_opener_products', params);
     
     if (error) {
       console.error('Error fetching basket opener products:', error);
@@ -141,6 +151,14 @@ export const fetchBasketOpenerProducts = async (
     }
     
     console.log(`Fetched ${data?.length || 0} basket opener products`);
+    
+    // Add more detailed logging for debugging
+    if (data && data.length > 0) {
+      console.log('First few basket opener products:', data.slice(0, 3));
+    } else {
+      console.log('No basket opener products found matching the criteria');
+    }
+    
     return data || [];
   } catch (error) {
     console.error('Exception in fetchBasketOpenerProducts:', error);

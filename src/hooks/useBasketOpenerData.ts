@@ -43,7 +43,7 @@ export const useBasketOpenerData = (selectedMonths: string) => {
     queryFn: async () => {
       try {
         console.log(`Fetching basket opener products from ${fromDate} to ${toDate} with store filter: ${storeIds.length ? storeIds.join(', ') : 'all stores'}`);
-        const result = await fetchBasketOpenerProducts(fromDate, toDate, storeIds);
+        const result = await fetchBasketOpenerProducts(fromDate, toDate, storeIds, customerGroup);
         console.log(`Fetched ${result.length} basket opener products`);
         return result;
       } catch (fetchError) {
