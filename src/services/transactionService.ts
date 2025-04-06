@@ -124,8 +124,10 @@ export const fetchBasketOpenerProducts = async (
 ): Promise<BasketOpenerProduct[]> => {
   try {
     console.log(`Fetching basket opener products from ${fromDate} to ${toDate}`);
+    console.log('Store IDs filter:', storeIds);
     
     // Using the rpc function we created in the database
+    // Note: If our store IDs are UUIDs, we need to ensure we're passing them correctly
     const { data, error } = await supabase
       .rpc('get_basket_opener_products', { 
         start_date: fromDate, 
