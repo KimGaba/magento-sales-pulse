@@ -22,6 +22,8 @@ const BasketOpenerTable: React.FC<BasketOpenerTableProps> = ({
   description,
   labels
 }) => {
+  console.log("Rendering basket opener table with products:", products);
+  
   if (!products || products.length === 0) {
     return (
       <Card>
