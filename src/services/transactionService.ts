@@ -102,3 +102,46 @@ export const fetchStoreTransactionData = async (
 ): Promise<Transaction[]> => {
   return fetchTransactionData(fromDate, toDate, storeIds);
 };
+
+/**
+ * Interface for basket opener products
+ */
+export interface BasketOpenerProduct {
+  product_id: string;
+  product_name: string;
+  opener_count: number;
+  total_appearances: number;
+  opener_score: number;
+}
+
+/**
+ * Fetches basket opener products within a date range
+ */
+export const fetchBasketOpenerProducts = async (
+  fromDate: string,
+  toDate: string,
+  storeIds: string[] = []
+): Promise<BasketOpenerProduct[]> => {
+  try {
+    console.log(`Fetching basket opener products from ${fromDate} to ${toDate}`);
+    
+    // Call the database function we created
+    const { data, error } = await supabase
+      .rpc('get_basket_opener_products', { 
+        start_date: fromDate, 
+        end_date: toDate,
+        store_filter: storeIds.length > 0 ? storeIds : null
+      });
+    
+    if (error) {
+      console.error('Error fetching basket opener products:', error);
+      throw error;
+    }
+    
+    console.log(`Fetched ${data?.length || 0} basket opener products`);
+    return data || [];
+  } catch (error) {
+    console.error('Exception in fetchBasketOpenerProducts:', error);
+    throw error;
+  }
+};

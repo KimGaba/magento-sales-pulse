@@ -272,6 +272,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_basket_opener_products: {
+        Args: {
+          start_date: string
+          end_date: string
+          store_filter?: string[]
+        }
+        Returns: {
+          product_id: string
+          product_name: string
+          opener_count: number
+          total_appearances: number
+          opener_score: number
+        }[]
+      }
       user_has_store_access: {
         Args: {
           store_id: string

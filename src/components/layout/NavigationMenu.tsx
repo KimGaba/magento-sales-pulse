@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem 
 } from '@/components/ui/sidebar';
-import { BarChart, Calendar, Database, TrendingUp, RefreshCw, Activity } from 'lucide-react';
+import { BarChart, Calendar, Database, TrendingUp, RefreshCw, Activity, ShoppingCart } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 
 export const NavigationMenu: React.FC = () => {
@@ -35,6 +35,11 @@ export const NavigationMenu: React.FC = () => {
       title: translations.layout.repeatPurchase, 
       path: '/repeat-purchase', 
       icon: RefreshCw 
+    },
+    { 
+      title: translations.layout.basketOpeners || "Kurv Åbnere", 
+      path: '/basket-openers', 
+      icon: ShoppingCart 
     },
     { 
       title: translations.layout.dailySales, 

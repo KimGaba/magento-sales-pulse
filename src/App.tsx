@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -12,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Trends from "./pages/Trends";
 import RepeatPurchaseRate from "./pages/RepeatPurchaseRate";
+import BasketOpeners from "./pages/BasketOpeners";
 import DailySales from "./pages/DailySales";
 import Connect from "./pages/Connect";
 import Settings from "./pages/Settings";
@@ -37,6 +39,7 @@ function App() {
                   <Route path="/products" element={<AuthGuard><Products /></AuthGuard>} />
                   <Route path="/trends" element={<AuthGuard><Trends /></AuthGuard>} />
                   <Route path="/repeat-purchase" element={<AuthGuard><RepeatPurchaseRate /></AuthGuard>} />
+                  <Route path="/basket-openers" element={<AuthGuard><BasketOpeners /></AuthGuard>} />
                   <Route path="/daily-sales" element={<AuthGuard><DailySales /></AuthGuard>} />
                   <Route path="/connect" element={<AuthGuard><Connect /></AuthGuard>} />
                   <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
