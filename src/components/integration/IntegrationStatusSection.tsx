@@ -6,7 +6,9 @@ import { fetchMagentoConnections, triggerMagentoSync } from '@/services/magentoS
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { MagentoConnection } from '@/types/magento';
-import { CircleCheck, CircleX, RefreshCw, Clock, Download } from 'lucide-react';
+import { CircleCheck, CircleX, RefreshCw, Clock, Download, Database } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const IntegrationStatusSection = () => {
   const { user } = useAuth();
@@ -14,6 +16,7 @@ const IntegrationStatusSection = () => {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [fetchingChanges, setFetchingChanges] = useState(false);
+  const [useMockData, setUseMockData] = useState(false);
   
   useEffect(() => {
     if (user) {
@@ -39,7 +42,7 @@ const IntegrationStatusSection = () => {
   const handleManualSync = async () => {
     setSyncing(true);
     try {
-      await triggerMagentoSync();
+      await triggerMagentoSync('full', useMockData);
       toast.success("Synkronisering er igangsat. Det kan tage et par minutter at fuldføre.");
       
       // Refresh connections after a short delay to show updated status
@@ -57,7 +60,7 @@ const IntegrationStatusSection = () => {
   const handleFetchChanges = async () => {
     setFetchingChanges(true);
     try {
-      await triggerMagentoSync('changes_only');
+      await triggerMagentoSync('changes_only', useMockData);
       toast.success("Henter ændringer fra din butik. Dette vil blive opdateret om et øjeblik.");
       
       // Refresh connections after a short delay to show updated status
@@ -183,6 +186,26 @@ const IntegrationStatusSection = () => {
               </div>
             </div>
           ))}
+        </div>
+        
+        <div className="mt-6 border-t pt-4">
+          <div className="flex items-center space-x-2">
+            <Database className="h-4 w-4 text-gray-500" />
+            <span className="text-sm font-medium">Testtilstand</span>
+          </div>
+          <div className="flex items-center space-x-2 mt-2">
+            <Switch
+              id="useMockData"
+              checked={useMockData}
+              onCheckedChange={setUseMockData}
+            />
+            <Label htmlFor="useMockData" className="text-sm text-gray-600">
+              Brug testdata {useMockData ? '(aktiveret)' : '(deaktiveret)'}
+            </Label>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Aktivér denne indstilling for at teste integrationen med genereret data i stedet for at kalde Magento API.
+          </p>
         </div>
       </CardContent>
     </Card>

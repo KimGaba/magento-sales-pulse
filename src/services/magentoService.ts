@@ -14,15 +14,20 @@ export const addMagentoConnection = async (
   try {
     console.log(`Adding Magento connection for user ${userId} to store ${storeName}`);
     
+    // Normalize storeUrl to ensure it doesn't have a trailing slash
+    const normalizedUrl = storeUrl.endsWith('/')
+      ? storeUrl.slice(0, -1)
+      : storeUrl;
+    
     const { data, error } = await supabase
       .from('magento_connections')
       .insert([
         {
           user_id: userId,
-          store_url: storeUrl,
+          store_url: normalizedUrl,
           access_token: accessToken,
           store_name: storeName,
-          status: 'active'
+          status: 'pending'
         }
       ])
       .select();
@@ -88,14 +93,15 @@ export const updateMagentoConnection = async (connectionId: string, data: Partia
 /**
  * Manually triggers synchronization for Magento stores
  */
-export const triggerMagentoSync = async (syncType: 'full' | 'changes_only' = 'full') => {
+export const triggerMagentoSync = async (syncType: 'full' | 'changes_only' = 'full', useMock: boolean = false) => {
   try {
-    console.log(`Manually triggering Magento synchronization (type: ${syncType})`);
+    console.log(`Manually triggering Magento synchronization (type: ${syncType}, useMock: ${useMock})`);
     
     const { data, error } = await supabase.functions.invoke('magento-sync', {
       body: { 
         trigger: 'manual',
-        syncType: syncType
+        syncType: syncType,
+        useMock: useMock
       }
     });
     
@@ -109,5 +115,40 @@ export const triggerMagentoSync = async (syncType: 'full' | 'changes_only' = 'fu
   } catch (error) {
     console.error('Error triggering Magento sync:', error);
     throw error;
+  }
+};
+
+/**
+ * Tests a Magento connection by trying to fetch a small amount of data
+ */
+export const testMagentoConnection = async (storeUrl: string, accessToken: string) => {
+  try {
+    console.log(`Testing Magento connection to ${storeUrl}`);
+    
+    // We'll call the Magento API directly here to test the connection
+    // Or use a dedicated edge function for testing
+    
+    // Normalize storeUrl to ensure it doesn't have a trailing slash
+    const normalizedUrl = storeUrl.endsWith('/')
+      ? storeUrl.slice(0, -1)
+      : storeUrl;
+    
+    const { data, error } = await supabase.functions.invoke('magento-sync', {
+      body: { 
+        action: 'test_connection',
+        storeUrl: normalizedUrl,
+        accessToken: accessToken
+      }
+    });
+    
+    if (error) {
+      console.error('Error testing Magento connection:', error);
+      throw error;
+    }
+    
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error testing Magento connection:', error);
+    return { success: false, error: error.message };
   }
 };

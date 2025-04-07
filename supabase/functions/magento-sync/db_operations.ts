@@ -1,4 +1,3 @@
-
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.21.0";
 import { Database } from "../_shared/database_types.ts";
 
@@ -90,17 +89,17 @@ export async function processDailySalesData(salesData: any[], storeId: string) {
   }
 }
 
-// Store individual transactions
-export async function storeTransactions(salesData: any[], storeId: string) {
+// Store individual transactions from Magento orders
+export async function storeTransactions(ordersData: any[], storeId: string) {
   try {
     // For each order, create a transaction record
-    for (const order of salesData) {
+    for (const order of ordersData) {
       // Check if this transaction already exists (using external_id)
       const { data: existingTransaction, error: checkError } = await supabase
         .from('transactions')
         .select('*')
         .eq('store_id', storeId)
-        .eq('external_id', order.increment_id)
+        .eq('external_id', order.external_id)
         .maybeSingle();
         
       if (checkError) {
@@ -110,7 +109,7 @@ export async function storeTransactions(salesData: any[], storeId: string) {
       
       // Skip if transaction already exists
       if (existingTransaction) {
-        console.log(`Transaction for order ${order.increment_id} already exists, skipping`);
+        console.log(`Transaction for order ${order.external_id} already exists, skipping`);
         continue;
       }
       
@@ -118,28 +117,48 @@ export async function storeTransactions(salesData: any[], storeId: string) {
       const metadata = {
         store_view: order.store_view,
         customer_group: order.customer_group,
-        status: order.status
+        status: order.status,
+        items_count: order.items,
+        payment_method: order.order_data?.payment_method,
+        shipping_method: order.order_data?.shipping_method,
+        customer_name: order.customer_name
       };
+      
+      // Format the transaction date properly
+      let transactionDate = order.transaction_date;
+      if (transactionDate) {
+        // Ensure it's in the correct format
+        try {
+          transactionDate = new Date(transactionDate).toISOString();
+        } catch (e) {
+          console.warn(`Invalid date format for order ${order.external_id}, using current time`);
+          transactionDate = new Date().toISOString();
+        }
+      } else {
+        transactionDate = new Date().toISOString();
+      }
       
       // Insert the transaction
       const { error: insertError } = await supabase
         .from('transactions')
         .insert({
           store_id: storeId,
-          external_id: order.increment_id,
-          amount: order.grand_total,
-          transaction_date: order.created_at,
-          customer_id: order.customer_email, // Using email as customer_id
-          // We would add product_id if processing line items
+          external_id: order.external_id,
+          amount: order.amount,
+          transaction_date: transactionDate,
+          customer_id: order.customer_id,
+          metadata: metadata
         });
         
       if (insertError) {
-        console.error(`Error inserting transaction for order ${order.increment_id}: ${insertError.message}`);
+        console.error(`Error inserting transaction for order ${order.external_id}: ${insertError.message}`);
       } else {
-        console.log(`Inserted transaction for order ${order.increment_id}`);
+        console.log(`Inserted transaction for order ${order.external_id}`);
       }
     }
     
+    console.log(`Completed storing ${ordersData.length} transactions`);
+    return { success: true, count: ordersData.length };
   } catch (error) {
     console.error(`Error storing transactions: ${error.message}`);
     throw error;

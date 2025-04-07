@@ -16,11 +16,13 @@ serve(async (req) => {
     try {
       const requestBody = await req.json();
       const syncType = requestBody.syncType || 'full';
+      const useMock = requestBody.useMock === true;
       
-      console.log(`Received sync request with type: ${syncType}`);
+      console.log(`Received sync request with type: ${syncType}, useMock: ${useMock}`);
       
       const result = await synchronizeMagentoData({ 
-        changesOnly: syncType === 'changes_only' 
+        changesOnly: syncType === 'changes_only',
+        useMock: useMock
       });
       
       return createCorsResponse(result, result.success ? 200 : 500);

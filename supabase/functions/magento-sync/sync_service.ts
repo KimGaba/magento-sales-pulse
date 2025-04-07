@@ -1,17 +1,18 @@
 
 import { supabase } from "./db_operations.ts";
-import { fetchMagentoSalesData, fetchAndStoreProductData } from "./magento_api.ts";
+import { fetchMagentoOrdersData, mockMagentoOrdersData, fetchAndStoreProductData } from "./magento_api.ts";
 import { processDailySalesData, storeTransactions } from "./db_operations.ts";
 
 interface SyncOptions {
   changesOnly?: boolean;
+  useMock?: boolean;
 }
 
 // Function to synchronize data from Magento
 export async function synchronizeMagentoData(options: SyncOptions = {}) {
-  const { changesOnly = false } = options;
+  const { changesOnly = false, useMock = false } = options;
   
-  console.log(`Starting Magento data synchronization (changes only: ${changesOnly})`);
+  console.log(`Starting Magento data synchronization (changes only: ${changesOnly}, use mock: ${useMock})`);
   
   try {
     // 1. Get all active Magento connections
@@ -65,57 +66,42 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
         console.log(`Created new store with ID: ${storeId}`);
       }
       
-      // 3. Fetch sales data from Magento - use changesOnly parameter to determine sync behavior
-      // Use default order statuses
-      const defaultOrderStatuses = ["processing", "complete"];
-      console.log(`Using default order statuses for sync: ${defaultOrderStatuses.join(', ')}`);
-      
-      if (!changesOnly) {
-        // Full sync
-        const salesData = await fetchMagentoSalesData(connection, defaultOrderStatuses);
-        
-        if (!salesData || !salesData.length) {
-          console.log(`No sales data fetched for store ${connection.store_name}`);
+      try {
+        // 3. Fetch orders data from Magento API
+        let ordersData;
+        if (useMock) {
+          ordersData = await mockMagentoOrdersData();
         } else {
-          console.log(`Fetched ${salesData.length} sales records for ${connection.store_name}`);
+          ordersData = await fetchMagentoOrdersData(connection);
+        }
+        
+        if (!ordersData || !ordersData.length) {
+          console.log(`No orders data fetched for store ${connection.store_name}`);
+        } else {
+          console.log(`Fetched ${ordersData.length} orders for ${connection.store_name}`);
           
           // 4. Process and store the daily sales aggregated data
-          await processDailySalesData(salesData, storeId);
+          await processDailySalesData(ordersData, storeId);
           
           // 5. Store individual transactions
-          await storeTransactions(salesData, storeId);
+          await storeTransactions(ordersData, storeId);
         }
-      } else {
-        // Only fetch changes
-        console.log(`Fetching only recent changes for ${connection.store_name}`);
+      } catch (apiError) {
+        console.error(`Error processing data for ${connection.store_name}: ${apiError.message}`);
         
-        // Get the last sync time to only fetch data since then
-        const lastSyncTime = new Date(connection.updated_at);
-        const salesData = await fetchMagentoSalesData(
-          connection, 
-          defaultOrderStatuses, 
-          lastSyncTime
-        );
-        
-        if (!salesData || !salesData.length) {
-          console.log(`No new sales data since last sync for store ${connection.store_name}`);
-        } else {
-          console.log(`Fetched ${salesData.length} new sales records for ${connection.store_name}`);
+        // Update connection status to indicate error
+        await supabase
+          .from('magento_connections')
+          .update({ 
+            status: 'error',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', connection.id);
           
-          // Process only new data
-          await processDailySalesData(salesData, storeId);
-          await storeTransactions(salesData, storeId);
-        }
+        continue;
       }
       
-      // 6. Fetch and store product data, including images
-      if (!changesOnly || Math.random() < 0.2) { // For changes_only, only update products 20% of the time
-        await fetchAndStoreProductData(connection, storeId, supabase);
-      } else {
-        console.log("Skipping product sync for changes_only request");
-      }
-      
-      // 7. Update connection status and last sync time
+      // 6. Update connection status and last sync time
       await supabase
         .from('magento_connections')
         .update({ 

@@ -177,6 +177,7 @@ export interface Database {
           customer_id: string | null
           external_id: string | null
           id: string
+          metadata: Json | null
           product_id: string | null
           store_id: string
           transaction_date: string
@@ -187,6 +188,7 @@ export interface Database {
           customer_id?: string | null
           external_id?: string | null
           id?: string
+          metadata?: Json | null
           product_id?: string | null
           store_id: string
           transaction_date?: string
@@ -197,6 +199,7 @@ export interface Database {
           customer_id?: string | null
           external_id?: string | null
           id?: string
+          metadata?: Json | null
           product_id?: string | null
           store_id?: string
           transaction_date?: string
@@ -216,4 +219,17 @@ export interface Database {
       [_ in never]: never
     }
   }
+}
+
+export interface MagentoConnection {
+  id: string;
+  user_id: string;
+  store_id: string | null;
+  created_at: string;
+  updated_at: string;
+  access_token: string;
+  status: string;
+  store_url: string;
+  store_name: string;
+  order_statuses?: string[];
 }
