@@ -56,8 +56,11 @@ async function testMagentoConnection(storeUrl: string, accessToken: string) {
 
 // Handle HTTP requests
 serve(async (req) => {
+  console.log(`Received request to magento-sync function: ${req.method} ${req.url}`);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
   
@@ -65,12 +68,15 @@ serve(async (req) => {
   if (req.method === 'POST') {
     try {
       const requestBody = await req.json();
+      console.log('Request body received:', JSON.stringify(requestBody));
       
       // Handle connection testing
       if (requestBody.action === 'test_connection') {
+        console.log('Processing test_connection action');
         const { storeUrl, accessToken } = requestBody;
         
         if (!storeUrl || !accessToken) {
+          console.error('Missing required parameters for test_connection');
           return createCorsResponse({
             success: false,
             error: "Missing required parameters: storeUrl and accessToken"
@@ -78,6 +84,7 @@ serve(async (req) => {
         }
         
         const testResult = await testMagentoConnection(storeUrl, accessToken);
+        console.log('Test connection result:', testResult);
         return createCorsResponse(testResult, testResult.success ? 200 : 400);
       }
       
@@ -92,6 +99,7 @@ serve(async (req) => {
         useMock: useMock
       });
       
+      console.log('Sync process complete, returning result:', result);
       return createCorsResponse(result, result.success ? 200 : 500);
     } catch (error) {
       console.error('Error processing sync request:', error);
@@ -100,5 +108,6 @@ serve(async (req) => {
   }
   
   // Handle unauthorized or incorrect methods
+  console.error(`Method not allowed: ${req.method}`);
   return createCorsResponse({ error: 'Method not allowed' }, 405);
 });

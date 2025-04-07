@@ -19,6 +19,14 @@ export const addMagentoConnection = async (
       ? storeUrl.slice(0, -1)
       : storeUrl;
     
+    // First test the connection to make sure it's valid
+    const testResult = await testMagentoConnection(normalizedUrl, accessToken);
+    
+    if (!testResult.success) {
+      console.error('Connection test failed:', testResult.error);
+      throw new Error(testResult.error || 'Failed to connect to Magento store');
+    }
+    
     const { data, error } = await supabase
       .from('magento_connections')
       .insert([
@@ -76,13 +84,19 @@ export const fetchMagentoConnections = async (userId: string): Promise<MagentoCo
  */
 export const updateMagentoConnection = async (connectionId: string, data: Partial<MagentoConnection>) => {
   try {
+    console.log(`Updating Magento connection ${connectionId}`, data);
+    
     const { error } = await supabase
       .from('magento_connections')
       .update(data)
       .eq('id', connectionId);
       
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating Magento connection:', error);
+      throw error;
+    }
     
+    console.log(`Successfully updated connection ${connectionId}`);
     return true;
   } catch (error) {
     console.error('Error updating Magento connection:', error);
@@ -125,9 +139,6 @@ export const testMagentoConnection = async (storeUrl: string, accessToken: strin
   try {
     console.log(`Testing Magento connection to ${storeUrl}`);
     
-    // We'll call the Magento API directly here to test the connection
-    // Or use a dedicated edge function for testing
-    
     // Normalize storeUrl to ensure it doesn't have a trailing slash
     const normalizedUrl = storeUrl.endsWith('/')
       ? storeUrl.slice(0, -1)
@@ -149,6 +160,8 @@ export const testMagentoConnection = async (storeUrl: string, accessToken: strin
         throw new Error('Ugyldigt API-token. Kontroller at du har angivet den korrekte API-nøgle.');
       } else if (error.message.includes('404')) {
         throw new Error('Magento API endpoint ikke fundet. Kontroller at URL\'en er korrekt og at Magento REST API er aktiveret.');
+      } else if (error.message.includes('Function not found')) {
+        throw new Error('Magento sync funktion ikke fundet. Dette er en konfigurationsfejl på serveren.');
       } else {
         throw error;
       }
@@ -169,6 +182,8 @@ export const testMagentoConnection = async (storeUrl: string, accessToken: strin
       errorMessage = 'CORS-fejl: Magento-serveren tillader ikke adgang fra denne applikation. Kontakt din Magento-administrator.';
     } else if (error.message.includes('Network Error') || error.message.includes('Failed to fetch')) {
       errorMessage = 'Netværksfejl: Kunne ikke forbinde til Magento-serveren. Kontroller URL og at serveren er online.';
+    } else if (error.message.includes('Function not found')) {
+      errorMessage = 'Serverfejl: Magento sync funktion ikke fundet. Dette er et konfigurationsproblem på server-siden.';
     }
     
     return { success: false, error: errorMessage };

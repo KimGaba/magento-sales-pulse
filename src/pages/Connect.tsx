@@ -144,24 +144,33 @@ const Connect = () => {
     if (!storeToDelete) return;
 
     try {
+      // First delete store data with all related records
       if (storeToDelete.store_id) {
+        console.log(`Deleting store data for store ID: ${storeToDelete.store_id}`);
         const { data, error } = await supabase.rpc('delete_store_data', {
           target_store_id: storeToDelete.store_id
         });
 
         if (error) {
+          console.error("Error deleting store data:", error);
           throw error;
         }
+        console.log("Store data deletion successful:", data);
       }
 
+      // Then delete the connection itself
+      console.log(`Deleting connection with ID: ${storeToDelete.id}`);
       const { error } = await supabase
         .from('magento_connections')
         .delete()
         .eq('id', storeToDelete.id);
 
       if (error) {
+        console.error("Error deleting connection:", error);
         throw error;
       }
+
+      console.log("Connection deleted successfully");
 
       // Update the connections list by removing the deleted connection
       setConnections(prevConnections => 
