@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
-import { toast } from 'sonner';
+import { toast as sonnerToast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from '@/i18n/LanguageContext';
@@ -168,13 +168,16 @@ const Connect = () => {
         prevConnections.filter(conn => conn.id !== storeToDelete.id)
       );
 
-      toast.success(t.connect.storeDeleted, {
+      toast({
+        title: t.connect.storeDeleted,
         description: t.connect.storeDeletedDesc,
       });
     } catch (error) {
       console.error("Error deleting store:", error);
-      toast.error(t.connect.deleteError, {
+      toast({
+        title: t.connect.deleteError,
         description: t.connect.deleteErrorDesc,
+        variant: "destructive",
       });
     } finally {
       setShowDeleteDialog(false);
