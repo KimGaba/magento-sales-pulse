@@ -143,12 +143,34 @@ export const testMagentoConnection = async (storeUrl: string, accessToken: strin
     
     if (error) {
       console.error('Error testing Magento connection:', error);
-      throw error;
+      
+      // Provide more helpful error messages based on common issues
+      if (error.message.includes('401')) {
+        throw new Error('Ugyldigt API-token. Kontroller at du har angivet den korrekte API-nøgle.');
+      } else if (error.message.includes('404')) {
+        throw new Error('Magento API endpoint ikke fundet. Kontroller at URL\'en er korrekt og at Magento REST API er aktiveret.');
+      } else {
+        throw error;
+      }
     }
     
     return { success: true, data };
   } catch (error) {
     console.error('Error testing Magento connection:', error);
-    return { success: false, error: error.message };
+    
+    // Check for specific error types to provide more helpful messages
+    let errorMessage = 'Fejl ved test af Magento-forbindelse';
+    
+    if (error.message.includes('API-token') || error.message.includes('API-nøgle')) {
+      errorMessage = error.message;
+    } else if (error.message.includes('URL')) {
+      errorMessage = error.message;
+    } else if (error.message.includes('CORS')) {
+      errorMessage = 'CORS-fejl: Magento-serveren tillader ikke adgang fra denne applikation. Kontakt din Magento-administrator.';
+    } else if (error.message.includes('Network Error') || error.message.includes('Failed to fetch')) {
+      errorMessage = 'Netværksfejl: Kunne ikke forbinde til Magento-serveren. Kontroller URL og at serveren er online.';
+    }
+    
+    return { success: false, error: errorMessage };
   }
 };

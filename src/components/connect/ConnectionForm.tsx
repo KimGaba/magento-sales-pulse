@@ -13,6 +13,8 @@ import {
   FormLabel,
   FormDescription
 } from "@/components/ui/form";
+import { Link } from 'react-router-dom';
+import { ExternalLink } from 'lucide-react';
 
 interface ConnectionFormValues {
   storeName: string;
@@ -104,9 +106,10 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({
                     />
                   </FormControl>
                   <FormDescription className="text-xs text-gray-500">
-                    <a href="#" className="text-magento-600 hover:underline">
+                    <Link to="/magento-api-help" className="text-magento-600 hover:underline flex items-center">
+                      <ExternalLink className="h-3 w-3 mr-1" />
                       Hvor finder jeg min API-nøgle?
-                    </a>
+                    </Link>
                   </FormDescription>
                 </FormItem>
               )}
