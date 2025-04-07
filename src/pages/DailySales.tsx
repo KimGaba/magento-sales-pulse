@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -229,21 +228,23 @@ const DailySales = () => {
             </PopoverContent>
           </Popover>
           
-          <UITooltip>
-            <TooltipTrigger asChild>
-              <Info className="h-4 w-4 text-gray-400 cursor-help" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="max-w-xs">
-                Måneder med data er fremhævet med grøn. 
-                {availableMonths.length > 0 ? (
-                  <>
-                    <br/>Data findes for: {availableMonths.map(m => format(m, 'MMM yyyy')).join(', ')}
-                  </>
-                ) : 'Ingen måneder har data endnu.'}
-              </p>
-            </TooltipContent>
-          </UITooltip>
+          <TooltipProvider>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-4 w-4 text-gray-400 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs">
+                  Måneder med data er fremhævet med grøn. 
+                  {availableMonths.length > 0 ? (
+                    <>
+                      <br/>Data findes for: {availableMonths.map(m => format(m, 'MMM yyyy')).join(', ')}
+                    </>
+                  ) : 'Ingen måneder har data endnu.'}
+                </p>
+              </TooltipContent>
+            </UITooltip>
+          </TooltipProvider>
 
           {isLoadingMonths && (
             <Loader2 className="h-4 w-4 animate-spin text-gray-500" />

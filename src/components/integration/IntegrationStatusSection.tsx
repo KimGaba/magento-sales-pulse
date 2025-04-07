@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/context/AuthContext';
@@ -9,6 +8,12 @@ import { MagentoConnection } from '@/types/magento';
 import { CircleCheck, CircleX, RefreshCw, Clock, Download, Database } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
 
 const IntegrationStatusSection = () => {
   const { user } = useAuth();
@@ -45,7 +50,6 @@ const IntegrationStatusSection = () => {
       await triggerMagentoSync('full', useMockData);
       toast.success("Synkronisering er igangsat. Det kan tage et par minutter at fuldføre.");
       
-      // Refresh connections after a short delay to show updated status
       setTimeout(() => {
         loadConnections();
       }, 3000);
@@ -63,7 +67,6 @@ const IntegrationStatusSection = () => {
       await triggerMagentoSync('changes_only', useMockData);
       toast.success("Henter ændringer fra din butik. Dette vil blive opdateret om et øjeblik.");
       
-      // Refresh connections after a short delay to show updated status
       setTimeout(() => {
         loadConnections();
       }, 3000);
@@ -192,6 +195,19 @@ const IntegrationStatusSection = () => {
           <div className="flex items-center space-x-2">
             <Database className="h-4 w-4 text-gray-500" />
             <span className="text-sm font-medium">Testtilstand</span>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 text-gray-400 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs max-w-xs">
+                    Når testtilstand er aktiveret, bruges simulerede data i stedet for at hente fra Magento API.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <div className="flex items-center space-x-2 mt-2">
             <Switch

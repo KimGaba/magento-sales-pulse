@@ -7,6 +7,7 @@ import { FilterProvider } from './context/FilterContext';
 import { ThemeProvider } from "@/components/theme-provider"
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster"
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 // Import pages
 import Index from './pages/Index';
@@ -38,23 +39,25 @@ function App() {
             <FilterProvider>
               <QueryClientProvider client={queryClient}>
                 <ThemeProvider>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
-                    <Route path="/daily-sales" element={<AuthGuard><DailySales /></AuthGuard>} />
-                    <Route path="/trends" element={<AuthGuard><Trends /></AuthGuard>} />
-                    <Route path="/repeat-purchase-rate" element={<AuthGuard><RepeatPurchaseRate /></AuthGuard>} />
-                    <Route path="/basket-openers" element={<AuthGuard><BasketOpeners /></AuthGuard>} />
-                    <Route path="/products" element={<AuthGuard><Products /></AuthGuard>} />
-                    <Route path="/connect" element={<AuthGuard><Connect /></AuthGuard>} />
-                    <Route path="/magento-api-help" element={<AuthGuard><MagentoApiHelp /></AuthGuard>} />
-                    <Route path="/integration-status" element={<AuthGuard><IntegrationStatus /></AuthGuard>} />
-                    <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
-                    <Route path="/database-test" element={<AuthGuard><DatabaseTest /></AuthGuard>} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                  <Toaster />
+                  <TooltipProvider>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
+                      <Route path="/daily-sales" element={<AuthGuard><DailySales /></AuthGuard>} />
+                      <Route path="/trends" element={<AuthGuard><Trends /></AuthGuard>} />
+                      <Route path="/repeat-purchase-rate" element={<AuthGuard><RepeatPurchaseRate /></AuthGuard>} />
+                      <Route path="/basket-openers" element={<AuthGuard><BasketOpeners /></AuthGuard>} />
+                      <Route path="/products" element={<AuthGuard><Products /></AuthGuard>} />
+                      <Route path="/connect" element={<AuthGuard><Connect /></AuthGuard>} />
+                      <Route path="/magento-api-help" element={<AuthGuard><MagentoApiHelp /></AuthGuard>} />
+                      <Route path="/integration-status" element={<AuthGuard><IntegrationStatus /></AuthGuard>} />
+                      <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
+                      <Route path="/database-test" element={<AuthGuard><DatabaseTest /></AuthGuard>} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                    <Toaster />
+                  </TooltipProvider>
                 </ThemeProvider>
               </QueryClientProvider>
             </FilterProvider>
