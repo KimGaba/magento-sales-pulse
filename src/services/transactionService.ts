@@ -129,10 +129,16 @@ export const fetchBasketOpenerProducts = async (
     console.log(`Customer group filter: ${customerGroup}`);
     
     // Using the rpc function we created in the database
-    const params: Record<string, any> = { 
+    // Fix: Create a properly typed params object that matches the expected type
+    const params: { 
+      start_date: string; 
+      end_date: string; 
+      store_filter?: string[];
+      customer_group?: string;
+    } = { 
       start_date: fromDate, 
       end_date: toDate,
-      store_filter: storeIds.length > 0 ? storeIds : null
+      store_filter: storeIds.length > 0 ? storeIds : undefined
     };
     
     // Add customer_group parameter if not 'alle'
