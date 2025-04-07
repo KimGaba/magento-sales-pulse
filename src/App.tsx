@@ -1,10 +1,11 @@
+
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './i18n/LanguageContext';
 import { FilterProvider } from './context/FilterContext';
 import { ThemeProvider } from "@/components/theme-provider"
-import { QueryClient, QueryClientProvider } from 'react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/toaster"
 
 // Import pages
@@ -24,7 +25,7 @@ import DatabaseTest from './pages/DatabaseTest';
 import MagentoApiHelp from './pages/MagentoApiHelp';
 
 // Import components
-import AuthGuard from './components/AuthGuard';
+import AuthGuard from './components/auth/AuthGuard';
 
 const queryClient = new QueryClient();
 
