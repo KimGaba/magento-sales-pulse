@@ -3,10 +3,11 @@ import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from '@/i18n/LanguageContext';
-import { addMagentoConnection, fetchMagentoConnections, triggerMagentoSync } from '@/services/supabase';
+import { addMagentoConnection, fetchMagentoConnections, triggerMagentoSync } from '@/services/magentoService';
 import { useSyncProcess } from '@/hooks/useSyncProcess';
 
 // Import our components
@@ -22,6 +23,7 @@ interface StoreConnection {
   store_name: string;
   store_url: string;
   status: string;
+  order_statuses?: string[];
 }
 
 interface ConnectFormValues {
@@ -161,18 +163,18 @@ const Connect = () => {
         throw error;
       }
 
-      await loadConnections();
+      // Update the connections list by removing the deleted connection
+      setConnections(prevConnections => 
+        prevConnections.filter(conn => conn.id !== storeToDelete.id)
+      );
 
-      toast({
-        title: t.connect.storeDeleted,
+      toast.success(t.connect.storeDeleted, {
         description: t.connect.storeDeletedDesc,
       });
     } catch (error) {
       console.error("Error deleting store:", error);
-      toast({
-        title: t.connect.deleteError,
+      toast.error(t.connect.deleteError, {
         description: t.connect.deleteErrorDesc,
-        variant: "destructive",
       });
     } finally {
       setShowDeleteDialog(false);
