@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/context/AuthContext';
@@ -5,7 +6,7 @@ import { fetchMagentoConnections, triggerMagentoSync } from '@/services/magentoS
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { MagentoConnection } from '@/types/magento';
-import { CircleCheck, CircleX, RefreshCw, Clock, Download, Database } from 'lucide-react';
+import { CircleCheck, CircleX, RefreshCw, Clock, Download, Database, Info } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { 
