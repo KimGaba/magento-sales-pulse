@@ -30,20 +30,27 @@ const IntegrationStatusSection = () => {
     }
   }, [user]);
   
-  const loadConnections = async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    try {
-      const connectionsData = await fetchMagentoConnections(user.id);
-      setConnections(connectionsData);
-    } catch (error) {
-      console.error("Error fetching connections:", error);
-      toast.error("Der opstod en fejl ved indlæsning af dine forbindelser.");
-    } finally {
-      setLoading(false);
-    }
-  };
+ const loadConnections = async () => {
+  if (!user) return;
+
+  setLoading(true);
+  try {
+    const connectionsData = await fetchMagentoConnections(user.id);
+
+    // ✨ Filtrér forbindelser uden store_id væk
+    const validConnections = connectionsData.filter(
+      (conn) => conn.store_id !== null
+    );
+
+    setConnections(validConnections);
+  } catch (error) {
+    console.error("Error fetching connections:", error);
+    toast.error("Der opstod en fejl ved indlæsning af integrationer");
+  } finally {
+    setLoading(false);
+  }
+};
+
   
   const handleManualSync = async () => {
     setSyncing(true);
