@@ -1,6 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 import { MagentoConnection } from '@/types/magento';
-import { updateMagentoConnection } from '@/services/magentoService';
 
 /**
  * Adds a Magento store connection
