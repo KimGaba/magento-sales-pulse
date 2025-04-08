@@ -145,9 +145,10 @@ const Connect = () => {
   const confirmDelete = async () => {
     if (!storeToDelete || !storeToDelete.store_id) return;
 
+    console.log("Deleting full store data via RPC for store ID:", storeToDelete.store_id);
+    setDeletingStore(true);
+
     try {
-      console.log("Deleting full store data via RPC for store ID:", storeToDelete.store_id);
-      
       const { data, error } = await supabase.rpc("delete_store_data", {
         target_store_id: storeToDelete.store_id,
       });
@@ -159,7 +160,6 @@ const Connect = () => {
 
       console.log("RPC deletion successful:", data);
 
-      // Fjern forbindelsen fra listen i UI
       setConnections((prev) =>
         prev.filter((conn) => conn.store_id !== storeToDelete.store_id)
       );
@@ -175,6 +175,7 @@ const Connect = () => {
         variant: "destructive",
       });
     } finally {
+      setDeletingStore(false);
       setShowDeleteDialog(false);
       setStoreToDelete(null);
     }
