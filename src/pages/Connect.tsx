@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -142,56 +141,33 @@ const Connect = () => {
   };
 
   const confirmDelete = async () => {
-    if (!storeToDelete) return;
+    if (!storeToDelete || !storeToDelete.store_id) return;
     
     setDeletingStore(true);
 
     try {
-      // First delete store data with all related records
-      if (storeToDelete.store_id) {
-        console.log(`Deleting store data for store ID: ${storeToDelete.store_id}`);
-        const { error: rpcError } = await supabase.rpc('delete_store_data', {
-          target_store_id: storeToDelete.store_id
-        });
+      console.log(`Deleting store data for store ID: ${storeToDelete.store_id}`);
+      
+      const { error } = await supabase.rpc('delete_store_data', {
+        target_store_id: storeToDelete.store_id
+      });
 
-        if (rpcError) {
-          console.error("Error deleting store data:", rpcError);
-          throw rpcError;
-        }
-        console.log("Store data deletion successful");
+      if (error) {
+        console.error("Error deleting store data:", error);
+        throw error;
       }
-
-      // Then delete the connection itself
-      console.log(`Deleting connection with ID: ${storeToDelete.id}`);
-      const { error: deleteError } = await supabase
-        .from('magento_connections')
-        .delete()
-        .eq('id', storeToDelete.id);
-
-      if (deleteError) {
-        console.error("Error deleting connection:", deleteError);
-        throw deleteError;
-      }
-
-      console.log("Connection deleted successfully");
-
-      // Update the connections list by removing the deleted connection immediately
+      
+      console.log("Store deletion successful");
+      
+      // Update local state to remove the deleted connection
       setConnections(prevConnections => 
-        prevConnections.filter(conn => conn.id !== storeToDelete.id)
+        prevConnections.filter(conn => conn.store_id !== storeToDelete.store_id)
       );
 
       toast({
         title: t.connect.storeDeleted,
         description: t.connect.storeDeletedDesc,
       });
-      
-      // Close the dialog before reloading connections to prevent flicker
-      setShowDeleteDialog(false);
-      setStoreToDelete(null);
-      
-      // Wait a moment then force a full reload to ensure database is in sync
-      await new Promise(resolve => setTimeout(resolve, 300));
-      await loadConnections();
       
     } catch (error) {
       console.error("Error deleting store:", error);
@@ -202,10 +178,13 @@ const Connect = () => {
       });
     } finally {
       setDeletingStore(false);
-      if (showDeleteDialog) {
-        setShowDeleteDialog(false);
-        setStoreToDelete(null);
-      }
+      setShowDeleteDialog(false);
+      setStoreToDelete(null);
+      
+      // Wait a moment then reload connections to ensure database is in sync
+      setTimeout(() => {
+        loadConnections();
+      }, 500);
     }
   };
 
@@ -268,4 +247,3 @@ const Connect = () => {
 };
 
 export default Connect;
-
