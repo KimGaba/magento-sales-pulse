@@ -142,49 +142,39 @@ const Connect = () => {
 
   const confirmDelete = async () => {
     if (!storeToDelete || !storeToDelete.store_id) return;
-    
-    setDeletingStore(true);
 
     try {
-      console.log(`Deleting store data for store ID: ${storeToDelete.store_id}`);
+      console.log("Deleting full store data via RPC for store ID:", storeToDelete.store_id);
       
-      const { error } = await supabase.rpc('delete_store_data', {
-        target_store_id: storeToDelete.store_id
+      const { data, error } = await supabase.rpc("delete_store_data", {
+        target_store_id: storeToDelete.store_id,
       });
 
       if (error) {
-        console.error("Error deleting store data:", error);
+        console.error("Error in delete_store_data RPC:", error);
         throw error;
       }
-      
-      console.log("Store deletion successful");
-      
-      // Update local state to remove the deleted connection
-      setConnections(prevConnections => 
-        prevConnections.filter(conn => conn.store_id !== storeToDelete.store_id)
+
+      console.log("RPC deletion successful:", data);
+
+      // Fjern forbindelsen fra listen i UI
+      setConnections((prev) =>
+        prev.filter((conn) => conn.store_id !== storeToDelete.store_id)
       );
 
       toast({
         title: t.connect.storeDeleted,
         description: t.connect.storeDeletedDesc,
       });
-      
     } catch (error) {
-      console.error("Error deleting store:", error);
       toast({
         title: t.connect.deleteError,
         description: t.connect.deleteErrorDesc,
         variant: "destructive",
       });
     } finally {
-      setDeletingStore(false);
       setShowDeleteDialog(false);
       setStoreToDelete(null);
-      
-      // Wait a moment then reload connections to ensure database is in sync
-      setTimeout(() => {
-        loadConnections();
-      }, 500);
     }
   };
 
