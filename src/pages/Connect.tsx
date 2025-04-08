@@ -143,43 +143,48 @@ const Connect = () => {
   };
 
   const confirmDelete = async () => {
-    if (!storeToDelete || !storeToDelete.store_id) return;
+  console.log("✅ confirmDelete kaldt – tjekker storeToDelete:", storeToDelete);
 
-    console.log("Deleting full store data via RPC for store ID:", storeToDelete.store_id);
-    setDeletingStore(true);
+  if (!storeToDelete || !storeToDelete.store_id) {
+    console.warn("⛔️ Sletning stoppet – ingen storeToDelete eller store_id mangler");
+    return;
+  }
 
-    try {
-      const { data, error } = await supabase.rpc("delete_store_data", {
-        target_store_id: storeToDelete.store_id,
-      });
+  console.log("Deleting full store data via RPC for store ID:", storeToDelete.store_id);
+  setDeletingStore(true);
 
-      if (error) {
-        console.error("Error in delete_store_data RPC:", error);
-        throw error;
-      }
+  try {
+    const { data, error } = await supabase.rpc("delete_store_data", {
+      target_store_id: storeToDelete.store_id,
+    });
 
-      console.log("RPC deletion successful:", data);
-
-      setConnections((prev) =>
-        prev.filter((conn) => conn.store_id !== storeToDelete.store_id)
-      );
-
-      toast({
-        title: t.connect.storeDeleted,
-        description: t.connect.storeDeletedDesc,
-      });
-    } catch (error) {
-      toast({
-        title: t.connect.deleteError,
-        description: t.connect.deleteErrorDesc,
-        variant: "destructive",
-      });
-    } finally {
-      setDeletingStore(false);
-      setShowDeleteDialog(false);
-      setStoreToDelete(null);
+    if (error) {
+      console.error("Error in delete_store_data RPC:", error);
+      throw error;
     }
-  };
+
+    console.log("RPC deletion successful:", data);
+
+    setConnections((prev) =>
+      prev.filter((conn) => conn.store_id !== storeToDelete.store_id)
+    );
+
+    toast({
+      title: t.connect.storeDeleted,
+      description: t.connect.storeDeletedDesc,
+    });
+  } catch (error) {
+    toast({
+      title: t.connect.deleteError,
+      description: t.connect.deleteErrorDesc,
+      variant: "destructive",
+    });
+  } finally {
+    setDeletingStore(false);
+    setShowDeleteDialog(false);
+    setStoreToDelete(null);
+  }
+};
 
   return (
     <Layout>
