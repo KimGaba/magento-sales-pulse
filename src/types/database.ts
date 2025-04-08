@@ -15,4 +15,16 @@ export type Transaction = {
   external_id?: string | null;
   created_at: string;
   product_id?: string | null;
+  metadata?: {
+    customer_email?: string;
+    store_view?: string;
+    customer_group?: string;
+    status?: string;
+    items_count?: number;
+    payment_method?: string;
+    shipping_method?: string;
+    customer_name?: string;
+    [key: string]: any;
+  };
+  email?: string;
 };
