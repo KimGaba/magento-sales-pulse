@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { MagentoConnection } from '@/types/magento';
+import { updateMagentoConnection } from '@/services/magentoService';
 
 /**
  * Adds a Magento store connection
@@ -165,3 +166,31 @@ export const testMagentoConnection = async (storeUrl: string, accessToken: strin
     return { success: false, error: error.message || 'Unknown error' };
   }
 };
+/**
+ * Updates a Magento store connection
+ */
+export const updateMagentoConnection = async (
+  connectionId: string,
+  data: Partial<MagentoConnection>
+) => {
+  try {
+    console.log(`Updating Magento connection ${connectionId}`, data);
+
+    const { error } = await supabase
+      .from('magento_connections')
+      .update(data)
+      .eq('id', connectionId);
+
+    if (error) {
+      console.error('Error updating Magento connection:', error);
+      throw error;
+    }
+
+    console.log(`✅ Successfully updated connection ${connectionId}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error updating Magento connection:', error);
+    throw error;
+  }
+};
+
