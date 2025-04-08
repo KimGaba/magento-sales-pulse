@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   AlertDialog,
@@ -35,12 +34,19 @@ const DeleteConnectionDialog: React.FC<DeleteConnectionDialogProps> = ({
   onConfirmDelete,
   isDeleting = false
 }) => {
+  const handleConfirmClick = () => {
+    console.log("🧨 Klik registreret – slet-knap trykket");
+    if (!storeToDelete) {
+      console.warn("⚠️ Ingen storeToDelete sat – sletning ignoreret");
+      return;
+    }
+    onConfirmDelete();
+  };
+
   return (
     <AlertDialog open={open} onOpenChange={(newOpen) => {
-      // Prevent closing the dialog while deletion is in progress
-      if (isDeleting && newOpen === false) {
-        return;
-      }
+      // Forhindr lukning under sletning
+      if (isDeleting && newOpen === false) return;
       onOpenChange(newOpen);
     }}>
       <AlertDialogContent>
@@ -54,7 +60,7 @@ const DeleteConnectionDialog: React.FC<DeleteConnectionDialogProps> = ({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Annuller</AlertDialogCancel>
           <AlertDialogAction 
-            onClick={onConfirmDelete}
+            onClick={handleConfirmClick}
             className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
             disabled={isDeleting}
           >
@@ -74,3 +80,4 @@ const DeleteConnectionDialog: React.FC<DeleteConnectionDialogProps> = ({
 };
 
 export default DeleteConnectionDialog;
+
