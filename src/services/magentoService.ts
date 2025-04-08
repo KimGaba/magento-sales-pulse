@@ -17,12 +17,14 @@ export const addMagentoConnection = async (
       ? storeUrl.slice(0, -1)
       : storeUrl;
 
-    // Test forbindelsen først
-    const testResult = await testMagentoConnection(normalizedUrl, accessToken);
-    if (!testResult.success) {
-      console.error('Connection test failed:', testResult.error);
-      throw new Error(testResult.error || 'Failed to connect to Magento store');
-    }
+  const tempConnectionId = crypto.randomUUID(); // eller lav et midlertidigt ID
+const testResult = await testMagentoConnection(
+  normalizedUrl,
+  accessToken,
+  tempConnectionId,
+  storeName,
+  userId
+);
 
     // ✅ Ryd gamle forbindelser hvor store_id er NULL
     console.log("🧹 Rydder tidligere forbindelser uden store_id");
