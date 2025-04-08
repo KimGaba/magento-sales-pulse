@@ -76,3 +76,25 @@ export const addMagentoConnection = async (
     throw error;
   }
 };
+export const fetchMagentoConnections = async (userId: string): Promise<MagentoConnection[]> => {
+  try {
+    console.log(`Fetching Magento connections for user ${userId}`);
+
+    const { data, error } = await supabase
+      .from('magento_connections')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching Magento connections:', error);
+      throw error;
+    }
+
+    console.log(`Fetched ${data?.length || 0} Magento connections`);
+    return data as MagentoConnection[] || [];
+  } catch (error) {
+    console.error('Error fetching Magento connections:', error);
+    throw error;
+  }
+};
