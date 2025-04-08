@@ -32,6 +32,16 @@ async function testMagentoConnection(storeUrl: string, accessToken: string) {
           success: false, 
           error: "Ugyldig API-nøgle. Dette er typisk et admin REST API token fra Magento, ikke dit admin-password." 
         };
+      } else if (response.status === 404) {
+        return {
+          success: false,
+          error: "Magento API endpoint ikke fundet. Kontroller at URL'en er korrekt og at Magento REST API er aktiveret."
+        };
+      } else if (response.status === 429) {
+        return {
+          success: false,
+          error: "For mange forespørgsler til Magento API. Vent venligst lidt og prøv igen."
+        };
       }
       
       throw new Error(`Failed to connect: ${response.status} ${response.statusText}`);
@@ -67,8 +77,17 @@ serve(async (req) => {
   // Only allow POST requests for manual triggers
   if (req.method === 'POST') {
     try {
-      const requestBody = await req.json();
-      console.log('Request body received:', JSON.stringify(requestBody));
+      let requestBody;
+      try {
+        requestBody = await req.json();
+        console.log('Request body received:', JSON.stringify(requestBody));
+      } catch (parseError) {
+        console.error('Error parsing request body:', parseError);
+        return createCorsResponse({ 
+          success: false, 
+          error: "Invalid JSON in request body" 
+        }, 400);
+      }
       
       // Handle connection testing
       if (requestBody.action === 'test_connection') {
@@ -94,13 +113,21 @@ serve(async (req) => {
       
       console.log(`Received sync request with type: ${syncType}, useMock: ${useMock}`);
       
-      const result = await synchronizeMagentoData({ 
-        changesOnly: syncType === 'changes_only',
-        useMock: useMock
-      });
-      
-      console.log('Sync process complete, returning result:', result);
-      return createCorsResponse(result, result.success ? 200 : 500);
+      try {
+        const result = await synchronizeMagentoData({ 
+          changesOnly: syncType === 'changes_only',
+          useMock: useMock
+        });
+        
+        console.log('Sync process complete, returning result:', result);
+        return createCorsResponse(result, result.success ? 200 : 500);
+      } catch (syncError) {
+        console.error('Error during sync process:', syncError);
+        return createCorsResponse({ 
+          success: false, 
+          error: `Sync process failed: ${syncError.message}` 
+        }, 500);
+      }
     } catch (error) {
       console.error('Error processing sync request:', error);
       return createCorsResponse({ success: false, error: error.message }, 500);

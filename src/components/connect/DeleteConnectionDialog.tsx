@@ -36,7 +36,13 @@ const DeleteConnectionDialog: React.FC<DeleteConnectionDialogProps> = ({
   isDeleting = false
 }) => {
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={open} onOpenChange={(newOpen) => {
+      // Prevent closing the dialog while deletion is in progress
+      if (isDeleting && newOpen === false) {
+        return;
+      }
+      onOpenChange(newOpen);
+    }}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Vil du slette denne butik?</AlertDialogTitle>

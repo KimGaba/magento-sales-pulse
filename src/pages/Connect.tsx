@@ -150,32 +150,32 @@ const Connect = () => {
       // First delete store data with all related records
       if (storeToDelete.store_id) {
         console.log(`Deleting store data for store ID: ${storeToDelete.store_id}`);
-        const { data, error } = await supabase.rpc('delete_store_data', {
+        const { error: rpcError } = await supabase.rpc('delete_store_data', {
           target_store_id: storeToDelete.store_id
         });
 
-        if (error) {
-          console.error("Error deleting store data:", error);
-          throw error;
+        if (rpcError) {
+          console.error("Error deleting store data:", rpcError);
+          throw rpcError;
         }
-        console.log("Store data deletion successful:", data);
+        console.log("Store data deletion successful");
       }
 
       // Then delete the connection itself
       console.log(`Deleting connection with ID: ${storeToDelete.id}`);
-      const { error } = await supabase
+      const { error: deleteError } = await supabase
         .from('magento_connections')
         .delete()
         .eq('id', storeToDelete.id);
 
-      if (error) {
-        console.error("Error deleting connection:", error);
-        throw error;
+      if (deleteError) {
+        console.error("Error deleting connection:", deleteError);
+        throw deleteError;
       }
 
       console.log("Connection deleted successfully");
 
-      // Update the connections list by removing the deleted connection
+      // Update the connections list by removing the deleted connection immediately
       setConnections(prevConnections => 
         prevConnections.filter(conn => conn.id !== storeToDelete.id)
       );
@@ -185,10 +185,13 @@ const Connect = () => {
         description: t.connect.storeDeletedDesc,
       });
       
-      // Reload connections to ensure the UI is up to date
-      setTimeout(() => {
-        loadConnections();
-      }, 500);
+      // Close the dialog before reloading connections to prevent flicker
+      setShowDeleteDialog(false);
+      setStoreToDelete(null);
+      
+      // Wait a moment then force a full reload to ensure database is in sync
+      await new Promise(resolve => setTimeout(resolve, 300));
+      await loadConnections();
       
     } catch (error) {
       console.error("Error deleting store:", error);
@@ -199,8 +202,10 @@ const Connect = () => {
       });
     } finally {
       setDeletingStore(false);
-      setShowDeleteDialog(false);
-      setStoreToDelete(null);
+      if (showDeleteDialog) {
+        setShowDeleteDialog(false);
+        setStoreToDelete(null);
+      }
     }
   };
 
@@ -263,3 +268,4 @@ const Connect = () => {
 };
 
 export default Connect;
+

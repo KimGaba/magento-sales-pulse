@@ -22,7 +22,27 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
         console.log(`Fetching all transactions from ${twoYearsAgo} to ${toDate} for trend chart`);
         const result = await fetchTransactionData(twoYearsAgo, toDate);
         console.log(`Fetched ${result.length} transactions for trend data`);
-        return result;
+        
+        // Ensure transactions have email data (extract from metadata if available)
+        return result.map(transaction => {
+          // Check if we have customer email info in metadata
+          if (transaction.metadata && transaction.metadata.customer_email) {
+            return {
+              ...transaction,
+              email: transaction.metadata.customer_email
+            };
+          }
+          
+          // Check if email might be in customer_id field (some systems store email as ID)
+          if (transaction.customer_id && transaction.customer_id.includes('@')) {
+            return {
+              ...transaction,
+              email: transaction.customer_id
+            };
+          }
+          
+          return transaction;
+        });
       } catch (fetchError) {
         console.error('Error in all transactions query:', fetchError);
         toast({
@@ -44,7 +64,27 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
         console.log(`Fetching transactions from ${fromDate} to ${toDate} for current period`);
         const result = await fetchTransactionData(fromDate, toDate);
         console.log(`Fetched ${result.length} transactions for current period`);
-        return result;
+        
+        // Ensure transactions have email data (extract from metadata if available)
+        return result.map(transaction => {
+          // Check if we have customer email info in metadata
+          if (transaction.metadata && transaction.metadata.customer_email) {
+            return {
+              ...transaction,
+              email: transaction.metadata.customer_email
+            };
+          }
+          
+          // Check if email might be in customer_id field (some systems store email as ID)
+          if (transaction.customer_id && transaction.customer_id.includes('@')) {
+            return {
+              ...transaction,
+              email: transaction.customer_id
+            };
+          }
+          
+          return transaction;
+        });
       } catch (fetchError) {
         console.error('Error in transaction query:', fetchError);
         toast({

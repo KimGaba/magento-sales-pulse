@@ -5,6 +5,7 @@ export type RepeatPurchaseData = {
   repeatCustomers: number;
   totalCustomers: number;
   repeatRate: number;
+  loyalCustomers?: number;  // Customers with 3+ purchases
   topCustomers: {
     email: string;
     purchases: number;
@@ -18,6 +19,7 @@ export type RepeatPurchaseData = {
 // Define a type for transaction data
 export interface Transaction {
   customer_id?: string | null;
+  email?: string | null;  // Added email field for improved identification
   amount: number;
   transaction_date: string;
   [key: string]: any; // For any other properties
@@ -33,20 +35,24 @@ export const calculateRepeatPurchaseRate = (
       repeatCustomers: 0,
       totalCustomers: 0,
       repeatRate: 0,
+      loyalCustomers: 0,
       topCustomers: []
     };
   }
 
-  // Group transactions by customer
+  // Group transactions by customer - preferring email over customer_id for identification
   const customerPurchases = transactions.reduce((acc, transaction) => {
-    const customerId = transaction.customer_id || 'unknown';
+    // Use email first, then customer_id, then 'unknown' as fallback
+    const customerId = transaction.email || transaction.customer_id || 'unknown';
+    
     if (!acc[customerId]) {
       acc[customerId] = {
         purchases: 0,
         totalSpent: 0,
         lastPurchase: '',
         firstPurchase: '',
-        transactions: []
+        transactions: [],
+        averageOrderValue: 0
       };
     }
     
@@ -68,6 +74,9 @@ export const calculateRepeatPurchaseRate = (
     
     acc[customerId].transactions.push(transaction);
     
+    // Calculate average order value
+    acc[customerId].averageOrderValue = acc[customerId].totalSpent / acc[customerId].purchases;
+    
     return acc;
   }, {} as Record<string, {
     purchases: number;
@@ -75,41 +84,39 @@ export const calculateRepeatPurchaseRate = (
     lastPurchase: string;
     firstPurchase: string;
     transactions: Transaction[];
+    averageOrderValue: number;
   }>);
   
-  // Count total unique customers and repeat customers
-  const totalCustomers = Object.keys(customerPurchases).length;
-  const repeatCustomers = Object.values(customerPurchases).filter(
-    customer => customer.purchases > 1
-  ).length;
+  // Count customers by category
+  const allCustomerStats = Object.values(customerPurchases);
+  const repeatCustomers = allCustomerStats.filter(customer => customer.purchases > 1);
+  const loyalCustomers = allCustomerStats.filter(customer => customer.purchases >= 3);
   
   // Calculate repeat rate
-  const repeatRate = totalCustomers > 0 ? (repeatCustomers / totalCustomers) * 100 : 0;
+  const repeatRate = allCustomerStats.length > 0 ? (repeatCustomers.length / allCustomerStats.length) * 100 : 0;
   
   // Get top returning customers (sorted by purchase count)
   const topCustomers = Object.entries(customerPurchases)
     .map(([customerId, data]) => {
-      // Calculate average order value
-      const averageOrderValue = data.totalSpent / data.purchases;
-      
       return {
         email: customerId === 'unknown' ? 'Guest Customer' : customerId,
         purchases: data.purchases,
         totalSpent: data.totalSpent,
         lastPurchase: data.lastPurchase,
         firstPurchase: data.firstPurchase,
-        averageOrderValue
+        averageOrderValue: data.averageOrderValue
       };
     })
     .filter(customer => customer.purchases > 1)
     .sort((a, b) => b.purchases - a.purchases)
-    .slice(0, 10); // Increasing from 5 to 10 top customers
+    .slice(0, 10); // Show top 10 customers
   
   return {
     period: months,
-    repeatCustomers,
-    totalCustomers,
+    repeatCustomers: repeatCustomers.length,
+    totalCustomers: allCustomerStats.length,
     repeatRate,
+    loyalCustomers: loyalCustomers.length,
     topCustomers
   };
 };
@@ -169,11 +176,11 @@ export const calculateMonthlyRepeatRates = (
     });
 
     if (periodTransactions.length > 0) {
-      // Group by customer to calculate repeat purchase rate
+      // Group by customer to calculate repeat purchase rate - using email as identifier when available
       const customerPurchases: Record<string, number> = {};
       
       periodTransactions.forEach(tx => {
-        const customerId = tx.customer_id || 'unknown';
+        const customerId = tx.email || tx.customer_id || 'unknown';
         customerPurchases[customerId] = (customerPurchases[customerId] || 0) + 1;
       });
       
