@@ -69,24 +69,31 @@ const Connect = () => {
     }
   }, [user]);
   
-  const loadConnections = async () => {
-    if (!user) return;
-    
-    setLoadingConnections(true);
-    try {
-      const connectionsData = await fetchMagentoConnections(user.id);
-      setConnections(connectionsData);
-    } catch (error) {
-      console.error("Error fetching connections:", error);
-      toast({
-        title: "Fejl ved indlæsning",
-        description: "Der opstod en fejl ved indlæsning af dine forbindelser.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingConnections(false);
-    }
-  };
+const loadConnections = async () => {
+  if (!user) return;
+
+  setLoadingConnections(true);
+  try {
+    const connectionsData = await fetchMagentoConnections(user.id);
+
+    // Filtrer forbindelser væk hvor store_id er null
+    const validConnections = connectionsData.filter(
+      (conn) => conn.store_id !== null
+    );
+
+    setConnections(validConnections);
+  } catch (error) {
+    console.error("Error fetching connections:", error);
+    toast({
+      title: "Fejl ved indlæsning",
+      description: "Der opstod en fejl ved indlæsning af dine forbindelser.",
+      variant: "destructive",
+    });
+  } finally {
+    setLoadingConnections(false);
+  }
+};
+
   
   const handleConnect = async (values: ConnectFormValues) => {
     if (!values.url.trim() || !values.apiKey.trim() || !values.storeName.trim()) {
@@ -143,48 +150,43 @@ const Connect = () => {
   };
 
   const confirmDelete = async () => {
-  console.log("✅ confirmDelete kaldt – tjekker storeToDelete:", storeToDelete);
+    if (!storeToDelete || !storeToDelete.store_id) return;
 
-  if (!storeToDelete || !storeToDelete.store_id) {
-    console.warn("⛔️ Sletning stoppet – ingen storeToDelete eller store_id mangler");
-    return;
-  }
+    console.log("Deleting full store data via RPC for store ID:", storeToDelete.store_id);
+    setDeletingStore(true);
 
-  console.log("Deleting full store data via RPC for store ID:", storeToDelete.store_id);
-  setDeletingStore(true);
+    try {
+      const { data, error } = await supabase.rpc("delete_store_data", {
+        target_store_id: storeToDelete.store_id,
+      });
 
-  try {
-    const { data, error } = await supabase.rpc("delete_store_data", {
-      target_store_id: storeToDelete.store_id,
-    });
+      if (error) {
+        console.error("Error in delete_store_data RPC:", error);
+        throw error;
+      }
 
-    if (error) {
-      console.error("Error in delete_store_data RPC:", error);
-      throw error;
+      console.log("RPC deletion successful:", data);
+
+      setConnections((prev) =>
+        prev.filter((conn) => conn.store_id !== storeToDelete.store_id)
+      );
+
+      toast({
+        title: t.connect.storeDeleted,
+        description: t.connect.storeDeletedDesc,
+      });
+    } catch (error) {
+      toast({
+        title: t.connect.deleteError,
+        description: t.connect.deleteErrorDesc,
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingStore(false);
+      setShowDeleteDialog(false);
+      setStoreToDelete(null);
     }
-
-    console.log("RPC deletion successful:", data);
-
-    setConnections((prev) =>
-      prev.filter((conn) => conn.store_id !== storeToDelete.store_id)
-    );
-
-    toast({
-      title: t.connect.storeDeleted,
-      description: t.connect.storeDeletedDesc,
-    });
-  } catch (error) {
-    toast({
-      title: t.connect.deleteError,
-      description: t.connect.deleteErrorDesc,
-      variant: "destructive",
-    });
-  } finally {
-    setDeletingStore(false);
-    setShowDeleteDialog(false);
-    setStoreToDelete(null);
-  }
-};
+  };
 
   return (
     <Layout>
