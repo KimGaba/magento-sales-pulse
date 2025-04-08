@@ -11,9 +11,13 @@ export async function processDailySalesData(salesData: any[], storeId: string) {
   try {
     // Group sales by date
     const salesByDate = salesData.reduce((acc, order) => {
-      // Extract just the date part (YYYY-MM-DD)
-      const orderDate = order.created_at.split('T')[0];
-      
+      const createdAt = order.created_at;
+      if (!createdAt || typeof createdAt !== 'string' || !createdAt.includes('T')) {
+        console.warn(`⚠️ Skipping order with invalid created_at:`, order);
+        return acc;
+      }
+      const orderDate = createdAt.split('T')[0];
+
       if (!acc[orderDate]) {
         acc[orderDate] = {
           total_sales: 0,
@@ -21,33 +25,31 @@ export async function processDailySalesData(salesData: any[], storeId: string) {
           orders: []
         };
       }
-      
+
       acc[orderDate].total_sales += parseFloat(order.grand_total);
       acc[orderDate].order_count += 1;
       acc[orderDate].orders.push(order);
-      
+
       return acc;
     }, {});
-    
+
     // Store daily sales for each date
     for (const [date, data] of Object.entries(salesByDate)) {
       const avgOrderValue = data.total_sales / data.order_count;
-      
-      // Check if a record already exists for this date and store
+
       const { data: existingRecord, error: checkError } = await supabase
         .from('daily_sales')
         .select('*')
         .eq('store_id', storeId)
         .eq('date', date)
         .maybeSingle();
-      
+
       if (checkError) {
         console.error(`Error checking for existing daily sales record: ${checkError.message}`);
         continue;
       }
-      
+
       if (existingRecord) {
-        // Update existing record
         const { error: updateError } = await supabase
           .from('daily_sales')
           .update({
@@ -57,14 +59,13 @@ export async function processDailySalesData(salesData: any[], storeId: string) {
             updated_at: new Date().toISOString()
           })
           .eq('id', existingRecord.id);
-          
+
         if (updateError) {
           console.error(`Error updating daily sales record: ${updateError.message}`);
         } else {
           console.log(`Updated daily sales for ${date}`);
         }
       } else {
-        // Insert new record
         const { error: insertError } = await supabase
           .from('daily_sales')
           .insert({
@@ -74,7 +75,7 @@ export async function processDailySalesData(salesData: any[], storeId: string) {
             order_count: data.order_count,
             average_order_value: avgOrderValue
           });
-          
+
         if (insertError) {
           console.error(`Error inserting daily sales record: ${insertError.message}`);
         } else {
@@ -82,7 +83,7 @@ export async function processDailySalesData(salesData: any[], storeId: string) {
         }
       }
     }
-    
+
   } catch (error) {
     console.error(`Error processing daily sales data: ${error.message}`);
     throw error;
@@ -92,28 +93,24 @@ export async function processDailySalesData(salesData: any[], storeId: string) {
 // Store individual transactions from Magento orders
 export async function storeTransactions(ordersData: any[], storeId: string) {
   try {
-    // For each order, create a transaction record
     for (const order of ordersData) {
-      // Check if this transaction already exists (using external_id)
       const { data: existingTransaction, error: checkError } = await supabase
         .from('transactions')
         .select('*')
         .eq('store_id', storeId)
         .eq('external_id', order.external_id)
         .maybeSingle();
-        
+
       if (checkError) {
         console.error(`Error checking for existing transaction: ${checkError.message}`);
         continue;
       }
-      
-      // Skip if transaction already exists
+
       if (existingTransaction) {
         console.log(`Transaction for order ${order.external_id} already exists, skipping`);
         continue;
       }
-      
-      // Add metadata including store_view and customer_group
+
       const metadata = {
         store_view: order.store_view,
         customer_group: order.customer_group,
@@ -123,11 +120,9 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
         shipping_method: order.order_data?.shipping_method,
         customer_name: order.customer_name
       };
-      
-      // Format the transaction date properly
+
       let transactionDate = order.transaction_date;
       if (transactionDate) {
-        // Ensure it's in the correct format
         try {
           transactionDate = new Date(transactionDate).toISOString();
         } catch (e) {
@@ -137,8 +132,7 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
       } else {
         transactionDate = new Date().toISOString();
       }
-      
-      // Insert the transaction
+
       const { error: insertError } = await supabase
         .from('transactions')
         .insert({
@@ -149,14 +143,14 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
           customer_id: order.customer_id,
           metadata: metadata
         });
-        
+
       if (insertError) {
         console.error(`Error inserting transaction for order ${order.external_id}: ${insertError.message}`);
       } else {
         console.log(`Inserted transaction for order ${order.external_id}`);
       }
     }
-    
+
     console.log(`Completed storing ${ordersData.length} transactions`);
     return { success: true, count: ordersData.length };
   } catch (error) {
