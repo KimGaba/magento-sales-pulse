@@ -17,52 +17,8 @@ export const addMagentoConnection = async (
       ? storeUrl.slice(0, -1)
       : storeUrl;
 
-  const tempConnectionId = crypto.randomUUID(); // eller lav et midlertidigt ID
-const testResult = await testMagentoConnection(
-  normalizedUrl,
-  accessToken,
-  tempConnectionId,
-  storeName,
-  userId
-);
-
-    // ✅ Ryd gamle forbindelser hvor store_id er NULL
-    console.log("🧹 Rydder tidligere forbindelser uden store_id");
-    await supabase
-      .from('magento_connections')
-      .delete()
-      .eq('user_id', userId)
-      .eq('store_url', normalizedUrl)
-      .is('store_id', null);
-
-    // Hent eksisterende forbindelser for bruger + URL
-    const { data: existingConnections, error: checkError } = await supabase
-      .from('magento_connections')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('store_url', normalizedUrl);
-
-    if (checkError) {
-      console.error('Error checking existing connections:', checkError);
-      throw checkError;
-    }
-
-    console.log('Found existing connections:', existingConnections);
-
-    // Tjek om der findes en "aktiv" forbindelse (med store_id eller status)
-    const hasActiveConnection = existingConnections?.some(
-      (conn) => conn.store_id !== null || conn.status === 'active'
-    );
-
-    if (hasActiveConnection) {
-      console.warn('Connection already exists for this store URL with store_id');
-      throw new Error(
-        'Der eksisterer allerede en aktiv forbindelse til denne Magento butik. Brug en anden URL eller slet den eksisterende forbindelse først.'
-      );
-    }
-
-    // Indsæt ny forbindelse
-    const { data, error } = await supabase
+    // Indsæt ny forbindelse først med status = pending
+    const { data: inserted, error: insertError } = await supabase
       .from('magento_connections')
       .insert([
         {
@@ -73,15 +29,32 @@ const testResult = await testMagentoConnection(
           status: 'pending'
         }
       ])
-      .select();
+      .select()
+      .single();
 
-    if (error) {
-      console.error('Error adding Magento connection:', error);
-      throw error;
+    if (insertError || !inserted) {
+      console.error('Error inserting initial connection:', insertError);
+      throw insertError || new Error('Failed to insert initial connection');
     }
 
-    console.log('✅ Successfully added Magento connection:', data);
-    return data;
+    const connectionId = inserted.id;
+
+    // Kør test af forbindelsen
+    const testResult = await testMagentoConnection(
+      normalizedUrl,
+      accessToken,
+      connectionId,
+      storeName,
+      userId
+    );
+
+    if (!testResult.success) {
+      console.error('Connection test failed:', testResult.error);
+      throw new Error(testResult.error || 'Failed to connect to Magento store');
+    }
+
+    console.log('✅ Successfully added Magento connection:', inserted);
+    return [inserted];
   } catch (error) {
     console.error('❌ Error adding Magento connection:', error);
     throw error;
