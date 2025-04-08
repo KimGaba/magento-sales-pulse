@@ -28,3 +28,17 @@ export type Transaction = {
   };
   email?: string;
 };
+
+export type Profile = {
+  id: string;
+  display_name?: string | null;
+  email?: string | null;
+  avatar_url?: string | null;
+  invoice_address?: string | null;
+  city?: string | null;
+  postal_code?: string | null;
+  country?: string | null;
+  timezone?: string | null;
+  created_at: string;
+  updated_at: string;
+};

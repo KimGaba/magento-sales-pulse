@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { Profile } from '@/types/database';
 
 /**
  * Fetches user profile data
@@ -20,7 +21,7 @@ export const fetchUserProfile = async (userId: string) => {
     }
     
     console.log('Fetched user profile:', data);
-    return data;
+    return data as Profile;
   } catch (error) {
     console.error('Error fetching user profile:', error);
     throw error;
@@ -32,7 +33,7 @@ export const fetchUserProfile = async (userId: string) => {
  */
 export const updateUserProfile = async (
   userId: string, 
-  updates: { display_name?: string; avatar_url?: string }
+  updates: Partial<Profile>
 ) => {
   try {
     console.log(`Updating profile for user ${userId}:`, updates);
@@ -49,7 +50,7 @@ export const updateUserProfile = async (
     }
     
     console.log('Successfully updated user profile:', data);
-    return data;
+    return data[0] as Profile;
   } catch (error) {
     console.error('Error updating user profile:', error);
     throw error;

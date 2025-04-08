@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -9,6 +8,7 @@ import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { InfoIcon, Save } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Profile } from '@/types/database';
 
 interface TimezoneSettingsProps {
   user: User | null;
@@ -75,19 +75,14 @@ const TimezoneSettings: React.FC<TimezoneSettingsProps> = ({ user }) => {
 
       if (updateError) throw updateError;
 
-      // Also update profiles table if it exists
-      try {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ timezone })
-          .eq('id', user.id);
-          
-        if (profileError && !profileError.message.includes('does not exist')) {
-          throw profileError;
-        }
-      } catch (profileError) {
-        // Silently fail if profiles table doesn't exist or doesn't have timezone column
-        console.log("Profile update might have failed:", profileError);
+      // Also update profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ timezone })
+        .eq('id', user.id);
+        
+      if (profileError) {
+        throw profileError;
       }
 
       toast.success("Tidszone indstillinger gemt");
