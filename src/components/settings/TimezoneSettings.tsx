@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -9,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { InfoIcon, Save } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Profile } from '@/types/database';
+import { fetchUserProfile } from '@/services/profileService';
 
 interface TimezoneSettingsProps {
   user: User | null;
@@ -49,14 +51,10 @@ const TimezoneSettings: React.FC<TimezoneSettingsProps> = ({ user }) => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('timezone')
-        .eq('id', user.id)
-        .single();
-        
-      if (data && !error && data.timezone) {
-        setTimezone(data.timezone);
+      const profile = await fetchUserProfile(user.id);
+      
+      if (profile && profile.timezone) {
+        setTimezone(profile.timezone);
       }
     } catch (error) {
       console.error('Error loading user timezone:', error);
@@ -75,7 +73,7 @@ const TimezoneSettings: React.FC<TimezoneSettingsProps> = ({ user }) => {
 
       if (updateError) throw updateError;
 
-      // Also update profiles table
+      // Update profiles table
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ timezone })
