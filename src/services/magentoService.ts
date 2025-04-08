@@ -31,7 +31,7 @@ export const addMagentoConnection = async (
       .delete()
       .eq('user_id', userId)
       .eq('store_url', normalizedUrl)
-      .is('store_id', null); // korrekt måde at matche null på
+      .is('store_id', null);
 
     // Tjek om der allerede findes en aktiv forbindelse
     const { data: existingConnections, error: checkError } = await supabase
@@ -76,6 +76,10 @@ export const addMagentoConnection = async (
     throw error;
   }
 };
+
+/**
+ * Fetches magento connections for a user
+ */
 export const fetchMagentoConnections = async (userId: string): Promise<MagentoConnection[]> => {
   try {
     console.log(`Fetching Magento connections for user ${userId}`);
@@ -96,5 +100,68 @@ export const fetchMagentoConnections = async (userId: string): Promise<MagentoCo
   } catch (error) {
     console.error('Error fetching Magento connections:', error);
     throw error;
+  }
+};
+
+/**
+ * Manually triggers synchronization for Magento stores
+ */
+export const triggerMagentoSync = async (
+  syncType: 'full' | 'changes_only' = 'full',
+  useMock: boolean = false
+) => {
+  try {
+    console.log(`Manually triggering Magento synchronization (type: ${syncType}, useMock: ${useMock})`);
+
+    const { data, error } = await supabase.functions.invoke('magento-sync', {
+      body: {
+        trigger: 'manual',
+        syncType,
+        useMock
+      }
+    });
+
+    if (error) {
+      console.error('Error triggering Magento sync:', error);
+      if (error.message?.includes('Function not found')) {
+        throw new Error('Magento sync function not found or not deployed.');
+      }
+      throw error;
+    }
+
+    console.log('Magento sync triggered successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Error triggering Magento sync:', error);
+    throw error;
+  }
+};
+
+/**
+ * Tests a Magento connection by calling the sync edge function
+ */
+export const testMagentoConnection = async (storeUrl: string, accessToken: string) => {
+  try {
+    const normalizedUrl = storeUrl.endsWith('/')
+      ? storeUrl.slice(0, -1)
+      : storeUrl;
+
+    const { data, error } = await supabase.functions.invoke('magento-sync', {
+      body: {
+        action: 'test_connection',
+        storeUrl: normalizedUrl,
+        accessToken
+      }
+    });
+
+    if (error) {
+      console.error('Error testing connection:', error);
+      return { success: false, error: error.message };
+    }
+
+    return data || { success: true };
+  } catch (error: any) {
+    console.error('Connection test failed:', error);
+    return { success: false, error: error.message || 'Unknown error' };
   }
 };
