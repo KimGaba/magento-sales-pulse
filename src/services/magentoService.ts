@@ -13,19 +13,10 @@ export const addMagentoConnection = async (
   try {
     console.log(`Adding Magento connection for user ${userId} to store ${storeName}`);
 
-    const normalizedUrl = storeUrl.endsWith('/')
-      ? storeUrl.slice(0, -1)
-      : storeUrl;
+    const normalizedUrl = storeUrl.endsWith('/') ? storeUrl.slice(0, -1) : storeUrl;
 
-    // Test forbindelsen først
-    const testResult = await testMagentoConnection(normalizedUrl, accessToken);
-    if (!testResult.success) {
-      console.error('Connection test failed:', testResult.error);
-      throw new Error(testResult.error || 'Failed to connect to Magento store');
-    }
-
-    // ✅ Ryd gamle forbindelser hvor store_id er NULL
-    console.log("🧹 Prøver at rydde tidligere forbindelser uden store_id");
+    // Ryd gamle forbindelser uden store_id
+    console.log('🧹 Rydder tidligere forbindelser uden store_id');
     await supabase
       .from('magento_connections')
       .delete()
@@ -50,8 +41,8 @@ export const addMagentoConnection = async (
       throw new Error('Der eksisterer allerede en forbindelse til denne Magento butik. Brug en anden URL eller slet den eksisterende forbindelse først.');
     }
 
-    // Indsæt ny forbindelse
-    const { data, error } = await supabase
+    // Opret ny forbindelse (pending)
+    const { data: inserted, error: insertError } = await supabase
       .from('magento_connections')
       .insert([
         {
@@ -62,15 +53,29 @@ export const addMagentoConnection = async (
           status: 'pending'
         }
       ])
-      .select();
+      .select()
+      .single();
 
-    if (error) {
-      console.error('Error adding Magento connection:', error);
-      throw error;
+    if (insertError || !inserted) {
+      console.error('Error adding Magento connection:', insertError);
+      throw insertError || new Error('Connection could not be created');
     }
 
-    console.log('✅ Successfully added Magento connection:', data);
-    return data;
+    // Test forbindelsen og aktiver
+    const testResult = await testMagentoConnection(
+      normalizedUrl,
+      accessToken,
+      inserted.id,
+      storeName,
+      userId
+    );
+
+    if (!testResult.success) {
+      throw new Error(testResult.error || 'Magento connection test failed');
+    }
+
+    console.log('✅ Successfully added and verified Magento connection');
+    return inserted;
   } catch (error) {
     console.error('❌ Error adding Magento connection:', error);
     throw error;
@@ -78,7 +83,7 @@ export const addMagentoConnection = async (
 };
 
 /**
- * Fetches magento connections for a user
+ * Fetches Magento connections for a user
  */
 export const fetchMagentoConnections = async (userId: string): Promise<MagentoConnection[]> => {
   try {
@@ -95,8 +100,7 @@ export const fetchMagentoConnections = async (userId: string): Promise<MagentoCo
       throw error;
     }
 
-    console.log(`Fetched ${data?.length || 0} Magento connections`);
-    return data as MagentoConnection[] || [];
+    return data || [];
   } catch (error) {
     console.error('Error fetching Magento connections:', error);
     throw error;
@@ -104,14 +108,14 @@ export const fetchMagentoConnections = async (userId: string): Promise<MagentoCo
 };
 
 /**
- * Manually triggers synchronization for Magento stores
+ * Triggers synchronization for Magento stores
  */
 export const triggerMagentoSync = async (
   syncType: 'full' | 'changes_only' = 'full',
   useMock: boolean = false
 ) => {
   try {
-    console.log(`Manually triggering Magento synchronization (type: ${syncType}, useMock: ${useMock})`);
+    console.log(`Triggering Magento sync (type: ${syncType}, useMock: ${useMock})`);
 
     const { data, error } = await supabase.functions.invoke('magento-sync', {
       body: {
@@ -129,7 +133,6 @@ export const triggerMagentoSync = async (
       throw error;
     }
 
-    console.log('Magento sync triggered successfully:', data);
     return data;
   } catch (error) {
     console.error('Error triggering Magento sync:', error);
@@ -138,7 +141,7 @@ export const triggerMagentoSync = async (
 };
 
 /**
- * Tests a Magento connection by calling the sync edge function
+ * Tests a Magento connection by calling the Edge Function
  */
 export const testMagentoConnection = async (
   storeUrl: string,
@@ -148,9 +151,7 @@ export const testMagentoConnection = async (
   userId: string
 ) => {
   try {
-    const normalizedUrl = storeUrl.endsWith('/')
-      ? storeUrl.slice(0, -1)
-      : storeUrl;
+    const normalizedUrl = storeUrl.endsWith('/') ? storeUrl.slice(0, -1) : storeUrl;
 
     const { data, error } = await supabase.functions.invoke('magento-sync', {
       body: {
@@ -164,7 +165,7 @@ export const testMagentoConnection = async (
     });
 
     if (error) {
-      console.error('Error testing connection:', error);
+      console.error('Error testing Magento connection:', error);
       return { success: false, error: error.message };
     }
 
@@ -174,6 +175,7 @@ export const testMagentoConnection = async (
     return { success: false, error: error.message || 'Unknown error' };
   }
 };
+
 /**
  * Updates a Magento store connection
  */
@@ -201,4 +203,3 @@ export const updateMagentoConnection = async (
     throw error;
   }
 };
-
