@@ -140,7 +140,13 @@ export const triggerMagentoSync = async (
 /**
  * Tests a Magento connection by calling the sync edge function
  */
-export const testMagentoConnection = async (storeUrl: string, accessToken: string) => {
+export const testMagentoConnection = async (
+  storeUrl: string,
+  accessToken: string,
+  connectionId: string,
+  storeName: string,
+  userId: string
+) => {
   try {
     const normalizedUrl = storeUrl.endsWith('/')
       ? storeUrl.slice(0, -1)
@@ -150,7 +156,10 @@ export const testMagentoConnection = async (storeUrl: string, accessToken: strin
       body: {
         action: 'test_connection',
         storeUrl: normalizedUrl,
-        accessToken
+        accessToken,
+        connectionId,
+        storeName,
+        userId
       }
     });
 
