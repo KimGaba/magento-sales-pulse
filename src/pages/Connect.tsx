@@ -60,6 +60,7 @@ const Connect = () => {
   const [loadingConnections, setLoadingConnections] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [storeToDelete, setStoreToDelete] = useState<StoreConnection | null>(null);
+  const [deletingStore, setDeletingStore] = useState(false);
   
   useEffect(() => {
     if (user) {
@@ -142,6 +143,8 @@ const Connect = () => {
 
   const confirmDelete = async () => {
     if (!storeToDelete) return;
+    
+    setDeletingStore(true);
 
     try {
       // First delete store data with all related records
@@ -181,6 +184,12 @@ const Connect = () => {
         title: t.connect.storeDeleted,
         description: t.connect.storeDeletedDesc,
       });
+      
+      // Reload connections to ensure the UI is up to date
+      setTimeout(() => {
+        loadConnections();
+      }, 500);
+      
     } catch (error) {
       console.error("Error deleting store:", error);
       toast({
@@ -189,6 +198,7 @@ const Connect = () => {
         variant: "destructive",
       });
     } finally {
+      setDeletingStore(false);
       setShowDeleteDialog(false);
       setStoreToDelete(null);
     }
@@ -246,6 +256,7 @@ const Connect = () => {
         onOpenChange={setShowDeleteDialog}
         storeToDelete={storeToDelete}
         onConfirmDelete={confirmDelete}
+        isDeleting={deletingStore}
       />
     </Layout>
   );

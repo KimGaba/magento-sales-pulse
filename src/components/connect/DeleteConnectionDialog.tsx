@@ -25,13 +25,15 @@ interface DeleteConnectionDialogProps {
   onOpenChange: (open: boolean) => void;
   storeToDelete: StoreConnection | null;
   onConfirmDelete: () => void;
+  isDeleting?: boolean;
 }
 
 const DeleteConnectionDialog: React.FC<DeleteConnectionDialogProps> = ({
   open,
   onOpenChange,
   storeToDelete,
-  onConfirmDelete
+  onConfirmDelete,
+  isDeleting = false
 }) => {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -44,12 +46,20 @@ const DeleteConnectionDialog: React.FC<DeleteConnectionDialogProps> = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Annuller</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>Annuller</AlertDialogCancel>
           <AlertDialogAction 
             onClick={onConfirmDelete}
             className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            disabled={isDeleting}
           >
-            Ja, slet butikken
+            {isDeleting ? (
+              <>
+                <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin mr-2"></span>
+                Sletter...
+              </>
+            ) : (
+              "Ja, slet butikken"
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

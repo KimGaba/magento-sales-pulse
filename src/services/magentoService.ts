@@ -121,6 +121,12 @@ export const triggerMagentoSync = async (syncType: 'full' | 'changes_only' = 'fu
     
     if (error) {
       console.error('Error triggering Magento sync:', error);
+      
+      // Check for specific error types
+      if (error.message.includes('Function not found')) {
+        throw new Error('Magento sync function not found or not deployed. Please check your Supabase edge functions.');
+      }
+      
       throw error;
     }
     
@@ -144,30 +150,44 @@ export const testMagentoConnection = async (storeUrl: string, accessToken: strin
       ? storeUrl.slice(0, -1)
       : storeUrl;
     
-    const { data, error } = await supabase.functions.invoke('magento-sync', {
-      body: { 
-        action: 'test_connection',
-        storeUrl: normalizedUrl,
-        accessToken: accessToken
-      }
-    });
-    
-    if (error) {
-      console.error('Error testing Magento connection:', error);
+    // Call the edge function for testing
+    try {
+      const { data, error } = await supabase.functions.invoke('magento-sync', {
+        body: { 
+          action: 'test_connection',
+          storeUrl: normalizedUrl,
+          accessToken: accessToken
+        }
+      });
       
-      // Provide more helpful error messages based on common issues
-      if (error.message.includes('401')) {
-        throw new Error('Ugyldigt API-token. Kontroller at du har angivet den korrekte API-nøgle.');
-      } else if (error.message.includes('404')) {
-        throw new Error('Magento API endpoint ikke fundet. Kontroller at URL\'en er korrekt og at Magento REST API er aktiveret.');
-      } else if (error.message.includes('Function not found')) {
-        throw new Error('Magento sync funktion ikke fundet. Dette er en konfigurationsfejl på serveren.');
-      } else {
-        throw error;
+      if (error) {
+        console.error('Error from edge function:', error);
+        
+        // Provide more helpful error messages based on common issues
+        if (error.message.includes('401')) {
+          throw new Error('Ugyldigt API-token. Kontroller at du har angivet den korrekte API-nøgle.');
+        } else if (error.message.includes('404')) {
+          if (error.message.includes('Function not found')) {
+            throw new Error('Magento sync function not found or not deployed. Please check your Supabase edge functions.');
+          } else {
+            throw new Error('Magento API endpoint ikke fundet. Kontroller at URL\'en er korrekt og at Magento REST API er aktiveret.');
+          }
+        } else {
+          throw error;
+        }
       }
+      
+      return data || { success: true };
+    } catch (functionError) {
+      console.error('Error calling edge function:', functionError);
+      
+      // Check if this is a "function not found" error
+      if (functionError.message && functionError.message.includes('Function not found')) {
+        throw new Error('Magento sync function not found or not deployed. Please check your Supabase edge functions.');
+      }
+      
+      throw functionError;
     }
-    
-    return { success: true, data };
   } catch (error) {
     console.error('Error testing Magento connection:', error);
     
@@ -183,7 +203,9 @@ export const testMagentoConnection = async (storeUrl: string, accessToken: strin
     } else if (error.message.includes('Network Error') || error.message.includes('Failed to fetch')) {
       errorMessage = 'Netværksfejl: Kunne ikke forbinde til Magento-serveren. Kontroller URL og at serveren er online.';
     } else if (error.message.includes('Function not found')) {
-      errorMessage = 'Serverfejl: Magento sync funktion ikke fundet. Dette er et konfigurationsproblem på server-siden.';
+      errorMessage = 'Edge function fejl: Magento sync funktion er ikke fundet eller ikke deployet. Kontroller Supabase edge functions.';
+    } else {
+      errorMessage = error.message || errorMessage;
     }
     
     return { success: false, error: errorMessage };
