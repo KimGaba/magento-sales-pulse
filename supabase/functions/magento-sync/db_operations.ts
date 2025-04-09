@@ -111,36 +111,15 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
         continue;
       }
 
-      // Slå store view info op i Supabase
-let storeViewMeta = null;
-if (order.store_view) {
-  const { data: storeView } = await supabase
-    .from('magento_store_views')
-    .select('*')
-    .eq('store_view_name', order.store_view)
-    .maybeSingle();
-
-  if (storeView) {
-    storeViewMeta = {
-      store_view_id: storeView.store_id, // ID fra Magento
-      website_id: storeView.website_id,
-      store_id: storeView.connection_id, // alternativt: storeView.store_id
-    };
-  }
-}
-
-// Kombiner metadata
-const metadata = {
-  store_view: order.store_view,
-  customer_group: order.customer_group,
-  status: order.status,
-  items_count: order.items,
-  payment_method: order.order_data?.payment_method,
-  shipping_method: order.order_data?.shipping_method,
-  customer_name: order.customer_name,
-  ...storeViewMeta // dynamisk tilføj store_view_id etc. hvis fundet
-};
-
+      const metadata = {
+        store_view: order.store_view,
+        customer_group: order.customer_group,
+        status: order.status,
+        items_count: order.items,
+        payment_method: order.order_data?.payment_method,
+        shipping_method: order.order_data?.shipping_method,
+        customer_name: order.customer_name
+      };
 
       let transactionDate = order.transaction_date;
       if (transactionDate) {
