@@ -1,6 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 import { MagentoConnection } from '@/types/magento';
-import { testMagentoConnection } from './magentoService'; // hvis ikke allerede importeret
 
 export const addMagentoConnection = async (
   userId: string,
