@@ -94,6 +94,56 @@ export type Database = {
           },
         ]
       }
+      magento_store_views: {
+        Row: {
+          connection_id: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          store_id: string
+          store_name: string | null
+          store_view_code: string | null
+          store_view_name: string | null
+          updated_at: string | null
+          website_id: string
+          website_name: string | null
+        }
+        Insert: {
+          connection_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          store_id: string
+          store_name?: string | null
+          store_view_code?: string | null
+          store_view_name?: string | null
+          updated_at?: string | null
+          website_id: string
+          website_name?: string | null
+        }
+        Update: {
+          connection_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          store_id?: string
+          store_name?: string | null
+          store_view_code?: string | null
+          store_view_name?: string | null
+          updated_at?: string | null
+          website_id?: string
+          website_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "magento_store_views_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "magento_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           created_at: string

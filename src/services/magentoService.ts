@@ -1,6 +1,7 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { MagentoConnection } from '@/types/magento';
-import { testMagentoConnection } from './magentoService'; // hvis ikke allerede importeret
+// Removing the circular import of testMagentoConnection
 
 export const addMagentoConnection = async (
   userId: string,
@@ -40,6 +41,7 @@ export const addMagentoConnection = async (
     }
 
     console.log('🧪 Testing connection before activation...');
+    // Now we directly use the testMagentoConnection function defined in this file
     const testResult = await testMagentoConnection(
       normalizedUrl,
       accessToken,
