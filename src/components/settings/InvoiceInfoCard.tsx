@@ -25,6 +25,7 @@ interface InvoiceInfoCardProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onLogout: () => void;
   onSubmit: () => void;
+  loading?: boolean; // Add the loading prop to the interface
 }
 
 const InvoiceInfoCard: React.FC<InvoiceInfoCardProps> = ({ 
@@ -34,7 +35,8 @@ const InvoiceInfoCard: React.FC<InvoiceInfoCardProps> = ({
   country, 
   onChange, 
   onLogout,
-  onSubmit
+  onSubmit,
+  loading = false // Set a default value of false
 }) => {
   const { translations } = useLanguage();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -65,6 +67,7 @@ const InvoiceInfoCard: React.FC<InvoiceInfoCardProps> = ({
               name="invoiceAddress"
               value={invoiceAddress}
               onChange={onChange}
+              disabled={loading}
             />
           </div>
 
@@ -76,6 +79,7 @@ const InvoiceInfoCard: React.FC<InvoiceInfoCardProps> = ({
                 name="city"
                 value={city}
                 onChange={onChange}
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -85,6 +89,7 @@ const InvoiceInfoCard: React.FC<InvoiceInfoCardProps> = ({
                 name="postalCode"
                 value={postalCode}
                 onChange={onChange}
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
@@ -94,16 +99,17 @@ const InvoiceInfoCard: React.FC<InvoiceInfoCardProps> = ({
                 name="country"
                 value={country}
                 onChange={onChange}
+                disabled={loading}
               />
             </div>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col sm:flex-row justify-between gap-3">
-          <Button variant="outline" type="button" onClick={handleLogoutClick} className="w-full sm:w-auto">
+          <Button variant="outline" type="button" onClick={handleLogoutClick} className="w-full sm:w-auto" disabled={loading}>
             <LogOut className="mr-2 h-4 w-4" />
             {translations.settings?.logOutButton || translations.common?.logOut || "Log Out"}
           </Button>
-          <Button type="button" onClick={onSubmit} className="w-full sm:w-auto">
+          <Button type="button" onClick={onSubmit} className="w-full sm:w-auto" disabled={loading}>
             <Save className="mr-2 h-4 w-4" />
             {translations.settings?.save || "Save Changes"}
           </Button>
