@@ -173,6 +173,50 @@ export interface Database {
           website_name?: string | null;
         };
       };
+      profiles: {
+        Row: {
+          id: string;
+          display_name: string | null;
+          email: string | null;
+          avatar_url: string | null;
+          invoice_address: string | null;
+          city: string | null;
+          postal_code: string | null;
+          country: string | null;
+          timezone: string | null;
+          tier: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          display_name?: string | null;
+          email?: string | null;
+          avatar_url?: string | null;
+          invoice_address?: string | null;
+          city?: string | null;
+          postal_code?: string | null;
+          country?: string | null;
+          timezone?: string | null;
+          tier?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          display_name?: string | null;
+          email?: string | null;
+          avatar_url?: string | null;
+          invoice_address?: string | null;
+          city?: string | null;
+          postal_code?: string | null;
+          country?: string | null;
+          timezone?: string | null;
+          tier?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never

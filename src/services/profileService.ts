@@ -56,3 +56,22 @@ export const updateUserProfile = async (
     throw error;
   }
 };
+
+/**
+ * Checks if user is an admin
+ */
+export const isUserAdmin = async (userId: string): Promise<boolean> => {
+  try {
+    const { data: user, error } = await supabase.auth.admin.getUserById(userId);
+    
+    if (error) {
+      console.error('Error checking admin status:', error);
+      return false;
+    }
+    
+    return user?.user?.user_metadata?.role === 'admin';
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
+  }
+};

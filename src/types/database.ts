@@ -39,6 +39,7 @@ export type Profile = {
   postal_code?: string | null;
   country?: string | null;
   timezone?: string | null;
+  tier?: string;
   created_at: string;
   updated_at: string;
 };

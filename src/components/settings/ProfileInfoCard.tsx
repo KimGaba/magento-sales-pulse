@@ -9,12 +9,14 @@ interface ProfileInfoCardProps {
   displayName: string;
   email: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  loading?: boolean;
 }
 
 const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({ 
   displayName, 
   email, 
-  onChange 
+  onChange,
+  loading = false
 }) => {
   const { translations } = useLanguage();
 
@@ -35,6 +37,7 @@ const ProfileInfoCard: React.FC<ProfileInfoCardProps> = ({
               name="displayName"
               value={displayName}
               onChange={onChange}
+              disabled={loading}
             />
           </div>
           <div className="space-y-2">
