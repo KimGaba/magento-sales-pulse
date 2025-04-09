@@ -1,9 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { MagentoConnection } from '@/types/magento';
+import { testMagentoConnection } from './magentoService'; // hvis ikke allerede importeret
 
-/**
- * Adds a Magento store connection
- */
 export const addMagentoConnection = async (
   userId: string,
   storeUrl: string,
@@ -17,11 +15,15 @@ export const addMagentoConnection = async (
       ? storeUrl.slice(0, -1)
       : storeUrl;
 
-    // Indsæt ny forbindelse først med status = pending
+    // Midlertidigt ID til forbindelsen
+    const tempConnectionId = crypto.randomUUID();
+
+    // Opret foreløbig forbindelse med status 'pending' og uden store_id
     const { data: inserted, error: insertError } = await supabase
       .from('magento_connections')
       .insert([
         {
+          id: tempConnectionId,
           user_id: userId,
           store_url: normalizedUrl,
           access_token: accessToken,
@@ -32,34 +34,54 @@ export const addMagentoConnection = async (
       .select()
       .single();
 
-    if (insertError || !inserted) {
-      console.error('Error inserting initial connection:', insertError);
-      throw insertError || new Error('Failed to insert initial connection');
+    if (insertError) {
+      console.error('❌ Error inserting connection:', insertError);
+      throw insertError;
     }
 
-    const connectionId = inserted.id;
-
-    // Kør test af forbindelsen
+    console.log('🧪 Testing connection before activation...');
     const testResult = await testMagentoConnection(
       normalizedUrl,
       accessToken,
-      connectionId,
+      tempConnectionId,
       storeName,
       userId
     );
 
     if (!testResult.success) {
-      console.error('Connection test failed:', testResult.error);
-      throw new Error(testResult.error || 'Failed to connect to Magento store');
+      console.error('❌ Test connection failed:', testResult.error);
+
+      // Slet den midlertidige forbindelse igen
+      await supabase
+        .from('magento_connections')
+        .delete()
+        .eq('id', tempConnectionId);
+
+      throw new Error(testResult.error || 'Connection test failed');
     }
 
-    console.log('✅ Successfully added Magento connection:', inserted);
-    return [inserted];
+    console.log(`✅ Connection activated and store_id updated: ${testResult.storeId}`);
+
+    // (Optional) Trigger sync nu hvor alt er opdateret
+    const { data: syncData, error: syncError } = await supabase.functions.invoke('magento-sync', {
+      body: {
+        trigger: 'initial_connection'
+      }
+    });
+
+    if (syncError) {
+      console.warn('⚠️ Sync not triggered after connection:', syncError.message);
+    } else {
+      console.log('✅ Initial sync triggered:', syncData);
+    }
+
+    return inserted;
   } catch (error) {
-    console.error('❌ Error adding Magento connection:', error);
+    console.error('❌ Error in addMagentoConnection:', error);
     throw error;
   }
 };
+
 
 /**
  * Fetches Magento connections for a user
