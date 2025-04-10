@@ -11,6 +11,7 @@ import IntegrationStatusSection from '@/components/settings/IntegrationStatusSec
 import IntegrationHistorySection from '@/components/settings/IntegrationHistorySection';
 import { fetchUserProfile, isUserAdmin } from '@/services/profileService';
 import { Profile } from '@/types/database';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Settings = () => {
   const { user, logout } = useAuth();
@@ -55,29 +56,36 @@ const Settings = () => {
     <div className="container max-w-3xl py-6">
       <SettingsHeader user={user} />
       
-      <UserProfileForm user={user} onLogout={logout} />
-      
-      <SubscriptionTierSelect 
-        user={user} 
-        profile={profile}
-        isAdmin={isAdmin}
-        onTierChange={() => {}}
-      />
-      
-      <TimezoneSettings user={user} />
-      
-      {user && <MagentoConnectionSettings userId={user.id} />}
-      
-      {/* Added Integration Status and History Sections */}
-      {user && (
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">Integration Status</h2>
-          <IntegrationStatusSection showFullSyncButton={false} />
-          <div className="mt-6">
+      <Tabs defaultValue="profile" className="mt-6">
+        <TabsList className="mb-4">
+          <TabsTrigger value="profile">Profilindstillinger</TabsTrigger>
+          <TabsTrigger value="integration">Integration</TabsTrigger>
+          <TabsTrigger value="subscription">Abonnement</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="profile">
+          <UserProfileForm user={user} onLogout={logout} />
+          <TimezoneSettings user={user} />
+        </TabsContent>
+        
+        <TabsContent value="integration">
+          <div className="space-y-6">
+            {user && <MagentoConnectionSettings userId={user.id} />}
+            
+            <IntegrationStatusSection showFullSyncButton={false} />
             <IntegrationHistorySection />
           </div>
-        </div>
-      )}
+        </TabsContent>
+        
+        <TabsContent value="subscription">
+          <SubscriptionTierSelect 
+            user={user} 
+            profile={profile}
+            isAdmin={isAdmin}
+            onTierChange={() => {}}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

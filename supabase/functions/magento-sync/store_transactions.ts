@@ -25,6 +25,18 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
         continue;
       }
 
+      // Prepare order items data in a structured format
+      const orderItems = Array.isArray(order.items) ? order.items.map(item => ({
+        sku: item.sku || '',
+        name: item.name || '',
+        price: parseFloat(item.price) || 0,
+        qty_ordered: parseFloat(item.qty_ordered) || 1,
+        row_total: parseFloat(item.row_total) || 0,
+        product_id: item.product_id || null,
+        product_type: item.product_type || ''
+      })) : [];
+
+      // Create a detailed metadata object with all the information we want to store
       const metadata = {
         store_view: order.store_view,
         customer_group: order.customer_group,
@@ -32,7 +44,9 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
         items_count: order.items,
         payment_method: order.order_data?.payment_method,
         shipping_method: order.order_data?.shipping_method,
-        customer_name: order.customer_name
+        customer_name: order.customer_name,
+        // Add the new detailed order items
+        order_items: orderItems
       };
 
       let transactionDate = order.transaction_date;
@@ -40,8 +54,8 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
         try {
           transactionDate = new Date(transactionDate).toISOString();
         } catch (e) {
-          console.warn(`Invalid date format for order ${order.external_id}, using current time`);
-          transactionDate = new Date().toISOString();
+          console.warn(`⚠️ Skipping order with invalid transaction_date: ${JSON.stringify(order, null, 2)}`);
+          continue; // Skip this order
         }
       } else {
         transactionDate = new Date().toISOString();

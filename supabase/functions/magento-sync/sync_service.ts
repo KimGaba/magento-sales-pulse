@@ -1,6 +1,6 @@
 
 import { supabase } from "../_shared/db_client.ts";
-import { fetchMagentoOrdersData, mockMagentoOrdersData } from "./magento_api.ts";
+import { fetchMagentoOrdersData, fetchMagentoStoreViews, mockMagentoOrdersData } from "./magento_api.ts";
 import { storeTransactions } from "./store_transactions.ts";
 import { processDailySalesData } from "./sales_aggregator.ts";
 
@@ -89,6 +89,15 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
     console.log(`\n🔧 Processing connection for store: ${connection.store_name} (ID: ${currentStoreId})`);
 
     try {
+      // Fetch and store store views for this connection
+      try {
+        console.log("🏬 Fetching store views for this connection");
+        await fetchMagentoStoreViews(connection);
+      } catch (storeViewError) {
+        console.error("❌ Error fetching store views:", storeViewError.message);
+        // Continue with order sync even if store view fetch fails
+      }
+
       // Check if there's an existing progress record for this connection
       const { data: existingProgress, error: progressError } = await supabase
         .from("sync_progress")

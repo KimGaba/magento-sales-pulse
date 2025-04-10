@@ -6,16 +6,14 @@ import { fetchMagentoConnections, triggerMagentoSync } from '@/services/magentoS
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { MagentoConnection } from '@/types/magento';
-import { CircleCheck, CircleX, RefreshCw, Clock, Download } from 'lucide-react';
+import { CircleCheck, CircleX, Clock, Download } from 'lucide-react';
 import SyncStatus from '../connect/SyncStatus';
 
 interface IntegrationStatusSectionProps {
   showFullSyncButton?: boolean;
 }
 
-const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ 
-  showFullSyncButton = false 
-}) => {
+const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = () => {
   const { user } = useAuth();
   const [connections, setConnections] = useState<MagentoConnection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,15 +40,11 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({
     try {
       const connectionsData = await fetchMagentoConnections(user.id);
       
-      // Log hele resultatet for at debugge
-      console.log("All connections:", connectionsData);
-
       // Filtrér forbindelser uden store_id væk
       const validConnections = connectionsData.filter(
         (conn) => conn.store_id !== null
       );
       
-      console.log("Valid connections with store_id:", validConnections);
       setConnections(validConnections);
     } catch (error) {
       console.error("Error fetching connections:", error);

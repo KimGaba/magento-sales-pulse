@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { format, parseISO, formatDistance } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { fetchSyncHistory } from '@/services/transactionService';
 
@@ -129,6 +129,13 @@ const IntegrationHistorySection = () => {
                 )}
               </TableBody>
             </Table>
+            
+            {history.length > 0 && (
+              <div className="mt-4 text-xs text-gray-500 bg-gray-50 p-3 rounded-md">
+                <p><strong>Næste planlagte synkronisering:</strong> Hver dag kl. 02:00</p>
+                <p>Butikker synkroniseres automatisk én gang dagligt for at opdatere med nye ordrer og produkter.</p>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
