@@ -1,4 +1,5 @@
-import { supabase } from "./supabaseClient.ts";
+
+import { supabase } from "../_shared/db_client.ts";
 import { fetchMagentoOrdersData, mockMagentoOrdersData } from "./magento_api.ts";
 import { storeTransactions } from "./store_transactions.ts";
 import { processDailySalesData } from "./sales_aggregator.ts";
