@@ -24,9 +24,21 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
     return { success: false, error: error.message };
   }
 
+  console.log("🔍 Active connections found:", connections?.length || 0);
+  
   if (!connections || connections.length === 0) {
     console.log("ℹ️ No active connections found");
     return { success: true, message: "No connections to process" };
+  }
+
+  // Log the first connection for debugging
+  if (connections.length > 0) {
+    console.log("First connection:", {
+      id: connections[0].id,
+      store_id: connections[0].store_id,
+      store_name: connections[0].store_name,
+      status: connections[0].status
+    });
   }
 
   for (const connection of connections) {
@@ -36,7 +48,7 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
       continue;
     }
 
-    console.log(`\n🔧 Processing connection for store: ${connection.store_name}`);
+    console.log(`\n🔧 Processing connection for store: ${connection.store_name} (ID: ${storeId})`);
 
     try {
       let allOrders = [];

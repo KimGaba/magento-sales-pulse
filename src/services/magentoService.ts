@@ -1,7 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { MagentoConnection } from '@/types/magento';
-// Removing the circular import of testMagentoConnection
 
 export const addMagentoConnection = async (
   userId: string,

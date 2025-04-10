@@ -3,9 +3,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, createCorsResponse } from "../_shared/cors_utils.ts";
 import { synchronizeMagentoData } from "./sync_service.ts";
+import { supabase } from "../_shared/db_client.ts";
 
 // Helper function to test a Magento connection
-async function testMagentoConnection(storeUrl: string, accessToken: string) {
+async function testMagentoConnection(storeUrl: string, accessToken: string, connectionId?: string, storeName?: string, userId?: string) {
   try {
     console.log(`Testing connection to Magento at ${storeUrl}`);
 
@@ -50,6 +51,74 @@ async function testMagentoConnection(storeUrl: string, accessToken: string) {
     const data = await response.json();
     console.log('Successfully connected to Magento API');
 
+    // Hvis vi har fået et connectionId med, opdatér denne forbindelse
+    if (connectionId && userId) {
+      console.log(`Activating connection ${connectionId} for user ${userId}`);
+      
+      // 1. Opret store-record hvis den ikke findes
+      let storeId;
+      
+      if (storeName) {
+        console.log(`Setting up store: ${storeName}`);
+        const { data: existingStore, error: storeCheckError } = await supabase
+          .from('stores')
+          .select('id')
+          .eq('name', storeName)
+          .maybeSingle();
+          
+        if (storeCheckError) {
+          console.error('Error checking for existing store:', storeCheckError);
+        }
+        
+        if (existingStore) {
+          console.log(`Found existing store with ID: ${existingStore.id}`);
+          storeId = existingStore.id;
+        } else {
+          const { data: newStore, error: storeCreateError } = await supabase
+            .from('stores')
+            .insert({ 
+              name: storeName,
+              url: storeUrl
+            })
+            .select()
+            .single();
+            
+          if (storeCreateError || !newStore) {
+            console.error('Error creating store:', storeCreateError);
+            throw new Error(`Failed to create store: ${storeCreateError?.message || 'Unknown error'}`);
+          }
+          
+          console.log(`Created new store with ID: ${newStore.id}`);
+          storeId = newStore.id;
+        }
+        
+        // 2. Opdatér forbindelsen med store_id og status 'active'
+        const { data: updatedConnection, error: updateError } = await supabase
+          .from('magento_connections')
+          .update({
+            store_id: storeId,
+            status: 'active',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', connectionId)
+          .select();
+          
+        if (updateError || !updatedConnection || updatedConnection.length === 0) {
+          console.error('❌ Failed to activate connection:', updateError?.message || 'No rows updated');
+          throw new Error(`Failed to activate connection: ${updateError?.message || 'No rows updated'}`);
+        }
+        
+        console.log('✅ Successfully activated connection with store_id:', storeId);
+        
+        return {
+          success: true,
+          message: "Forbindelse til Magento API oprettet med succes",
+          storeInfo: data,
+          storeId: storeId
+        };
+      }
+    }
+
     return {
       success: true,
       message: "Forbindelse til Magento API oprettet med succes",
@@ -69,10 +138,10 @@ serve(async (req) => {
   console.log(`Received request to magento-sync function: ${req.method} ${req.url}`);
 
   // Handle CORS preflight requests
- if (req.method === 'OPTIONS') {
-  console.log('Handling CORS preflight request');
-  return new Response(null, { headers: corsHeaders, status: 200 });
-}
+  if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
+    return new Response(null, { headers: corsHeaders, status: 200 });
+  }
 
   // Only allow POST requests for manual triggers
   if (req.method === 'POST') {
@@ -92,7 +161,7 @@ serve(async (req) => {
       // Handle connection testing
       if (requestBody.action === 'test_connection') {
         console.log('Processing test_connection action');
-        const { storeUrl, accessToken } = requestBody;
+        const { storeUrl, accessToken, connectionId, storeName, userId } = requestBody;
 
         if (!storeUrl || !accessToken) {
           console.error('Missing required parameters for test_connection');
@@ -102,7 +171,7 @@ serve(async (req) => {
           }, 400);
         }
 
-        const testResult = await testMagentoConnection(storeUrl, accessToken);
+        const testResult = await testMagentoConnection(storeUrl, accessToken, connectionId, storeName, userId);
         console.log('Test connection result:', testResult);
         return createCorsResponse(testResult, testResult.success ? 200 : 400);
       }

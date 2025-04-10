@@ -36,12 +36,16 @@ const IntegrationStatusSection = () => {
   setLoading(true);
   try {
     const connectionsData = await fetchMagentoConnections(user.id);
+    
+    // Log hele resultatet for at debugge
+    console.log("All connections:", connectionsData);
 
     // ✨ Filtrér forbindelser uden store_id væk
     const validConnections = connectionsData.filter(
       (conn) => conn.store_id !== null
     );
-
+    
+    console.log("Valid connections with store_id:", validConnections);
     setConnections(validConnections);
   } catch (error) {
     console.error("Error fetching connections:", error);

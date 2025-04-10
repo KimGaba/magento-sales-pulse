@@ -1,3 +1,4 @@
+
 console.log("✅ This is the latest build of Connect.tsx");
 
 import React, { useState, useEffect } from 'react';
@@ -76,11 +77,15 @@ const loadConnections = async () => {
   try {
     const connectionsData = await fetchMagentoConnections(user.id);
 
+    // Log hele resultatet for at identificere problemet
+    console.log("Raw connection data:", connectionsData);
+
     // Filtrer forbindelser væk hvor store_id er null
     const validConnections = connectionsData.filter(
       (conn) => conn.store_id !== null
     );
 
+    console.log("Filtered connections:", validConnections);
     setConnections(validConnections);
   } catch (error) {
     console.error("Error fetching connections:", error);

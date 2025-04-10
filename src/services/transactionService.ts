@@ -66,17 +66,17 @@ export const fetchTransactionData = async (
     
     let query = supabase
       .from('transactions')
-      .select('id, store_id, amount, transaction_date, customer_id, external_id, created_at, product_id')
-      .gte('transaction_date', fromDate)
-      .lte('transaction_date', toDate);
+      .select('transactions.id, transactions.store_id, transactions.amount, transactions.transaction_date, transactions.customer_id, transactions.external_id, transactions.created_at, transactions.product_id')
+      .gte('transactions.transaction_date', fromDate)
+      .lte('transactions.transaction_date', toDate);
     
     // Apply store_id filter if needed
     if (storeIds && storeIds.length > 0) {
       console.log('Filtering by store IDs:', storeIds);
-      query = query.in('store_id', storeIds);
+      query = query.in('transactions.store_id', storeIds);
     }
     
-    const { data, error } = await query.order('transaction_date', { ascending: false });
+    const { data, error } = await query.order('transactions.transaction_date', { ascending: false });
     
     if (error) {
       console.error('Error fetching transaction data:', error);

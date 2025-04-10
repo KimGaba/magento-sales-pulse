@@ -5,6 +5,8 @@ import { supabase } from "../_shared/db_client.ts";
 // Store individual transactions from Magento orders
 export async function storeTransactions(ordersData: any[], storeId: string) {
   try {
+    console.log(`Storing ${ordersData.length} transactions for store ${storeId}`);
+    
     for (const order of ordersData) {
       const { data: existingTransaction, error: checkError } = await supabase
         .from('transactions')
