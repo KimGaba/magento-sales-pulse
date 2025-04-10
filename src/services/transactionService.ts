@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Transaction } from '@/types/database';
 
@@ -175,13 +176,13 @@ export const fetchBasketOpenerProducts = async (
     console.log(`Fetched ${data?.length || 0} basket opener products`);
     
     // Add more detailed logging for debugging
-    if (data && data.length > 0) {
+    if (data && Array.isArray(data) && data.length > 0) {
       console.log('First few basket opener products:', data.slice(0, 3));
     } else {
       console.log('No basket opener products found matching the criteria');
     }
     
-    return data || [];
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('Exception in fetchBasketOpenerProducts:', error);
     throw error;
@@ -212,7 +213,7 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
   try {
     console.log(`Fetching sync progress for store ${storeId}`);
     
-    // Using raw SQL query instead of from() since sync_progress isn't in generated types
+    // Use the database function directly with proper typing
     const { data, error } = await supabase
       .rpc('get_sync_progress', { store_id_param: storeId });
     
@@ -221,7 +222,7 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
       throw error;
     }
     
-    if (data && data.length > 0) {
+    if (data && Array.isArray(data) && data.length > 0) {
       console.log('Found sync progress:', data[0]);
       return data[0] as SyncProgress;
     }
