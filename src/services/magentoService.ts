@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { MagentoConnection } from '@/types/magento';
 
@@ -7,7 +6,7 @@ export const addMagentoConnection = async (
   storeUrl: string,
   accessToken: string,
   storeName: string
-): Promise<string> {
+): Promise<string> => {
   try {
     console.log(`Adding Magento connection for user ${userId} to store ${storeName}`);
 
@@ -83,7 +82,6 @@ export const addMagentoConnection = async (
     throw error;
   }
 };
-
 
 /**
  * Fetches Magento connections for a user
