@@ -1,9 +1,10 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchSyncProgress, SyncProgress } from '@/services/transactionService';
 
-interface SyncStatus {
+interface SyncState {
   products: 'waiting' | 'syncing' | 'completed';
   orders: 'waiting' | 'syncing' | 'completed';
   customers: 'waiting' | 'syncing' | 'completed';
@@ -15,14 +16,50 @@ export const useSyncProcess = () => {
   const [step, setStep] = useState(1);
   const [syncProgress, setSyncProgress] = useState(0);
   const [connecting, setConnecting] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>({
+  const [storeId, setStoreId] = useState<string | null>(null);
+  const [realSyncProgress, setRealSyncProgress] = useState<SyncProgress | null>(null);
+  const [syncStatus, setSyncStatus] = useState<SyncState>({
     products: 'waiting',
     orders: 'waiting',
     customers: 'waiting',
     statistics: 'waiting'
   });
 
-  const updateSyncStatus = (item: keyof SyncStatus, status: 'waiting' | 'syncing' | 'completed') => {
+  // Poll for real sync progress if we have a storeId
+  useEffect(() => {
+    if (storeId && step === 2) {
+      const interval = setInterval(async () => {
+        try {
+          const progress = await fetchSyncProgress(storeId);
+          if (progress) {
+            setRealSyncProgress(progress);
+            
+            // If sync is completed, move to step 3
+            if (progress.status === 'completed') {
+              setTimeout(() => {
+                setStep(3);
+              }, 1000);
+            }
+            
+            // Calculate visual progress based on real progress
+            if (progress.total_orders > 0) {
+              const percentage = Math.min(
+                Math.round((progress.orders_processed / progress.total_orders) * 100),
+                100
+              );
+              setSyncProgress(percentage);
+            }
+          }
+        } catch (error) {
+          console.error('Error polling sync progress:', error);
+        }
+      }, 3000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [storeId, step]);
+
+  const updateSyncStatus = (item: keyof SyncState, status: 'waiting' | 'syncing' | 'completed') => {
     setSyncStatus(prev => ({
       ...prev,
       [item]: status
@@ -45,50 +82,59 @@ export const useSyncProcess = () => {
     }
   };
 
-  const startSyncProcess = () => {
+  const startSyncProcess = (newStoreId: string) => {
     setStep(2);
+    setStoreId(newStoreId);
     
     toast({
       title: "Forbindelse oprettet!",
       description: "Din Magento-butik blev forbundet med succes. Starter synkronisering...",
     });
     
-    updateSyncStatus('products', 'syncing');
-    setSyncProgress(10);
-    
-    setTimeout(() => {
-      updateSyncStatus('products', 'completed');
-      updateSyncStatus('orders', 'syncing');
-      setSyncProgress(30);
+    // If we don't get real progress data, we'll use this fallback
+    if (!realSyncProgress) {
+      updateSyncStatus('products', 'syncing');
+      setSyncProgress(10);
       
       setTimeout(() => {
-        updateSyncStatus('orders', 'completed');
-        updateSyncStatus('customers', 'syncing');
-        setSyncProgress(60);
+        updateSyncStatus('products', 'completed');
+        updateSyncStatus('orders', 'syncing');
+        setSyncProgress(30);
         
         setTimeout(() => {
-          updateSyncStatus('customers', 'completed');
-          updateSyncStatus('statistics', 'syncing');
-          setSyncProgress(80);
+          updateSyncStatus('orders', 'completed');
+          updateSyncStatus('customers', 'syncing');
+          setSyncProgress(60);
           
           setTimeout(() => {
-            updateSyncStatus('statistics', 'completed');
-            setSyncProgress(100);
-            
-            triggerInitialSync();
+            updateSyncStatus('customers', 'completed');
+            updateSyncStatus('statistics', 'syncing');
+            setSyncProgress(80);
             
             setTimeout(() => {
-              setStep(3);
+              updateSyncStatus('statistics', 'completed');
+              setSyncProgress(100);
+              
+              triggerInitialSync();
+              
+              setTimeout(() => {
+                setStep(3);
+              }, 1000);
             }, 1000);
-          }, 1000);
+          }, 1500);
         }, 1500);
       }, 1500);
-    }, 1500);
+    } else {
+      // If we have real progress data, we'll use that directly
+      triggerInitialSync();
+    }
   };
 
   const resetSyncProcess = () => {
     setStep(1);
     setSyncProgress(0);
+    setStoreId(null);
+    setRealSyncProgress(null);
     setSyncStatus({
       products: 'waiting',
       orders: 'waiting',
@@ -103,6 +149,8 @@ export const useSyncProcess = () => {
     syncProgress,
     syncStatus,
     connecting,
+    storeId,
+    realSyncProgress,
     setConnecting,
     startSyncProcess,
     resetSyncProcess

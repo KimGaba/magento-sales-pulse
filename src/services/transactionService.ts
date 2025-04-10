@@ -188,3 +188,84 @@ export const fetchBasketOpenerProducts = async (
     throw error;
   }
 };
+
+/**
+ * Interface for sync progress information
+ */
+export interface SyncProgress {
+  id?: string;
+  store_id: string;
+  connection_id: string;
+  current_page: number;
+  total_pages: number;
+  orders_processed: number;
+  total_orders: number;
+  status: 'in_progress' | 'completed' | 'error';
+  started_at: string;
+  updated_at: string;
+  error_message?: string;
+}
+
+/**
+ * Fetches the current sync progress for a store
+ */
+export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress | null> => {
+  try {
+    console.log(`Fetching sync progress for store ${storeId}`);
+    
+    const { data, error } = await supabase
+      .from('sync_progress')
+      .select('*')
+      .eq('store_id', storeId)
+      .order('updated_at', { ascending: false })
+      .limit(1);
+    
+    if (error) {
+      console.error('Error fetching sync progress:', error);
+      throw error;
+    }
+    
+    if (data && data.length > 0) {
+      console.log('Found sync progress:', data[0]);
+      return data[0] as SyncProgress;
+    }
+    
+    console.log('No sync progress found');
+    return null;
+  } catch (error) {
+    console.error('Exception in fetchSyncProgress:', error);
+    return null;
+  }
+};
+
+/**
+ * Directly calls the magento-sync edge function to get the latest progress
+ */
+export const getSyncProgressFromEdgeFunction = async (storeId: string): Promise<SyncProgress | null> => {
+  try {
+    console.log(`Getting sync progress from edge function for store ${storeId}`);
+    
+    const { data, error } = await supabase.functions.invoke('magento-sync', {
+      body: {
+        action: 'get_sync_progress',
+        storeId
+      }
+    });
+    
+    if (error) {
+      console.error('Error calling getSyncProgress edge function:', error);
+      throw error;
+    }
+    
+    if (data?.success && data?.progress) {
+      console.log('Received sync progress from edge function:', data.progress);
+      return data.progress as SyncProgress;
+    }
+    
+    console.log('No sync progress found from edge function');
+    return null;
+  } catch (error) {
+    console.error('Exception in getSyncProgressFromEdgeFunction:', error);
+    return null;
+  }
+};

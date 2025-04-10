@@ -2,7 +2,7 @@
 // Follow Deno and Supabase Edge runtime conventions
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, createCorsResponse } from "../_shared/cors_utils.ts";
-import { synchronizeMagentoData } from "./sync_service.ts";
+import { synchronizeMagentoData, getSyncProgress } from "./sync_service.ts";
 import { supabase } from "../_shared/db_client.ts";
 
 // Helper function to test a Magento connection
@@ -133,6 +133,58 @@ async function testMagentoConnection(storeUrl: string, accessToken: string, conn
   }
 }
 
+// Process chunked sync using the continuation mechanism
+async function processSyncWithContinuation(options: any) {
+  try {
+    const result = await synchronizeMagentoData(options);
+    
+    // If we need to continue syncing, trigger the next chunk via the cron function
+    if (result.success && result.continuation) {
+      console.log("⏭️ Sync needs to continue. Scheduling next chunk...");
+      
+      try {
+        // Use the SUPABASE_ANON_KEY to call the same function for the next chunk
+        const nextChunkOptions = {
+          trigger: 'continuation',
+          continuationData: result.continuation,
+          syncType: options.syncType || 'full',
+          useMock: options.useMock || false
+        };
+        
+        const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+        const functionUrl = "https://vlkcnndgtarduplyedyp.supabase.co/functions/v1/magento-sync-cron";
+        
+        // Schedule the next chunk using the cron function
+        await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseKey}`
+          },
+          body: JSON.stringify({ 
+            action: 'continue_sync',
+            continuationData: result.continuation
+          })
+        });
+        
+        console.log("✅ Next chunk scheduled successfully");
+      } catch (continuationError) {
+        console.error("❌ Error scheduling next chunk:", continuationError);
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    console.error("❌ Error in processSyncWithContinuation:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+// New function to get sync progress
+async function handleGetSyncProgress(storeId: string) {
+  return await getSyncProgress(storeId);
+}
+
 // Handle HTTP requests
 serve(async (req) => {
   console.log(`Received request to magento-sync function: ${req.method} ${req.url}`);
@@ -175,20 +227,67 @@ serve(async (req) => {
         console.log('Test connection result:', testResult);
         return createCorsResponse(testResult, testResult.success ? 200 : 400);
       }
+      
+      // Handle getting sync progress
+      if (requestBody.action === 'get_sync_progress') {
+        console.log('Processing get_sync_progress action');
+        const { storeId } = requestBody;
 
-      // Handle sync requests
+        if (!storeId) {
+          console.error('Missing required parameter for get_sync_progress: storeId');
+          return createCorsResponse({
+            success: false,
+            error: "Missing required parameter: storeId"
+          }, 400);
+        }
+
+        const progressResult = await handleGetSyncProgress(storeId);
+        return createCorsResponse(progressResult, progressResult.success ? 200 : 500);
+      }
+      
+      // Handle sync continuation
+      if (requestBody.action === 'continue_sync') {
+        console.log('Processing continue_sync action');
+        const { continuationData } = requestBody;
+
+        if (!continuationData || !continuationData.connectionId || !continuationData.storeId) {
+          console.error('Missing required parameters for continue_sync');
+          return createCorsResponse({
+            success: false,
+            error: "Missing required continuation data"
+          }, 400);
+        }
+
+        const syncOptions = {
+          startPage: continuationData.startPage || 1,
+          storeId: continuationData.storeId,
+          connectionId: continuationData.connectionId,
+          maxPages: 5 // Process fewer pages in continuation to reduce timeout risk
+        };
+
+        console.log('Continuing sync with options:', syncOptions);
+        const result = await processSyncWithContinuation(syncOptions);
+        
+        return createCorsResponse(result, result.success ? 200 : 500);
+      }
+
+      // Handle regular sync requests
       const syncType = requestBody.syncType || 'full';
       const useMock = requestBody.useMock === true;
+      const maxPages = requestBody.maxPages || 10; // Allow customizing page count
 
-      console.log(`Received sync request with type: ${syncType}, useMock: ${useMock}`);
+      console.log(`Received sync request with type: ${syncType}, useMock: ${useMock}, maxPages: ${maxPages}`);
 
       try {
-        const result = await synchronizeMagentoData({
+        const syncOptions = {
           changesOnly: syncType === 'changes_only',
-          useMock: useMock
-        });
+          useMock: useMock,
+          maxPages: maxPages
+        };
 
-        console.log('Sync process complete, returning result:', result);
+        const result = await processSyncWithContinuation(syncOptions);
+        
+        console.log('Sync process initiated, returning result:', result);
         return createCorsResponse(result, result.success ? 200 : 500);
       } catch (syncError) {
         console.error('Error during sync process:', syncError);
