@@ -7,7 +7,7 @@ export const addMagentoConnection = async (
   storeUrl: string,
   accessToken: string,
   storeName: string
-) => {
+): Promise<string> {
   try {
     console.log(`Adding Magento connection for user ${userId} to store ${storeName}`);
 
@@ -76,7 +76,8 @@ export const addMagentoConnection = async (
       console.log('✅ Initial sync triggered:', syncData);
     }
 
-    return inserted;
+    // Return just the store_id instead of the whole connection object
+    return testResult.storeId;
   } catch (error) {
     console.error('❌ Error in addMagentoConnection:', error);
     throw error;

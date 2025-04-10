@@ -122,6 +122,7 @@ const loadConnections = async () => {
     setConnecting(true);
     
     try {
+      // The function now returns just the store_id string
       const storeId = await addMagentoConnection(
         user.id,
         values.url,
@@ -129,6 +130,7 @@ const loadConnections = async () => {
         values.storeName
       );
       
+      // Pass the storeId to startSyncProcess
       startSyncProcess(storeId);
       
       // We'll call loadConnections after sync completes in step 3

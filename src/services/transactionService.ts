@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Transaction } from '@/types/database';
 
@@ -213,13 +212,9 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
   try {
     console.log(`Fetching sync progress for store ${storeId}`);
     
-    // Using raw query to avoid type errors since sync_progress isn't in the generated types
+    // Using raw SQL query instead of from() since sync_progress isn't in generated types
     const { data, error } = await supabase
-      .from('sync_progress')
-      .select('*')
-      .eq('store_id', storeId)
-      .order('updated_at', { ascending: false })
-      .limit(1);
+      .rpc('get_sync_progress', { store_id_param: storeId });
     
     if (error) {
       console.error('Error fetching sync progress:', error);
@@ -228,7 +223,7 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
     
     if (data && data.length > 0) {
       console.log('Found sync progress:', data[0]);
-      return data[0] as unknown as SyncProgress;
+      return data[0] as SyncProgress;
     }
     
     console.log('No sync progress found');
