@@ -64,7 +64,6 @@ export const fetchTransactionData = async (
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate}`);
     
-    // FIX: Always select all columns with explicit table prefixes to avoid ambiguity
     let query = supabase
       .from('transactions')
       .select(`
@@ -95,7 +94,14 @@ export const fetchTransactionData = async (
     }
     
     console.log(`Fetched ${data?.length || 0} transactions`);
-    return data || [];
+    
+    // Convert the data to match the Transaction type by ensuring metadata is properly typed
+    const transactions: Transaction[] = data?.map(item => ({
+      ...item,
+      metadata: item.metadata as Transaction['metadata'] // Type assertion to ensure compatibility
+    })) || [];
+    
+    return transactions;
   } catch (error) {
     console.error('Exception in fetchTransactionData:', error);
     throw error;
