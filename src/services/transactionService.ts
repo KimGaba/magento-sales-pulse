@@ -212,10 +212,10 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
   try {
     console.log(`Fetching sync progress for store ${storeId}`);
     
-    // Fix: Use a direct query to workaround the TypeScript definition limitation
-    // Instead of trying to use the RPC function with type checking
+    // Use a type assertion with unknown first to avoid type errors
+    // This is safe because we validate the structure before returning
     const { data, error } = await supabase
-      .from('sync_progress')
+      .from('sync_progress' as any)
       .select('*')
       .eq('store_id', storeId)
       .order('updated_at', { ascending: false })
@@ -227,8 +227,20 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
     }
     
     if (data && data.length > 0) {
-      console.log('Found sync progress:', data[0]);
-      return data[0] as SyncProgress;
+      const progressData = data[0];
+      
+      // Validate that the returned data has the expected structure
+      if (progressData && 
+          'store_id' in progressData && 
+          'connection_id' in progressData &&
+          'current_page' in progressData &&
+          'status' in progressData) {
+        console.log('Found sync progress:', progressData);
+        return progressData as unknown as SyncProgress;
+      } else {
+        console.warn('Retrieved data does not match SyncProgress structure:', progressData);
+        return null;
+      }
     }
     
     console.log('No sync progress found');
