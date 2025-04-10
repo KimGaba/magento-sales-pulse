@@ -267,6 +267,7 @@ export type Database = {
           customer_id: string | null
           external_id: string | null
           id: string
+          metadata: Json | null
           product_id: string | null
           store_id: string
           transaction_date: string
@@ -277,6 +278,7 @@ export type Database = {
           customer_id?: string | null
           external_id?: string | null
           id?: string
+          metadata?: Json | null
           product_id?: string | null
           store_id: string
           transaction_date?: string
@@ -287,6 +289,7 @@ export type Database = {
           customer_id?: string | null
           external_id?: string | null
           id?: string
+          metadata?: Json | null
           product_id?: string | null
           store_id?: string
           transaction_date?: string
