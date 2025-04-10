@@ -68,10 +68,10 @@ serve(async (req) => {
   console.log(`Received request to magento-sync function: ${req.method} ${req.url}`);
 
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    console.log('Handling CORS preflight request');
-    return new Response(null, { headers: corsHeaders });
-  }
+ if (req.method === 'OPTIONS') {
+  console.log('Handling CORS preflight request');
+  return new Response(null, { headers: corsHeaders, status: 200 });
+}
 
   // Only allow POST requests for manual triggers
   if (req.method === 'POST') {
