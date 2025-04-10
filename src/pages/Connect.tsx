@@ -122,14 +122,14 @@ const loadConnections = async () => {
     setConnecting(true);
     
     try {
-      await addMagentoConnection(
+      const storeId = await addMagentoConnection(
         user.id,
         values.url,
         values.apiKey,
         values.storeName
       );
       
-      startSyncProcess();
+      startSyncProcess(storeId);
       
       // We'll call loadConnections after sync completes in step 3
       

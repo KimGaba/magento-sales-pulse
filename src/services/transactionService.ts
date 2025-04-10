@@ -213,6 +213,7 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
   try {
     console.log(`Fetching sync progress for store ${storeId}`);
     
+    // Using raw query to avoid type errors since sync_progress isn't in the generated types
     const { data, error } = await supabase
       .from('sync_progress')
       .select('*')
@@ -227,7 +228,7 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
     
     if (data && data.length > 0) {
       console.log('Found sync progress:', data[0]);
-      return data[0] as SyncProgress;
+      return data[0] as unknown as SyncProgress;
     }
     
     console.log('No sync progress found');
