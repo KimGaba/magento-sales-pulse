@@ -1,128 +1,73 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.21.0";
+import { fetchMagentoOrdersData, storeTransactions, processDailySalesData } from './magento_api.ts';
 
-import { supabase } from "./db_operations.ts";
-import { fetchMagentoOrdersData, mockMagentoOrdersData, fetchAndStoreProductData } from "./magento_api.ts";
-import { processDailySalesData, storeTransactions } from "./db_operations.ts";
+const supabaseUrl = "https://vlkcnndgtarduplyedyp.supabase.co";
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+export const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-interface SyncOptions {
-  changesOnly?: boolean;
-  useMock?: boolean;
-}
-
-// Function to synchronize data from Magento
-export async function synchronizeMagentoData(options: SyncOptions = {}) {
-  const { changesOnly = false, useMock = false } = options;
-  
-  console.log(`Starting Magento data synchronization (changes only: ${changesOnly}, use mock: ${useMock})`);
-  
+// Main sync function
+export async function synchronizeMagentoData({ useMock = false } = {}) {
   try {
-    // 1. Get all active Magento connections
-    const { data: connections, error: connectionsError } = await supabase
-      .from('magento_connections')
-      .select('*')
-      .eq('status', 'active');
-    
-    if (connectionsError) {
-      throw new Error(`Error fetching Magento connections: ${connectionsError.message}`);
-    }
-    
-    if (!connections || connections.length === 0) {
-      console.log("No active Magento connections found. Exiting.");
-      return { success: true, message: "No active connections to process" };
-    }
-    
-    console.log(`Found ${connections.length} active Magento connections`);
-    
-    // Process each connection
+    console.log("\n🔄 Starting Magento data synchronization");
+    const { data: connections, error } = await supabase.from("magento_connections").select("*").eq("status", "active");
+    if (error) throw new Error(`Failed to fetch connections: ${error.message}`);
+    if (!connections || connections.length === 0) return {
+      success: true,
+      message: "No connections found"
+    };
+
     for (const connection of connections) {
-      console.log(`Processing connection for store: ${connection.store_name}`);
-      
-      // 2. Initialize the store in our database if it doesn't exist yet
-      let storeId = connection.store_id;
-      
+      const storeId = connection.store_id;
       if (!storeId) {
-        // Create a new store record
-        const { data: storeData, error: storeError } = await supabase
-          .from('stores')
-          .insert({
-            name: connection.store_name,
-            url: connection.store_url
-          })
-          .select()
-          .single();
-        
-        if (storeError) {
-          console.error(`Error creating store for ${connection.store_name}: ${storeError.message}`);
-          continue;
-        }
-        
-        storeId = storeData.id;
-        
-        // Update the connection with the new store_id
-        await supabase
-          .from('magento_connections')
-          .update({ store_id: storeId })
-          .eq('id', connection.id);
-          
-        console.log(`Created new store with ID: ${storeId}`);
-      }
-      
-      try {
-        // 3. Fetch orders data from Magento API
-        let ordersData;
-        if (useMock) {
-          ordersData = await mockMagentoOrdersData();
-        } else {
-          ordersData = await fetchMagentoOrdersData(connection);
-        }
-        
-        if (!ordersData || !ordersData.length) {
-          console.log(`No orders data fetched for store ${connection.store_name}`);
-        } else {
-          console.log(`Fetched ${ordersData.length} orders for ${connection.store_name}`);
-          
-          // 4. Process and store the daily sales aggregated data
-          await processDailySalesData(ordersData, storeId);
-          
-          // 5. Store individual transactions
-          await storeTransactions(ordersData, storeId);
-        }
-      } catch (apiError) {
-        console.error(`Error processing data for ${connection.store_name}: ${apiError.message}`);
-        
-        // Update connection status to indicate error
-        await supabase
-          .from('magento_connections')
-          .update({ 
-            status: 'error',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', connection.id);
-          
+        console.warn(`⚠️ Missing store_id for connection ${connection.id}`);
         continue;
       }
-      
-      // 6. Update connection status and last sync time
-      await supabase
-        .from('magento_connections')
-        .update({ 
-          status: 'active',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', connection.id);
-      
-      console.log(`Completed synchronization for ${connection.store_name}`);
+      let page = 1, pageSize = 100, fetched = 0;
+      do {
+        const { orders, totalCount } = await fetchMagentoOrdersData(connection, page, pageSize);
+        if (!orders || orders.length === 0) break;
+        await storeTransactions(orders, storeId);
+        await processDailySalesData(orders, storeId);
+        fetched += orders.length;
+        page++;
+      } while (fetched % pageSize === 0);
+
+      console.log(`✅ Finished sync for ${connection.store_name}`);
     }
-    
-    return { 
-      success: true, 
-      message: `Successfully synchronized ${changesOnly ? 'changes for' : 'data for'} ${connections.length} Magento stores` 
+
+    return {
+      success: true,
+      message: `✅ Successfully synchronized data for ${connections.length} store(s)`
     };
-    
-  } catch (error) {
-    console.error("Error during Magento synchronization:", error);
-    return { 
-      success: false, 
-      message: `Synchronization failed: ${error.message}` 
+  } catch (err) {
+    console.error("❌ Sync error:", err);
+    return {
+      success: false,
+      message: `Sync failed: ${err.message}`
     };
   }
 }
+
+// Optionally, export a handler if used as an edge function
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
+      }
+    });
+  }
+  const { useMock = false } = await req.json();
+  const result = await synchronizeMagentoData({
+    useMock
+  });
+  return new Response(JSON.stringify(result), {
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*"
+    },
+    status: result.success ? 200 : 500
+  });
+});
