@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Transaction } from '@/types/database';
 
@@ -213,9 +212,10 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
   try {
     console.log(`Fetching sync progress for store ${storeId}`);
     
-    // Use the database function directly with proper typing
-    const { data, error } = await supabase
-      .rpc('get_sync_progress', { store_id_param: storeId });
+    // Use a type assertion to work around the TypeScript error
+    // since we know the function exists but isn't in the TypeScript types
+    const { data, error } = await (supabase
+      .rpc('get_sync_progress', { store_id_param: storeId }) as any);
     
     if (error) {
       console.error('Error fetching sync progress:', error);
@@ -223,8 +223,17 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
     }
     
     if (data && Array.isArray(data) && data.length > 0) {
-      console.log('Found sync progress:', data[0]);
-      return data[0] as SyncProgress;
+      // Here we explicitly ensure the return type matches SyncProgress
+      // by validating the expected properties exist
+      const syncProgressData = data[0];
+      
+      if (syncProgressData && 
+          'store_id' in syncProgressData && 
+          'connection_id' in syncProgressData &&
+          'current_page' in syncProgressData) {
+        console.log('Found sync progress:', syncProgressData);
+        return syncProgressData as SyncProgress;
+      }
     }
     
     console.log('No sync progress found');
