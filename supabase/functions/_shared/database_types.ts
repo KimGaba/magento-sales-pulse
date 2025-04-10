@@ -1,4 +1,3 @@
-
 export interface Database {
   public: {
     Tables: {
@@ -58,6 +57,67 @@ export interface Database {
           status?: string;
           store_url?: string;
           store_name?: string;
+        };
+      };
+      transactions: {
+        Row: {
+          id: string;
+          store_id: string;
+          external_id: string;
+          transaction_date: string;
+          customer_id: string;
+          amount: number;
+          metadata: Record<string, any>;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          external_id: string;
+          transaction_date: string;
+          customer_id: string;
+          amount: number;
+          metadata?: Record<string, any>;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          external_id?: string;
+          transaction_date?: string;
+          customer_id?: string;
+          amount?: number;
+          metadata?: Record<string, any>;
+          created_at?: string;
+        };
+      };
+      daily_sales: {
+        Row: {
+          id: string;
+          store_id: string;
+          date: string;
+          total_sales: number;
+          order_count: number;
+          average_order_value: number;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          store_id: string;
+          date: string;
+          total_sales: number;
+          order_count: number;
+          average_order_value: number;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          store_id?: string;
+          date?: string;
+          total_sales?: number;
+          order_count?: number;
+          average_order_value?: number;
+          updated_at?: string;
         };
       };
     };
