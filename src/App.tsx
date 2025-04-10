@@ -19,7 +19,6 @@ import RepeatPurchaseRate from './pages/RepeatPurchaseRate';
 import BasketOpeners from './pages/BasketOpeners';
 import Products from './pages/Products';
 import Connect from './pages/Connect';
-import IntegrationStatus from './pages/IntegrationStatus';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import DatabaseTest from './pages/DatabaseTest';
@@ -51,7 +50,6 @@ function App() {
                       <Route path="/products" element={<AuthGuard><Products /></AuthGuard>} />
                       <Route path="/connect" element={<AuthGuard><Connect /></AuthGuard>} />
                       <Route path="/magento-api-help" element={<AuthGuard><MagentoApiHelp /></AuthGuard>} />
-                      <Route path="/integration-status" element={<AuthGuard><IntegrationStatus /></AuthGuard>} />
                       <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
                       <Route path="/database-test" element={<AuthGuard><DatabaseTest /></AuthGuard>} />
                       <Route path="*" element={<NotFound />} />

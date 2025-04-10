@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   AlertDialog,
@@ -53,8 +54,10 @@ const DeleteConnectionDialog: React.FC<DeleteConnectionDialogProps> = ({
         <AlertDialogHeader>
           <AlertDialogTitle>Vil du slette denne butik?</AlertDialogTitle>
           <AlertDialogDescription>
-            Dette vil slette alle data relateret til butikken "{storeToDelete?.store_name}". 
-            Denne handling kan ikke fortrydes, og alle data vil gå tabt.
+            Dette vil slette butikken "{storeToDelete?.store_name}" og alle relaterede data, 
+            herunder alle transaktioner, produkter og salgsstatistikker.
+            <br /><br />
+            <span className="font-semibold text-red-600">Denne handling kan ikke fortrydes!</span>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -80,4 +83,3 @@ const DeleteConnectionDialog: React.FC<DeleteConnectionDialogProps> = ({
 };
 
 export default DeleteConnectionDialog;
-

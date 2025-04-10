@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Transaction } from '@/types/database';
 
@@ -280,5 +281,81 @@ export const getSyncProgressFromEdgeFunction = async (storeId: string): Promise<
   } catch (error) {
     console.error('Exception in getSyncProgressFromEdgeFunction:', error);
     return null;
+  }
+};
+
+/**
+ * Interface for sync history item
+ */
+export interface SyncHistoryItem {
+  id: string;
+  timestamp: string;
+  end_timestamp?: string;
+  status: 'success' | 'error' | 'in_progress';
+  items_synced: number;
+  duration_seconds?: number;
+  trigger_type: 'manual' | 'scheduled' | 'initial';
+  store_id: string;
+  store_name?: string;
+}
+
+/**
+ * Fetches synchronization history for the last 7 days
+ * Currently returns mock data, will be updated to use actual API
+ */
+export const fetchSyncHistory = async (): Promise<SyncHistoryItem[]> => {
+  try {
+    console.log('Fetching sync history for the last 7 days');
+    
+    // This is temporary mock data
+    // TODO: Replace with actual API call when available
+    const now = new Date();
+    const history: SyncHistoryItem[] = [];
+    
+    // Generate some realistic mock data
+    for (let i = 0; i < 5; i++) {
+      const startDate = new Date(now);
+      startDate.setHours(startDate.getHours() - (i * 8));
+      
+      const endDate = new Date(startDate);
+      endDate.setMinutes(endDate.getMinutes() + Math.floor(Math.random() * 30) + 5);
+      
+      const syncedItems = Math.floor(Math.random() * 150) + 50;
+      const durationSeconds = Math.floor((endDate.getTime() - startDate.getTime()) / 1000);
+      const triggerTypes: ('manual' | 'scheduled' | 'initial')[] = ['scheduled', 'initial', 'scheduled', 'scheduled', 'manual'];
+      
+      history.push({
+        id: `sync-${i}`,
+        timestamp: startDate.toISOString(),
+        end_timestamp: endDate.toISOString(),
+        status: Math.random() > 0.2 ? 'success' : 'error',
+        items_synced: syncedItems,
+        duration_seconds: durationSeconds,
+        trigger_type: triggerTypes[i],
+        store_id: 'store-' + i,
+        store_name: 'Store ' + (i + 1)
+      });
+    }
+    
+    // Add one in-progress sync
+    if (Math.random() > 0.5) {
+      const inProgressDate = new Date(now);
+      inProgressDate.setMinutes(inProgressDate.getMinutes() - 3);
+      
+      history.unshift({
+        id: 'sync-in-progress',
+        timestamp: inProgressDate.toISOString(),
+        status: 'in_progress',
+        items_synced: Math.floor(Math.random() * 30) + 10,
+        trigger_type: 'scheduled',
+        store_id: 'store-current',
+        store_name: 'Current Store'
+      });
+    }
+    
+    return history;
+  } catch (error) {
+    console.error('Error fetching sync history:', error);
+    return [];
   }
 };

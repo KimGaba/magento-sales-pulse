@@ -7,6 +7,8 @@ import UserProfileForm from '@/components/settings/UserProfileForm';
 import MagentoConnectionSettings from '@/components/settings/MagentoConnectionSettings';
 import TimezoneSettings from '@/components/settings/TimezoneSettings';
 import SubscriptionTierSelect from '@/components/settings/SubscriptionTierSelect';
+import IntegrationStatusSection from '@/components/settings/IntegrationStatusSection';
+import IntegrationHistorySection from '@/components/settings/IntegrationHistorySection';
 import { fetchUserProfile, isUserAdmin } from '@/services/profileService';
 import { Profile } from '@/types/database';
 
@@ -65,6 +67,17 @@ const Settings = () => {
       <TimezoneSettings user={user} />
       
       {user && <MagentoConnectionSettings userId={user.id} />}
+      
+      {/* Added Integration Status and History Sections */}
+      {user && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Integration Status</h2>
+          <IntegrationStatusSection showFullSyncButton={false} />
+          <div className="mt-6">
+            <IntegrationHistorySection />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

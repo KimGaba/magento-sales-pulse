@@ -107,7 +107,7 @@ const Dashboard = () => {
             getStatusIndicator()
           )}
           <Button asChild size="sm">
-            <Link to="/integration-status">Se detaljer</Link>
+            <Link to="/settings">Se detaljer</Link>
           </Button>
         </CardContent>
       </Card>

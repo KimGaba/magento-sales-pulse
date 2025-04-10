@@ -77,7 +77,7 @@ const ConnectionsList: React.FC<ConnectionsListProps> = ({
                   onClick={() => onDisconnect(connection)}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Frakobl
+                  Slet butik
                 </Button>
               </div>
             </div>
