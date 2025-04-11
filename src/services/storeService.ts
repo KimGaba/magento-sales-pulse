@@ -29,6 +29,13 @@ export const getStoresForUser = async (userId: string) => {
   }
 };
 
+/**
+ * Fetch store data - added for backward compatibility
+ */
+export const fetchStoreData = async (userId: string) => {
+  return getStoresForUser(userId);
+};
+
 export const createStore = async (name: string, url?: string) => {
   try {
     const { data, error } = await supabase

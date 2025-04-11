@@ -41,5 +41,6 @@ export {
 // Profile service exports
 export {
   fetchUserProfile,
-  updateUserProfile
+  updateUserProfile,
+  getProfile
 } from './profileService';

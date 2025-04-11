@@ -28,6 +28,9 @@ export const fetchUserProfile = async (userId: string) => {
   }
 };
 
+// Export getProfile as an alias of fetchUserProfile for backward compatibility
+export const getProfile = fetchUserProfile;
+
 /**
  * Updates user profile data
  */

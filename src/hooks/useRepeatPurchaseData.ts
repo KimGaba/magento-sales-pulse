@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, subMonths } from 'date-fns';
@@ -35,7 +36,7 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
               typeof typedTransaction.metadata === 'object' && 
               typedTransaction.metadata !== null) {
             const metadata = typedTransaction.metadata as Record<string, any>;
-            if ('customer_email' in metadata) {
+            if (metadata.customer_email) {
               return {
                 ...typedTransaction,
                 email: metadata.customer_email
@@ -88,7 +89,7 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
               typeof typedTransaction.metadata === 'object' && 
               typedTransaction.metadata !== null) {
             const metadata = typedTransaction.metadata as Record<string, any>;
-            if ('customer_email' in metadata) {
+            if (metadata.customer_email) {
               return {
                 ...typedTransaction,
                 email: metadata.customer_email

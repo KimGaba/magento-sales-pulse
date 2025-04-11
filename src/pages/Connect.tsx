@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from '@/hooks/use-toast';
-import { useToast as useSonner } from 'sonner';
+import { useToast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { addMagentoConnection, MagentoConnection, triggerMagentoSync } from '@/services/magentoService';
 import { useSyncProcess } from '@/hooks/useSyncProcess';
 import { Profile } from '@/types/database';
-import { getProfile } from '@/services/profileService';
+import { fetchUserProfile } from '@/services/profileService';
 import Layout from '@/components/layout/Layout';
 
 const Connect = () => {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useSonner();
+  const { toast: sonnerToast } = useToast();
   const [storeUrl, setStoreUrl] = useState('');
   const [storeName, setStoreName] = useState('');
   const [accessToken, setAccessToken] = useState('');
@@ -31,7 +31,8 @@ const Connect = () => {
     connecting,
     realSyncProgress,
     setConnecting, 
-    startSyncProcess, 
+    startSyncProcess,
+    setStep, 
     resetSyncProcess 
   } = useSyncProcess();
 
@@ -43,7 +44,7 @@ const Connect = () => {
 
   const fetchProfile = async () => {
     try {
-      const userProfile = await getProfile(user.id);
+      const userProfile = await fetchUserProfile(user.id);
       setProfile(userProfile);
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -90,7 +91,7 @@ const Connect = () => {
       const connectedStore = await addMagentoConnection(newConnection);
       setConnectionData(connectedStore);
       
-      toast({
+      sonnerToast({
         title: "Butik forbundet!",
         description: "Din Magento-butik er nu forbundet. Synkronisering starter...",
       });
@@ -113,10 +114,9 @@ const Connect = () => {
     try {
       await triggerMagentoSync(storeId);
       
-      toast({
+      sonnerToast({
         title: "Synkronisering startet",
         description: "Dit Magento data bliver nu synkroniseret. Dette kan tage nogle minutter.",
-        variant: "success"
       });
       
       if (connectionData) {
@@ -142,10 +142,9 @@ const Connect = () => {
   const handleRetrySync = async (connection: MagentoConnection) => {
     try {
       await triggerMagentoSync(connection.store_id || '');
-      toast({
+      sonnerToast({
         title: "Synkronisering genstartet",
         description: "Dit Magento data bliver nu synkroniseret igen. Dette kan tage nogle minutter.",
-        variant: "success"
       });
     } catch (error) {
       console.error("Error restarting sync:", error);
@@ -158,7 +157,7 @@ const Connect = () => {
   };
 
   const handleGoToDashboard = () => {
-    router.push('/dashboard');
+    navigate('/dashboard');
   };
 
   return (
