@@ -98,23 +98,21 @@ export const fetchOrderStatuses = async (): Promise<string[]> => {
     // to get all unique order statuses across all orders
     const { data: transactions } = await supabase
       .from('transactions')
-      .select('metadata')
-      .not('metadata', 'is', null);
+      .select('metadata');
     
     // Extract unique statuses from transaction metadata
-    const statusSet = new Set<string>();
+    const statusSet = new Set<string>(commonStatuses);
     
-    // Add common statuses by default
-    commonStatuses.forEach(status => statusSet.add(status));
-    
-    // Add any found in transactions
     if (transactions && transactions.length > 0) {
       transactions.forEach(transaction => {
         try {
-          // Try to safely access the status from metadata
-          const metadata = transaction.metadata as any;
-          if (metadata && metadata.status && typeof metadata.status === 'string') {
-            statusSet.add(metadata.status);
+          if (transaction.metadata && 
+              typeof transaction.metadata === 'object' && 
+              transaction.metadata !== null) {
+            const metadata = transaction.metadata as Record<string, any>;
+            if (metadata.status && typeof metadata.status === 'string') {
+              statusSet.add(metadata.status);
+            }
           }
         } catch (e) {
           // Ignore errors in individual transactions

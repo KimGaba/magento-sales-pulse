@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, subMonths } from 'date-fns';
@@ -28,17 +27,20 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
           // Create a typed safe transaction object
           const typedTransaction: Transaction = {
             ...transaction,
-            metadata: transaction.metadata as Transaction['metadata'] || {}
+            metadata: transaction.metadata || {}
           };
           
           // Check if we have customer email info in metadata
           if (typedTransaction.metadata && 
               typeof typedTransaction.metadata === 'object' && 
-              'customer_email' in typedTransaction.metadata) {
-            return {
-              ...typedTransaction,
-              email: typedTransaction.metadata.customer_email
-            };
+              typedTransaction.metadata !== null) {
+            const metadata = typedTransaction.metadata as Record<string, any>;
+            if ('customer_email' in metadata) {
+              return {
+                ...typedTransaction,
+                email: metadata.customer_email
+              };
+            }
           }
           
           // Check if email might be in customer_id field (some systems store email as ID)
@@ -50,7 +52,7 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
           }
           
           return typedTransaction;
-        });
+        }) as Transaction[];
       } catch (fetchError) {
         console.error('Error in all transactions query:', fetchError);
         toast({
@@ -58,7 +60,7 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
           description: "Failed to load all transaction data. Please try again.",
           variant: "destructive"
         });
-        return [];
+        return [] as Transaction[];
       }
     },
     retry: 1,
@@ -78,17 +80,20 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
           // Create a typed safe transaction object
           const typedTransaction: Transaction = {
             ...transaction,
-            metadata: transaction.metadata as Transaction['metadata'] || {}
+            metadata: transaction.metadata || {}
           };
           
           // Check if we have customer email info in metadata
           if (typedTransaction.metadata && 
               typeof typedTransaction.metadata === 'object' && 
-              'customer_email' in typedTransaction.metadata) {
-            return {
-              ...typedTransaction,
-              email: typedTransaction.metadata.customer_email
-            };
+              typedTransaction.metadata !== null) {
+            const metadata = typedTransaction.metadata as Record<string, any>;
+            if ('customer_email' in metadata) {
+              return {
+                ...typedTransaction,
+                email: metadata.customer_email
+              };
+            }
           }
           
           // Check if email might be in customer_id field (some systems store email as ID)
@@ -100,7 +105,7 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
           }
           
           return typedTransaction;
-        });
+        }) as Transaction[];
       } catch (fetchError) {
         console.error('Error in transaction query:', fetchError);
         toast({
@@ -108,15 +113,15 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
           description: "Failed to load transaction data. Please try again.",
           variant: "destructive"
         });
-        return [];
+        return [] as Transaction[];
       }
     },
     retry: 1, // Only retry once to avoid spamming the server with failed requests
   });
 
   // Ensure we always have an array of transactions
-  const transactions: Transaction[] = data || [];
-  const allTransactions: Transaction[] = allTransactionsData || [];
+  const transactions = data || [] as Transaction[];
+  const allTransactions = allTransactionsData || [] as Transaction[];
   
   // Calculate current period data
   const currentPeriodData = calculateRepeatPurchaseRate(

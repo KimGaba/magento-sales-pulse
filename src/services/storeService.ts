@@ -2,61 +2,87 @@
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Fetches store data for a user
+ * Fetches stores that a user has access to
  */
-export const fetchStoreData = async () => {
-  const { data, error } = await supabase.from('stores').select('*');
-  
-  if (error) {
-    console.error('Error fetching store data:', error);
-    throw error;
-  }
-  
-  return data || [];
-};
-
-/**
- * Gets stores that a user has access to
- */
-export const getStoresForUser = async (userId: string): Promise<any[]> => {
+export const getStoresForUser = async (userId: string) => {
   try {
-    // Get connections for the user
-    const { data: connections, error: connectionsError } = await supabase
+    const { data, error } = await supabase
       .from('magento_connections')
-      .select('store_id')
+      .select('store_id, stores:store_id(id, name, url)')
       .eq('user_id', userId)
       .not('store_id', 'is', null);
     
-    if (connectionsError) {
-      console.error('Error fetching user connections:', connectionsError);
-      throw connectionsError;
+    if (error) {
+      console.error('Error fetching stores for user:', error);
+      throw error;
     }
     
-    if (!connections || connections.length === 0) {
-      return [];
-    }
+    // Extract store data from the joined results
+    const stores = data
+      .filter(item => item.stores) // Filter out null stores
+      .map(item => item.stores);
     
-    // Extract store IDs from connections
-    const storeIds = connections.map(conn => conn.store_id).filter(Boolean);
-    
-    if (storeIds.length === 0) {
-      return [];
-    }
-    
-    // Get store details
-    const { data: stores, error: storesError } = await supabase
-      .from('stores')
-      .select('*')
-      .in('id', storeIds);
-    
-    if (storesError) {
-      console.error('Error fetching stores:', storesError);
-      throw storesError;
-    }
-    
-    return stores || [];
+    return stores;
   } catch (error) {
     console.error('Error in getStoresForUser:', error);
+    return [];
+  }
+};
+
+export const createStore = async (name: string, url?: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('stores')
+      .insert({ name, url })
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error creating store:', error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error in createStore:', error);
+    throw error;
+  }
+};
+
+export const updateStore = async (id: string, updates: { name?: string; url?: string }) => {
+  try {
+    const { data, error } = await supabase
+      .from('stores')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error updating store:', error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error in updateStore:', error);
+    throw error;
+  }
+};
+
+export const deleteStore = async (id: string) => {
+  try {
+    // Use the database function delete_store_data to clean up all related data
+    const { error } = await supabase.rpc('delete_store_data', { target_store_id: id });
+    
+    if (error) {
+      console.error('Error deleting store:', error);
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error in deleteStore:', error);
     throw error;
   }
 };

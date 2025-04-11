@@ -72,30 +72,19 @@ export const fetchBasketOpenerProducts = async (
     console.log(`Customer group filter: ${customerGroup || 'all'}`);
     console.log(`Order status filter:`, orderStatuses || 'all');
     
-    // This is a direct query to the basket opener products in the database
-    // We'll use a basic select for now, but this should be replaced with proper implementation
-    // when the database function is available
-    const { data, error } = await supabase
-      .from('basket_openers_view')
-      .select('*')
-      .gte('transaction_date', fromDate)
-      .lte('transaction_date', toDate);
+    // Use a database function to get basket opener products
+    const { data, error } = await supabase.rpc('get_basket_opener_products', {
+      start_date: fromDate,
+      end_date: toDate,
+      store_filter: storeIds.length > 0 ? storeIds : null
+    });
     
     if (error) {
       console.error('Error fetching basket opener products:', error);
       throw error;
     }
     
-    // Convert to BasketOpenerProduct array
-    const products: BasketOpenerProduct[] = (data || []).map(item => ({
-      product_id: item.product_id,
-      product_name: item.product_name || 'Unknown Product',
-      opener_count: item.opener_count || 0,
-      total_appearances: item.total_appearances || 0,
-      opener_score: item.opener_score || 0
-    }));
-    
-    return products;
+    return data || [];
   } catch (error) {
     console.error('Exception in fetchBasketOpenerProducts:', error);
     throw error;
@@ -129,9 +118,13 @@ export const fetchTransactionData = async (
     
     // Apply order status filter if provided
     if (orderStatuses && orderStatuses.length > 0) {
-      // This assumes that status is a column in the metadata JSONB field
-      // We'll need to use special Supabase/PostgreSQL syntax for this
-      query = query.or(orderStatuses.map(status => `metadata->status.eq.${status}`).join(','));
+      // Filter based on metadata->status field
+      // Note: Using a more reliable filter approach
+      let statusFilters = orderStatuses.map(status => 
+        `metadata->>'status' = '${status}'`
+      ).join(' OR ');
+      
+      query = query.or(statusFilters);
     }
     
     const { data, error } = await query;

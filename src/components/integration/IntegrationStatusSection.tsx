@@ -24,7 +24,8 @@ const IntegrationStatusSection = () => {
   const [fetchingChanges, setFetchingChanges] = useState(false);
   const [useMockData, setUseMockData] = useState(false);
   const [selectedStore, setSelectedStore] = useState<string | null>(null);
-  
+  const [selectedConnection, setSelectedConnection] = useState<MagentoConnection | null>(null);
+
   useEffect(() => {
     if (user) {
       loadConnections();
@@ -82,13 +83,18 @@ const IntegrationStatusSection = () => {
   
   const handleFetchChanges = async () => {
     setFetchingChanges(true);
+    toast.success("Starter synkronisering af ændringer - vi henter dine data...");
+    
     try {
-      await triggerMagentoSync(selectedStore || '');
-      toast.success("Henter ændringer fra din butik. Dette vil blive opdateret om et øjeblik.");
-      
-      setTimeout(() => {
-        loadConnections();
-      }, 3000);
+      if (selectedConnection) {
+        // Pass only the store ID to triggerMagentoSync
+        await triggerMagentoSync(selectedConnection.store_id || '');
+        toast.success("Henter ændringer fra din butik. Dette vil blive opdateret om et øjeblik.");
+        
+        setTimeout(() => {
+          loadConnections();
+        }, 3000);
+      }
     } catch (error) {
       console.error("Error fetching changes:", error);
       toast.error("Der opstod en fejl ved hentning af ændringer.");
@@ -96,7 +102,19 @@ const IntegrationStatusSection = () => {
       setFetchingChanges(false);
     }
   };
-  
+
+  const triggerSync = async (connection: MagentoConnection) => {
+    try {
+      // Pass only the store ID to triggerMagentoSync
+      await triggerMagentoSync(connection.store_id || '');
+      toast.success("Synkronisering startet - vi henter dine data...");
+      loadConnections();
+    } catch (error) {
+      console.error("Error triggering sync:", error);
+      toast.error("Der opstod en fejl ved start af synkronisering.");
+    }
+  };
+
   const getStatusIndicator = (status: string) => {
     if (status === 'active') {
       return <CircleCheck className="h-6 w-6 text-green-500" />;

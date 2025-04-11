@@ -35,7 +35,6 @@ const DailySales = () => {
   const fromDate = date ? format(startOfMonth(date), 'yyyy-MM-dd') : '';
   const toDate = date ? format(endOfMonth(date), 'yyyy-MM-dd') : '';
 
-  // Add DB connection test
   const { data: isConnected = false, isLoading: isTestingConnection } = useQuery({
     queryKey: ['databaseTest'],
     queryFn: () => testDatabaseConnection(),
@@ -124,8 +123,13 @@ const DailySales = () => {
 
   const hasDataForMonth = (day: Date) => {
     return availableMonths.some(availMonth => {
-      const availMonthDate = new Date(availMonth.year, parseInt(availMonth.month) - 1);
-      return isSameMonth(availMonthDate, day);
+      const monthNum = parseInt(availMonth.month);
+      const yearNum = availMonth.year;
+      if (!isNaN(monthNum) && !isNaN(yearNum)) {
+        const availMonthDate = new Date(yearNum, monthNum - 1);
+        return isSameMonth(availMonthDate, day);
+      }
+      return false;
     });
   };
 
@@ -242,7 +246,15 @@ const DailySales = () => {
                   Måneder med data er fremhævet med grøn. 
                   {availableMonths.length > 0 ? (
                     <>
-                      <br/>Data findes for: {availableMonths.map(m => format(m, 'MMM yyyy')).join(', ')}
+                      <br/>Data findes for: {availableMonths.map(m => {
+                        const monthNum = parseInt(m.month);
+                        const yearNum = m.year;
+                        if (!isNaN(monthNum) && !isNaN(yearNum)) {
+                          const date = new Date(yearNum, monthNum - 1);
+                          return format(date, 'MMM yyyy');
+                        }
+                        return '';
+                      }).filter(Boolean).join(', ')}
                     </>
                   ) : 'Ingen måneder har data endnu.'}
                 </p>

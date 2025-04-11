@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { format, parseISO } from 'date-fns';
 import { CheckCircle, XCircle, RefreshCw } from 'lucide-react';
-import { fetchSyncHistory } from '@/services/transactionService';
+import { SyncProgress, fetchSyncHistory } from '@/services/transactionService';
 
 interface SyncHistoryItem {
   id: string;
@@ -30,7 +30,7 @@ const IntegrationHistorySection = () => {
     setLoading(true);
     try {
       // Pass a default store ID for now - this should be updated with the actual store ID when available
-      const historyData = await fetchSyncHistory('default-store-id');
+      const historyData = await fetchSyncHistory('default-store-id', 10);
       
       // Convert the SyncProgress[] to SyncHistoryItem[]
       const formattedHistory: SyncHistoryItem[] = historyData.map(item => ({
