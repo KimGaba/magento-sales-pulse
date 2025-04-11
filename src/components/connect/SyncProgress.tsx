@@ -61,7 +61,7 @@ const SyncProgress: React.FC<SyncProgressProps> = ({ syncStatus, syncProgress })
             )}
           </div>
           <div className="flex justify-between items-center">
-            <span>Salgstatistikker</span>
+            <span>Salgsstatistikker</span>
             {syncStatus.statistics === 'completed' ? (
               <CheckCircle className="h-5 w-5 text-green-600" />
             ) : syncStatus.statistics === 'syncing' ? (
@@ -79,7 +79,7 @@ const SyncProgress: React.FC<SyncProgressProps> = ({ syncStatus, syncProgress })
       </CardContent>
       <CardFooter className="flex justify-center">
         <p className="text-sm text-gray-500">
-          Dette vindue opdateres automatisk når synkroniseringen er færdig
+          Synkronisering kører automatisk og du vil blive notificeret når vi er færdige
         </p>
       </CardFooter>
     </Card>

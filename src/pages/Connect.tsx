@@ -122,6 +122,9 @@ const loadConnections = async () => {
     setConnecting(true);
     
     try {
+      // Show immediate feedback
+      toast.success("Forbinder til din Magento-butik. Dette kan tage et øjeblik...");
+      
       // The function now returns just the store_id string
       const storeId = await addMagentoConnection(
         user.id,
@@ -129,6 +132,9 @@ const loadConnections = async () => {
         values.apiKey,
         values.storeName
       );
+      
+      // Show success message
+      toast.success("Forbindelse oprettet! Starter synkronisering af data...");
       
       // Pass the storeId to startSyncProcess
       startSyncProcess(storeId);

@@ -260,6 +260,63 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_progress: {
+        Row: {
+          connection_id: string
+          current_page: number
+          error_message: string | null
+          id: string
+          orders_processed: number
+          started_at: string
+          status: string
+          store_id: string
+          total_orders: number | null
+          total_pages: number | null
+          updated_at: string
+        }
+        Insert: {
+          connection_id: string
+          current_page?: number
+          error_message?: string | null
+          id?: string
+          orders_processed?: number
+          started_at?: string
+          status: string
+          store_id: string
+          total_orders?: number | null
+          total_pages?: number | null
+          updated_at?: string
+        }
+        Update: {
+          connection_id?: string
+          current_page?: number
+          error_message?: string | null
+          id?: string
+          orders_processed?: number
+          started_at?: string
+          status?: string
+          store_id?: string
+          total_orders?: number | null
+          total_pages?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_progress_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "magento_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_progress_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number

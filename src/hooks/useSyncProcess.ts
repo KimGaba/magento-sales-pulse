@@ -48,6 +48,26 @@ export const useSyncProcess = () => {
                 100
               );
               setSyncProgress(percentage);
+              
+              // Update the sync status based on progress
+              if (percentage > 0 && percentage < 30) {
+                updateSyncStatus('products', 'completed');
+                updateSyncStatus('orders', 'syncing');
+              } else if (percentage >= 30 && percentage < 60) {
+                updateSyncStatus('products', 'completed');
+                updateSyncStatus('orders', 'completed');
+                updateSyncStatus('customers', 'syncing');
+              } else if (percentage >= 60 && percentage < 90) {
+                updateSyncStatus('products', 'completed');
+                updateSyncStatus('orders', 'completed');
+                updateSyncStatus('customers', 'completed');
+                updateSyncStatus('statistics', 'syncing');
+              } else if (percentage >= 90) {
+                updateSyncStatus('products', 'completed');
+                updateSyncStatus('orders', 'completed');
+                updateSyncStatus('customers', 'completed');
+                updateSyncStatus('statistics', 'completed');
+              }
             }
           }
         } catch (error) {
@@ -91,11 +111,12 @@ export const useSyncProcess = () => {
       description: "Din Magento-butik blev forbundet med succes. Starter synkronisering...",
     });
     
+    // Begin with a visual indicator right away
+    updateSyncStatus('products', 'syncing');
+    setSyncProgress(5);
+    
     // If we don't get real progress data, we'll use this fallback
     if (!realSyncProgress) {
-      updateSyncStatus('products', 'syncing');
-      setSyncProgress(10);
-      
       setTimeout(() => {
         updateSyncStatus('products', 'completed');
         updateSyncStatus('orders', 'syncing');

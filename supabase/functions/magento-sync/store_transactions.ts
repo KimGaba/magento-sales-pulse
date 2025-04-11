@@ -36,15 +36,20 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
         product_type: item.product_type || ''
       })) : [];
 
+      // Extract payment and shipping information
+      const paymentMethod = order.payment?.method || order.order_data?.payment_method || 'unknown';
+      const shippingMethod = order.shipping_description || order.order_data?.shipping_method || 'unknown';
+
       // Create a detailed metadata object with all the information we want to store
       const metadata = {
         store_view: order.store_view,
         customer_group: order.customer_group,
         status: order.status,
-        items_count: order.items,
-        payment_method: order.order_data?.payment_method,
-        shipping_method: order.order_data?.shipping_method,
+        items_count: order.items_count || orderItems.length,
+        payment_method: paymentMethod,
+        shipping_method: shippingMethod,
         customer_name: order.customer_name,
+        customer_email: order.customer_email,
         // Add the new detailed order items
         order_items: orderItems
       };

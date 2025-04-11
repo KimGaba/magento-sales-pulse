@@ -26,6 +26,30 @@ interface SyncProgress {
   error_message?: string;
 }
 
+// Check if sync_progress table exists, create it if it doesn't
+async function ensureSyncProgressTable() {
+  try {
+    const { count, error } = await supabase
+      .from('sync_progress')
+      .select('*', { count: 'exact', head: true });
+    
+    if (error) {
+      // Only attempt table creation if the error is specifically about relation not existing
+      if (error.message && error.message.includes('relation "sync_progress" does not exist')) {
+        console.log("sync_progress table doesn't exist, attempting to create it");
+        // We need the sync_progress table to be created via SQL migration
+        console.error("sync_progress table needs to be created via SQL migration");
+      } else {
+        console.error("Error checking sync_progress table:", error.message);
+      }
+    } else {
+      console.log(`sync_progress table exists with ${count} records`);
+    }
+  } catch (error) {
+    console.error("Error in ensureSyncProgressTable:", error.message);
+  }
+}
+
 export async function synchronizeMagentoData(options: SyncOptions = {}) {
   const { 
     useMock = false, 
@@ -36,6 +60,9 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
   } = options;
 
   console.log("\n🔄 Starting Magento data synchronization", options);
+  
+  // Ensure sync_progress table exists
+  await ensureSyncProgressTable();
 
   let query = supabase.from("magento_connections").select("*").eq("status", "active");
   
@@ -147,12 +174,18 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
           };
 
           // Save initial progress
-          const { error: saveError } = await supabase
-            .from("sync_progress")
-            .insert(progress);
+          try {
+            const { error: saveError } = await supabase
+              .from("sync_progress")
+              .insert(progress);
 
-          if (saveError) {
-            console.error("❌ Error saving sync progress:", saveError.message);
+            if (saveError) {
+              console.error("❌ Error saving sync progress:", saveError.message);
+            } else {
+              console.log("✅ Created initial sync progress record");
+            }
+          } catch (insertError) {
+            console.error("❌ Error creating sync progress:", insertError.message);
           }
         }
 
@@ -184,13 +217,19 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
               progress.updated_at = new Date().toISOString();
               
               // Save progress update
-              const { error: updateError } = await supabase
-                .from("sync_progress")
-                .update(progress)
-                .eq("connection_id", connection.id)
-                .eq("status", "in_progress");
-  
-              if (updateError) {
+              try {
+                const { error: updateError } = await supabase
+                  .from("sync_progress")
+                  .update(progress)
+                  .eq("connection_id", connection.id)
+                  .eq("status", "in_progress");
+    
+                if (updateError) {
+                  console.error("❌ Error updating sync progress:", updateError.message);
+                } else {
+                  console.log(`✅ Updated sync progress: ${totalFetched}/${totalCount} orders`);
+                }
+              } catch (updateError) {
                 console.error("❌ Error updating sync progress:", updateError.message);
               }
             }
@@ -216,13 +255,17 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
               progress.error_message = `Error fetching page ${currentPage}: ${fetchError.message}`;
               progress.updated_at = new Date().toISOString();
               
-              const { error: updateError } = await supabase
-                .from("sync_progress")
-                .update(progress)
-                .eq("connection_id", connection.id)
-                .eq("status", "in_progress");
-  
-              if (updateError) {
+              try {
+                const { error: updateError } = await supabase
+                  .from("sync_progress")
+                  .update(progress)
+                  .eq("connection_id", connection.id)
+                  .eq("status", "in_progress");
+    
+                if (updateError) {
+                  console.error("❌ Error updating sync progress with error:", updateError.message);
+                }
+              } catch (updateError) {
                 console.error("❌ Error updating sync progress with error:", updateError.message);
               }
             }
@@ -247,15 +290,19 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
         progress.status = "completed";
         progress.updated_at = new Date().toISOString();
         
-        const { error: updateError } = await supabase
-          .from("sync_progress")
-          .update(progress)
-          .eq("connection_id", connection.id);
-
-        if (updateError) {
+        try {
+          const { error: updateError } = await supabase
+            .from("sync_progress")
+            .update(progress)
+            .eq("connection_id", connection.id);
+  
+          if (updateError) {
+            console.error("❌ Error updating sync progress to completed:", updateError.message);
+          } else {
+            console.log(`✅ Marked sync progress as completed for ${connection.store_name}`);
+          }
+        } catch (updateError) {
           console.error("❌ Error updating sync progress to completed:", updateError.message);
-        } else {
-          console.log(`✅ Marked sync progress as completed for ${connection.store_name}`);
         }
       }
 
@@ -270,17 +317,21 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
       console.error(`❌ Error processing orders for ${connection.store_name}:`, syncError);
       
       // Update progress with error
-      const { error: updateError } = await supabase
-        .from("sync_progress")
-        .update({
-          status: "error",
-          error_message: `Error processing orders: ${syncError.message}`,
-          updated_at: new Date().toISOString()
-        })
-        .eq("connection_id", connection.id)
-        .eq("status", "in_progress");
-
-      if (updateError) {
+      try {
+        const { error: updateError } = await supabase
+          .from("sync_progress")
+          .update({
+            status: "error",
+            error_message: `Error processing orders: ${syncError.message}`,
+            updated_at: new Date().toISOString()
+          })
+          .eq("connection_id", connection.id)
+          .eq("status", "in_progress");
+  
+        if (updateError) {
+          console.error("❌ Error updating sync progress with error:", updateError.message);
+        }
+      } catch (updateError) {
         console.error("❌ Error updating sync progress with error:", updateError.message);
       }
     }

@@ -96,7 +96,10 @@ const SyncStatus: React.FC<SyncStatusProps> = ({ storeId, onRefresh }) => {
         <CardContent>
           <div className="flex flex-col items-center justify-center py-6 space-y-4">
             <Clock className="h-12 w-12 text-gray-400" />
-            <p className="text-gray-500">Ingen synkronisering i gang</p>
+            <p className="text-gray-500">Ingen nylig synkronisering fundet</p>
+            <p className="text-sm text-gray-400 text-center">
+              Synkronisering køres automatisk efter forbindelse af en butik eller når der hentes ændringer
+            </p>
             {onRefresh && (
               <Button variant="outline" onClick={handleRefresh} size="sm">
                 <RefreshCw className="h-4 w-4 mr-2" />
@@ -194,6 +197,14 @@ const SyncStatus: React.FC<SyncStatusProps> = ({ storeId, onRefresh }) => {
               <p className="text-red-800 text-sm">
                 {progress.error_message || 'Der opstod en fejl under synkroniseringen'}
               </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={handleRefresh}
+              >
+                Prøv igen
+              </Button>
             </div>
           )}
         </div>
