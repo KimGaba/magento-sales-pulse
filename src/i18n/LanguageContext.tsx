@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import en from './locales/en';
+import { en } from './locales/en';
 import { da } from './locales/da';
 
 type Locale = 'en' | 'da';
@@ -12,9 +12,28 @@ interface LanguageContextType {
   setLocale: (locale: Locale) => void;
 }
 
+// We need to ensure both translation objects have the same structure
+// Convert Danish translations to match English structure using type assertion
+const daWithFallbacks = {
+  ...da,
+  // Add missing properties from English as fallbacks for Danish
+  login: { ...en.login, ...(da.login || {}) },
+  register: { ...en.register, ...(da.register || {}) },
+  auth: { ...en.auth, ...(da.auth || {}) },
+  layout: { ...en.layout, ...(da.layout || {}) },
+  languageSelector: { ...en.languageSelector, ...(da.languageSelector || {}) },
+  timeFilter: { ...en.timeFilter, ...(da.timeFilter || {}) },
+  dashboard: { ...en.dashboard, ...(da.dashboard || {}) },
+  settings: { ...en.settings, ...(da.settings || {}) },
+  connect: { ...en.connect, ...(da.connect || {}) },
+  repeatPurchase: { ...en.repeatPurchase, ...(da.repeatPurchase || {}) },
+  basketOpeners: { ...en.basketOpeners, ...(da.basketOpeners || {}) },
+  navigation: { ...en.navigation, ...(da.navigation || {}) }
+} as Translations;
+
 const locales: Record<Locale, Translations> = {
   en,
-  da
+  da: daWithFallbacks
 };
 
 const defaultLocale: Locale = 'en';

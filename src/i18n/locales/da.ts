@@ -31,6 +31,58 @@ export const da = {
     page: 'Side',
     of: 'af',
     refresh: 'Opdater',
+    login: 'Log ind',
+    register: 'Registrer',
+    logOut: 'Log ud'
+  },
+  login: {
+    title: 'Log ind',
+    username: 'Brugernavn',
+    email: 'Email',
+    password: 'Adgangskode',
+    submit: 'Log ind',
+    forgotPassword: 'Glemt adgangskode?',
+    noAccount: 'Har du ikke en konto?',
+    createOne: 'Opret en',
+    error: 'Ugyldige legitimationsoplysninger',
+    subtitle: 'Indtast dine legitimationsoplysninger for at fortsætte',
+    loginTab: 'Log ind',
+    registerTab: 'Registrer',
+    emptyFields: 'Udfyld venligst alle felter',
+    loginError: 'Kunne ikke logge ind. Kontroller dine legitimationsoplysninger og prøv igen.',
+    newAccountHint: 'Har du ikke en konto endnu?',
+    newAccountText: 'Opret en ny konto',
+    loggingIn: 'Logger ind...',
+    loginButton: 'Log ind',
+    continueWith: 'Eller fortsæt med',
+    googleButton: 'Fortsæt med Google',
+    createNewAccount: 'Opret ny konto'
+  },
+  register: {
+    title: 'Registrer',
+    username: 'Brugernavn',
+    email: 'Email',
+    password: 'Adgangskode',
+    confirmPassword: 'Bekræft adgangskode',
+    submit: 'Registrer',
+    haveAccount: 'Har du allerede en konto?',
+    login: 'Log ind',
+    error: 'Registrering mislykkedes',
+    success: 'Registrering lykkedes!',
+    emptyFields: 'Alle felter skal udfyldes',
+    passwordMismatch: 'Adgangskoderne stemmer ikke overens',
+    accountCreated: 'Konto oprettet!',
+    registering: 'Registrerer...',
+    registerButton: 'Registrer',
+    continueWith: 'Eller fortsæt med',
+    googleButton: 'Fortsæt med Google'
+  },
+  auth: {
+    authentication: 'Godkendelse',
+    authorization: 'Autorisation',
+    verifyEmail: 'Bekræft din email',
+    verifyEmailDesc: 'Vi har sendt en bekræftelsesmail til din indbakke.',
+    checkEmail: 'Tjek din email for at aktivere din konto.'
   },
   navigation: {
     dashboard: 'Instrumentbræt',
@@ -42,6 +94,29 @@ export const da = {
     connect: 'Forbind',
     settings: 'Indstillinger',
     integrationStatus: 'Integrationsstatus',
+  },
+  layout: {
+    dashboard: 'Instrumentbræt',
+    products: 'Produkter',
+    trends: 'Tendenser',
+    dailySales: 'Daglig Omsætning',
+    connect: 'Forbind',
+    settings: 'Indstillinger',
+    repeatPurchase: 'Genkøbsfrekvens',
+    basketOpeners: 'Kurv Åbnere'
+  },
+  languageSelector: {
+    language: 'Sprog',
+    english: 'Engelsk',
+    danish: 'Dansk'
+  },
+  timeFilter: {
+    today: 'I dag',
+    yesterday: 'I går',
+    last7Days: 'Sidste 7 dage',
+    last30Days: 'Sidste 30 dage',
+    thisMonth: 'Denne måned',
+    lastMonth: 'Sidste måned'
   },
   dashboard: {
     title: 'Instrumentbræt',
