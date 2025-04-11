@@ -39,12 +39,13 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
       // Extract payment and shipping information
       const paymentMethod = order.payment?.method || order.order_data?.payment_method || 'unknown';
       const shippingMethod = order.shipping_description || order.order_data?.shipping_method || 'unknown';
+      const orderStatus = order.status || 'unknown';
 
       // Create a detailed metadata object with all the information we want to store
       const metadata = {
         store_view: order.store_view,
         customer_group: order.customer_group,
-        status: order.status,
+        status: orderStatus,
         items_count: order.items_count || orderItems.length,
         payment_method: paymentMethod,
         shipping_method: shippingMethod,

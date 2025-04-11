@@ -1,74 +1,65 @@
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from "@/components/ui/checkbox";
-import { useForm } from "react-hook-form";
-import { 
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormDescription
-} from "@/components/ui/form";
-import { Link } from 'react-router-dom';
-import { ExternalLink } from 'lucide-react';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+import { useTranslation } from '@/i18n/LanguageContext';
 
-interface ConnectionFormValues {
-  storeName: string;
-  url: string;
-  apiKey: string;
-  orderStatuses: Record<string, boolean>;
-}
+// Schema for connection form
+const connectionFormSchema = z.object({
+  storeName: z.string().min(2, "Butiksnavn skal være mindst 2 tegn"),
+  url: z.string().url("Indtast en gyldig URL").refine((val) => {
+    return val.startsWith('http://') || val.startsWith('https://');
+  }, "URL skal starte med http:// eller https://"),
+  apiKey: z.string().min(5, "API-nøglen er for kort")
+});
+
+type ConnectionFormValues = z.infer<typeof connectionFormSchema>;
 
 interface ConnectionFormProps {
   onSubmit: (values: ConnectionFormValues) => void;
   connecting: boolean;
-  defaultOrderStatuses: Record<string, boolean>;
 }
 
-const ConnectionForm: React.FC<ConnectionFormProps> = ({ 
-  onSubmit, 
-  connecting,
-  defaultOrderStatuses
-}) => {
+const ConnectionForm: React.FC<ConnectionFormProps> = ({ onSubmit, connecting }) => {
+  const { toast } = useToast();
+  const { t } = useTranslation();
+  
   const form = useForm<ConnectionFormValues>({
+    resolver: zodResolver(connectionFormSchema),
     defaultValues: {
       storeName: '',
       url: '',
-      apiKey: '',
-      orderStatuses: defaultOrderStatuses
+      apiKey: ''
     }
   });
 
+  const handleSubmit = (values: ConnectionFormValues) => {
+    // We're no longer collecting order statuses
+    onSubmit(values);
+  };
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Forbind til Magento</CardTitle>
-        <CardDescription>
-          Indtast din Magento butiksadresse og API-nøgle
-        </CardDescription>
-      </CardHeader>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
+      <CardContent className="pt-6">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <FormField
               control={form.control}
               name="storeName"
               render={({ field }) => (
-                <FormItem className="space-y-2">
+                <FormItem>
                   <FormLabel>Butiksnavn</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="Min Butik"
-                    />
+                    <Input placeholder="Min Magento-butik" {...field} />
                   </FormControl>
-                  <FormDescription className="text-xs text-gray-500">
-                    Et navn til at identificere din butik i systemet
-                  </FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -77,17 +68,12 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({
               control={form.control}
               name="url"
               render={({ field }) => (
-                <FormItem className="space-y-2">
-                  <FormLabel>Magento URL</FormLabel>
+                <FormItem>
+                  <FormLabel>Magento API URL</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="https://dinbutik.dk"
-                    />
+                    <Input placeholder="https://minbutik.dk" {...field} />
                   </FormControl>
-                  <FormDescription className="text-xs text-gray-500">
-                    F.eks. https://dinbutik.dk
-                  </FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -96,66 +82,31 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({
               control={form.control}
               name="apiKey"
               render={({ field }) => (
-                <FormItem className="space-y-2">
-                  <FormLabel>API-nøgle</FormLabel>
+                <FormItem>
+                  <FormLabel>Magento API-nøgle</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      type="password"
-                      placeholder="Din Magento API-nøgle"
-                    />
+                    <Input type="password" placeholder="API-nøgle / access token" {...field} />
                   </FormControl>
-                  <FormDescription className="text-xs text-gray-500">
-                    <Link to="/magento-api-help" className="text-magento-600 hover:underline flex items-center">
-                      <ExternalLink className="h-3 w-3 mr-1" />
-                      Hvor finder jeg min API-nøgle?
-                    </Link>
-                  </FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />
             
-            <div className="space-y-3 pt-2">
-              <div className="text-sm font-medium">Synkroniser ordrer med status</div>
-              <div className="text-xs text-gray-500 mb-2">
-                Vælg hvilke ordre-statusser der skal synkroniseres fra Magento
-              </div>
-              
-              {Object.entries(defaultOrderStatuses).map(([status, defaultValue]) => (
-                <FormField
-                  key={status}
-                  control={form.control}
-                  name={`orderStatuses.${status}` as any}
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel className="text-sm capitalize">
-                          {status}
-                        </FormLabel>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              ))}
+            <div className="pt-2">
+              <Button type="submit" className="w-full" disabled={connecting}>
+                {connecting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Forbinder...
+                  </>
+                ) : (
+                  "Forbind butik"
+                )}
+              </Button>
             </div>
-          </CardContent>
-          <CardFooter>
-            <Button 
-              type="submit"
-              className="w-full bg-magento-600 hover:bg-magento-700"
-              disabled={connecting}
-            >
-              {connecting ? "Forbinder..." : "Forbind butik"}
-            </Button>
-          </CardFooter>
-        </form>
-      </Form>
+          </form>
+        </Form>
+      </CardContent>
     </Card>
   );
 };

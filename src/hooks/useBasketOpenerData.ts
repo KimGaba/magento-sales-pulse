@@ -1,75 +1,79 @@
 
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { format, subMonths } from 'date-fns';
-import { fetchBasketOpenerProducts, BasketOpenerProduct } from '@/services/transactionService';
-import { toast } from '@/hooks/use-toast';
+import { useState, useEffect, useCallback } from 'react';
 import { useFilter } from '@/context/FilterContext';
+import { addMonths, format } from 'date-fns';
+import { fetchBasketOpenerProducts, BasketOpenerProduct } from '@/services/transactionService';
+import { getStoresForUser } from '@/services/storeService';
+import { useAuth } from '@/context/AuthContext';
 
 export const useBasketOpenerData = (selectedMonths: string) => {
-  // Get store filter and customer group from FilterContext
-  const { storeView, customerGroup } = useFilter();
+  const [products, setProducts] = useState<BasketOpenerProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const { storeView, customerGroup, orderStatuses } = useFilter();
+  const { user } = useAuth();
   
-  // Calculate dates based on selected period
-  const today = new Date();
-  const fromDate = format(subMonths(today, parseInt(selectedMonths)), 'yyyy-MM-dd');
-  const toDate = format(today, 'yyyy-MM-dd');
-
-  // Get store ID mapping from store views
-  // This would come from a mapping service in a real app
-  // For now we're using our test store ID
-  const getStoreIdFromView = (view: string): string => {
-    const storeMapping: Record<string, string> = {
-      'dk': '22222222-2222-2222-2222-222222222222',
-      'se': '22222222-2222-2222-2222-222222222222', // Same ID for testing
-      'no': '22222222-2222-2222-2222-222222222222', // Same ID for testing
-      'fi': '22222222-2222-2222-2222-222222222222'  // Same ID for testing
-    };
-    
-    return storeMapping[view] || '';
-  };
-  
-  // Convert storeView to store IDs for filtering
-  const storeIds = storeView === 'alle' 
-    ? [] // Empty array means all stores
-    : [getStoreIdFromView(storeView)];
-
-  console.log(`Selected store view: ${storeView}, store IDs: ${storeIds.join(',') || 'all'}`);
-  console.log(`Selected customer group: ${customerGroup}`);
-  
-  // Query for basket opener products
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['basket-openers', fromDate, toDate, storeView, customerGroup],
-    queryFn: async () => {
-      try {
-        console.log(`Fetching basket opener products from ${fromDate} to ${toDate} with store filter: ${storeIds.length ? storeIds.join(', ') : 'all stores'}`);
-        const result = await fetchBasketOpenerProducts(fromDate, toDate, storeIds, customerGroup);
-        console.log(`Fetched ${result.length} basket opener products`);
-        return result;
-      } catch (fetchError) {
-        console.error('Error in basket opener products query:', fetchError);
-        toast({
-          title: "Error loading data",
-          description: "Failed to load basket opener data. Please try again.",
-          variant: "destructive"
-        });
-        return [];
+  const fetchData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Calculate date range from selected months
+      const now = new Date();
+      const monthsAgo = addMonths(now, -parseInt(selectedMonths));
+      const fromDate = format(monthsAgo, 'yyyy-MM-dd');
+      const toDate = format(now, 'yyyy-MM-dd');
+      
+      // Convert selected order statuses
+      const selectedStatuses = Object.entries(orderStatuses)
+        .filter(([_, selected]) => selected)
+        .map(([status]) => status);
+      
+      // If no statuses are selected, don't load data
+      if (selectedStatuses.length === 0) {
+        setProducts([]);
+        return;
       }
-    },
-    retry: 1,
-  });
-
-  // Ensure we always have an array of products
-  const products: BasketOpenerProduct[] = data || [];
+      
+      // Get stores the user has access to
+      let storeIds: string[] = [];
+      if (user) {
+        const userStores = await getStoresForUser(user.id);
+        storeIds = userStores.map(store => store.id);
+      }
+      
+      // If there are no stores, return empty data
+      if (storeIds.length === 0) {
+        setProducts([]);
+        return;
+      }
+      
+      // Get the opener products
+      const data = await fetchBasketOpenerProducts(
+        fromDate, 
+        toDate, 
+        storeIds,
+        storeView !== 'alle' ? storeView : undefined,
+        customerGroup !== 'alle' ? customerGroup : undefined,
+        selectedStatuses
+      );
+      
+      setProducts(data);
+    } catch (err) {
+      console.error('Error fetching basket opener data:', err);
+      setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedMonths, storeView, customerGroup, orderStatuses, user]);
+  
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
   
   const handleRetry = () => {
-    refetch();
+    fetchData();
   };
-
-  return {
-    products,
-    isLoading,
-    error,
-    handleRetry
-  };
+  
+  return { products, isLoading, error, handleRetry };
 };

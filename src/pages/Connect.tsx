@@ -1,11 +1,8 @@
 
-console.log("✅ This is the latest build of Connect.tsx");
-
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
-import { toast as sonnerToast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from '@/i18n/LanguageContext';
@@ -32,17 +29,7 @@ interface ConnectFormValues {
   storeName: string;
   url: string;
   apiKey: string;
-  orderStatuses: Record<string, boolean>;
 }
-
-const defaultOrderStatuses = {
-  "pending": false,
-  "processing": true,
-  "complete": true,
-  "closed": false,
-  "canceled": false,
-  "holded": false
-};
 
 const Connect = () => {
   const { toast } = useToast();
@@ -70,35 +57,34 @@ const Connect = () => {
     }
   }, [user]);
   
-const loadConnections = async () => {
-  if (!user) return;
+  const loadConnections = async () => {
+    if (!user) return;
 
-  setLoadingConnections(true);
-  try {
-    const connectionsData = await fetchMagentoConnections(user.id);
+    setLoadingConnections(true);
+    try {
+      const connectionsData = await fetchMagentoConnections(user.id);
 
-    // Log hele resultatet for at identificere problemet
-    console.log("Raw connection data:", connectionsData);
+      // Log hele resultatet for at identificere problemet
+      console.log("Raw connection data:", connectionsData);
 
-    // Filtrer forbindelser væk hvor store_id er null
-    const validConnections = connectionsData.filter(
-      (conn) => conn.store_id !== null
-    );
+      // Filtrer forbindelser væk hvor store_id er null
+      const validConnections = connectionsData.filter(
+        (conn) => conn.store_id !== null
+      );
 
-    console.log("Filtered connections:", validConnections);
-    setConnections(validConnections);
-  } catch (error) {
-    console.error("Error fetching connections:", error);
-    toast({
-      title: "Fejl ved indlæsning",
-      description: "Der opstod en fejl ved indlæsning af dine forbindelser.",
-      variant: "destructive",
-    });
-  } finally {
-    setLoadingConnections(false);
-  }
-};
-
+      console.log("Filtered connections:", validConnections);
+      setConnections(validConnections);
+    } catch (error) {
+      console.error("Error fetching connections:", error);
+      toast({
+        title: "Fejl ved indlæsning",
+        description: "Der opstod en fejl ved indlæsning af dine forbindelser.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingConnections(false);
+    }
+  };
   
   const handleConnect = async (values: ConnectFormValues) => {
     if (!values.url.trim() || !values.apiKey.trim() || !values.storeName.trim()) {
@@ -234,7 +220,6 @@ const loadConnections = async () => {
               <ConnectionForm 
                 onSubmit={handleConnect}
                 connecting={connecting}
-                defaultOrderStatuses={defaultOrderStatuses}
               />
             )}
 

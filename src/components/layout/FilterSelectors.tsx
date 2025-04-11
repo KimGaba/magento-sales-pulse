@@ -14,8 +14,9 @@ import {
   PopoverTrigger
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Filter, Globe, Users, Check } from 'lucide-react';
+import { Filter, Globe, Users, Check, ClipboardList } from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
+import OrderStatusSelector from './OrderStatusSelector';
 
 const FilterSelectors = () => {
   const { storeView, customerGroup, setStoreView, setCustomerGroup } = useFilter();
@@ -41,7 +42,7 @@ const FilterSelectors = () => {
           <span>Filtre</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-4">
+      <PopoverContent className="w-80 p-4" align="end">
         <div className="space-y-4">
           <h4 className="text-sm font-medium mb-3">Filtreringsindstillinger</h4>
           
@@ -86,6 +87,14 @@ const FilterSelectors = () => {
                 <SelectItem value="vip">VIP</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-muted-foreground" />
+              <label className="text-sm">Ordrestatus</label>
+            </div>
+            <OrderStatusSelector />
           </div>
           
           <div className="flex justify-end mt-4">
