@@ -176,6 +176,17 @@ const en = {
     openerScore: "Opener Score",
     openerCount: "Times as Opener",
     totalAppearances: "Total Appearances"
+  },
+  navigation: {
+    dashboard: 'Dashboard',
+    dailySales: 'Daily Sales',
+    trends: 'Trends',
+    repeatPurchaseRate: 'Repeat Purchase Rate',
+    basketOpeners: 'Basket Openers',
+    products: 'Products',
+    connect: 'Connect',
+    settings: 'Settings',
+    integrationStatus: 'Integration Status',
   }
 };
 

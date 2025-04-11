@@ -23,6 +23,7 @@ import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 import DatabaseTest from './pages/DatabaseTest';
 import MagentoApiHelp from './pages/MagentoApiHelp';
+import IntegrationStatus from './pages/IntegrationStatus';
 
 // Import components
 import AuthGuard from './components/auth/AuthGuard';
@@ -52,6 +53,7 @@ function App() {
                       <Route path="/magento-api-help" element={<AuthGuard><MagentoApiHelp /></AuthGuard>} />
                       <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
                       <Route path="/database-test" element={<AuthGuard><DatabaseTest /></AuthGuard>} />
+                      <Route path="/integration-status" element={<AuthGuard><IntegrationStatus /></AuthGuard>} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                     <Toaster />

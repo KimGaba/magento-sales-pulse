@@ -1,121 +1,137 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { 
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem 
-} from '@/components/ui/sidebar';
-import { BarChart, Calendar, Database, TrendingUp, RefreshCw, Activity, ShoppingCart } from 'lucide-react';
+  BarChart3, 
+  LayoutDashboard, 
+  CalendarDays, 
+  TrendingUp, 
+  Repeat, 
+  ShoppingCart, 
+  Package, 
+  Settings, 
+  Link as LinkIcon,
+  Database
+} from 'lucide-react';
 import { useLanguage } from '@/i18n/LanguageContext';
 
-export const NavigationMenu: React.FC = () => {
+const NavigationMenu = () => {
   const { translations } = useLanguage();
-  
-  const menuItems = [
-    { 
-      title: translations.layout.dashboard, 
-      path: '/dashboard', 
-      icon: BarChart 
-    },
-    { 
-      title: translations.layout.products, 
-      path: '/products', 
-      icon: Database 
-    },
-    { 
-      title: translations.layout.trends, 
-      path: '/trends', 
-      icon: TrendingUp 
-    },
-    { 
-      title: translations.layout.repeatPurchase, 
-      path: '/repeat-purchase', 
-      icon: RefreshCw 
-    },
-    { 
-      title: translations.layout.basketOpeners || "Kurv Åbnere", 
-      path: '/basket-openers', 
-      icon: ShoppingCart 
-    },
-    { 
-      title: translations.layout.dailySales, 
-      path: '/daily-sales', 
-      icon: Calendar 
-    },
-  ];
+  const t = translations.navigation;
 
   return (
-    <>
-      <div className="p-4">
-        <div className="flex items-center">
-          <img 
-            src="/lovable-uploads/b987e83a-8258-4105-ad71-1cc75ec496f7.png" 
-            alt="Logo" 
-            className="h-10"
-          />
-        </div>
-      </div>
+    <nav className="space-y-1">
+      <NavLink 
+        to="/dashboard" 
+        className={({ isActive }) => 
+          `flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+            isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          }`
+        }
+      >
+        <LayoutDashboard className="mr-3 h-5 w-5" />
+        {t.dashboard}
+      </NavLink>
+      
+      <NavLink 
+        to="/daily-sales" 
+        className={({ isActive }) => 
+          `flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+            isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          }`
+        }
+      >
+        <CalendarDays className="mr-3 h-5 w-5" />
+        {t.dailySales}
+      </NavLink>
+      
+      <NavLink 
+        to="/trends" 
+        className={({ isActive }) => 
+          `flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+            isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          }`
+        }
+      >
+        <TrendingUp className="mr-3 h-5 w-5" />
+        {t.trends}
+      </NavLink>
+      
+      <NavLink 
+        to="/repeat-purchase-rate" 
+        className={({ isActive }) => 
+          `flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+            isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          }`
+        }
+      >
+        <Repeat className="mr-3 h-5 w-5" />
+        {t.repeatPurchaseRate}
+      </NavLink>
+      
+      <NavLink 
+        to="/basket-openers" 
+        className={({ isActive }) => 
+          `flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+            isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          }`
+        }
+      >
+        <ShoppingCart className="mr-3 h-5 w-5" />
+        {t.basketOpeners}
+      </NavLink>
+      
+      <NavLink 
+        to="/products" 
+        className={({ isActive }) => 
+          `flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+            isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          }`
+        }
+      >
+        <Package className="mr-3 h-5 w-5" />
+        {t.products}
+      </NavLink>
 
-      <SidebarGroup>
-        <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            {menuItems.map((item) => (
-              <SidebarMenuItem key={item.path}>
-                <SidebarMenuButton asChild>
-                  <Link to={item.path} className="flex items-center">
-                    <item.icon className="mr-2 h-4 w-4" />
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+      <hr className="border-t border-gray-200 my-2" />
       
-      <SidebarGroup>
-        <SidebarGroupLabel>Integration</SidebarGroupLabel>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link to="/connect" className="flex items-center">
-                  <Database className="mr-2 h-4 w-4" />
-                  <span>Forbind Butik</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link to="/integration-status" className="flex items-center">
-                  <Activity className="mr-2 h-4 w-4" />
-                  <span>Integration Status</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+      <NavLink 
+        to="/connect" 
+        className={({ isActive }) => 
+          `flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+            isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          }`
+        }
+      >
+        <LinkIcon className="mr-3 h-5 w-5" />
+        {t.connect}
+      </NavLink>
       
-      <SidebarGroup className="mt-auto">
-        <SidebarGroupContent>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <Link to="/settings" className="flex items-center text-gray-600">
-                  <Database className="mr-2 h-4 w-4" />
-                  <span>Indstillinger</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
-    </>
+      <NavLink 
+        to="/integration-status" 
+        className={({ isActive }) => 
+          `flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+            isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          }`
+        }
+      >
+        <Database className="mr-3 h-5 w-5" />
+        {t.integrationStatus || 'Integration Status'}
+      </NavLink>
+      
+      <NavLink 
+        to="/settings" 
+        className={({ isActive }) => 
+          `flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+            isActive ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          }`
+        }
+      >
+        <Settings className="mr-3 h-5 w-5" />
+        {t.settings}
+      </NavLink>
+    </nav>
   );
 };
+
+export default NavigationMenu;
