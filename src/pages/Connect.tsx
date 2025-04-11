@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -6,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from '@/hooks/use-toast';
-import { useToast } from 'sonner';
+import { Toaster } from "sonner";
 import { Loader2 } from 'lucide-react';
 import { addMagentoConnection, MagentoConnection, triggerMagentoSync } from '@/services/magentoService';
 import { useSyncProcess } from '@/hooks/useSyncProcess';
@@ -17,7 +18,6 @@ import Layout from '@/components/layout/Layout';
 const Connect = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast: sonnerToast } = useToast();
   const [storeUrl, setStoreUrl] = useState('');
   const [storeName, setStoreName] = useState('');
   const [accessToken, setAccessToken] = useState('');
@@ -91,7 +91,7 @@ const Connect = () => {
       const connectedStore = await addMagentoConnection(newConnection);
       setConnectionData(connectedStore);
       
-      sonnerToast({
+      toast({
         title: "Butik forbundet!",
         description: "Din Magento-butik er nu forbundet. Synkronisering starter...",
       });
@@ -114,7 +114,7 @@ const Connect = () => {
     try {
       await triggerMagentoSync(storeId);
       
-      sonnerToast({
+      toast({
         title: "Synkronisering startet",
         description: "Dit Magento data bliver nu synkroniseret. Dette kan tage nogle minutter.",
       });
@@ -142,7 +142,7 @@ const Connect = () => {
   const handleRetrySync = async (connection: MagentoConnection) => {
     try {
       await triggerMagentoSync(connection.store_id || '');
-      sonnerToast({
+      toast({
         title: "Synkronisering genstartet",
         description: "Dit Magento data bliver nu synkroniseret igen. Dette kan tage nogle minutter.",
       });

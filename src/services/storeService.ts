@@ -30,7 +30,7 @@ export const getStoresForUser = async (userId: string) => {
 };
 
 /**
- * Fetch store data - added for backward compatibility
+ * Fetch store data - for backward compatibility
  */
 export const fetchStoreData = async (userId: string) => {
   return getStoresForUser(userId);

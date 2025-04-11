@@ -28,7 +28,7 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
           // Create a typed safe transaction object
           const typedTransaction: Transaction = {
             ...transaction,
-            metadata: transaction.metadata || {}
+            metadata: transaction.metadata as Record<string, any> || {}
           };
           
           // Check if we have customer email info in metadata
@@ -81,7 +81,7 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
           // Create a typed safe transaction object
           const typedTransaction: Transaction = {
             ...transaction,
-            metadata: transaction.metadata || {}
+            metadata: transaction.metadata as Record<string, any> || {}
           };
           
           // Check if we have customer email info in metadata
