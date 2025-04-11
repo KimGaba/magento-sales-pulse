@@ -1,4 +1,5 @@
-const en = {
+
+export const en = {
   common: {
     back: "Back",
     loading: "Loading...",

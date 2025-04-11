@@ -1,6 +1,7 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import en from './locales/en';
-import da from './locales/da';
+import { da } from './locales/da';
 
 type Locale = 'en' | 'da';
 type Translations = typeof en;

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Sidebar, SidebarContent, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { NavigationMenu } from './NavigationMenu';
+import NavigationMenu from './NavigationMenu';
 import { Button } from '@/components/ui/button';
 import { User } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
