@@ -32,7 +32,7 @@ const Connect = () => {
     realSyncProgress,
     setConnecting, 
     startSyncProcess,
-    setStep, 
+    setStep, // Now correctly imported from the hook
     resetSyncProcess 
   } = useSyncProcess();
 

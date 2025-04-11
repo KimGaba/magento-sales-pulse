@@ -172,6 +172,7 @@ export const useSyncProcess = () => {
     connecting,
     storeId,
     realSyncProgress,
+    setStep, // Export setStep function to be used by components
     setConnecting,
     startSyncProcess,
     resetSyncProcess
