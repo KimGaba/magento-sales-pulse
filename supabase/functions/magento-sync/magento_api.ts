@@ -139,109 +139,71 @@ export async function fetchMagentoStoreViews(connection: MagentoConnection) {
   }
 }
 
-export async function mockMagentoOrdersData() {
-  const storeViews = ['dk', 'se', 'no', 'fi'];
-  const customerGroups = ['retail', 'wholesale', 'vip'];
-  const statuses = ['pending', 'processing', 'complete', 'canceled'];
-  const payments = ['paypal', 'checkmo', 'banktransfer'];
-  const shippings = ['GLS', 'Bring', 'PostNord'];
-
-  const orders = Array.from({ length: 20 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    return {
-      external_id: `mock-${i + 1}`,
-      transaction_date: date.toISOString(),
-      amount: 100 + i * 10,
-      customer_id: `mock${i}@example.com`,
-      customer_name: `Mock Customer ${i}`,
-      store_view: storeViews[i % storeViews.length],
-      customer_group: customerGroups[i % customerGroups.length],
-      status: statuses[i % statuses.length],
-      items: i % 5 + 1,
-      items_data: Array.from({ length: i % 5 + 1 }, (_, j) => ({
-        sku: `SKU-${i}-${j}`,
-        name: `Product ${i}-${j}`,
-        price: 50 + j * 10,
-        qty_ordered: j + 1,
-        row_total: (50 + j * 10) * (j + 1),
-        product_id: `product-${i}-${j}`,
-        product_type: 'simple'
-      })),
-      order_data: {
-        payment_method: payments[i % payments.length],
-        shipping_method: shippings[i % shippings.length]
-      }
-    };
-  });
-
-  console.log(`🔧 Generated ${orders.length} mock orders`);
-  return orders;
-}
-
-export async function fetchMagentoSalesData(connection: MagentoConnection, orderStatuses: string[]) {
-  await new Promise(resolve => setTimeout(resolve, 1000));
-
-  const statuses = ['pending', 'processing', 'complete', 'canceled'];
-  const orders = Array.from({ length: 10 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    const status = statuses[i % statuses.length];
-
-    if (!orderStatuses.includes(status)) return null;
-
-    return {
-      increment_id: `sample-${i}`,
-      created_at: date.toISOString(),
-      customer_email: `sample${i}@example.com`,
-      customer_name: `Sample ${i}`,
-      grand_total: 100 + i * 5,
-      store_view: 'dk',
-      customer_group: 'retail',
-      status
-    };
-  }).filter(Boolean);
-
-  return orders;
-}
-
 export async function fetchAndStoreProductData(connection: MagentoConnection, storeId: string, supabase: any) {
-  await new Promise(resolve => setTimeout(resolve, 800));
+  try {
+    console.log(`📦 Fetching Magento products from ${connection.store_url}`);
+    const url = `${connection.store_url}/rest/V1/products?searchCriteria[pageSize]=100`;
 
-  const products = Array.from({ length: 10 }, (_, i) => ({
-    external_id: `prod-${i}`,
-    sku: `SKU-${i}`,
-    name: `Product ${i}`,
-    price: 100 + i * 10,
-    special_price: i % 2 === 0 ? 90 + i * 5 : null,
-    description: `Product description for item ${i}`,
-    image_url: `https://via.placeholder.com/150?text=Product+${i}`,
-    in_stock: true,
-    status: 'enabled',
-    type: 'simple',
-    store_view: 'default'
-  }));
+    const headers = {
+      'Authorization': `Bearer ${connection.access_token}`,
+      'Content-Type': 'application/json'
+    };
 
-  for (const product of products) {
-    const { data: existing, error: fetchErr } = await supabase.from('products').select('*').eq('store_id', storeId).eq('external_id', product.external_id).maybeSingle();
-
-    if (fetchErr) {
-      console.error(`Error fetching product: ${fetchErr.message}`);
-      continue;
+    const response = await fetch(url, { method: 'GET', headers });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Magento API error (${response.status}): ${errorText}`);
+      throw new Error(`Failed to fetch products: ${response.statusText}`);
     }
 
-    if (existing) {
-      await supabase.from('products').update({
-        ...product,
-        updated_at: new Date().toISOString()
-      }).eq('id', existing.id);
-    } else {
-      await supabase.from('products').insert({
-        ...product,
-        store_id: storeId
-      });
+    const data = await response.json();
+    const products = data.items || [];
+
+    for (const product of products) {
+      const productData = {
+        external_id: product.id,
+        sku: product.sku,
+        name: product.name,
+        price: product.price || null,
+        special_price: product.special_price || null,
+        description: product.description || null,
+        image_url: product.media_gallery_entries && product.media_gallery_entries.length > 0 
+          ? `${connection.store_url}/media/catalog/product${product.media_gallery_entries[0].file}` 
+          : null,
+        in_stock: product.extension_attributes?.stock_item?.is_in_stock || false,
+        status: product.status === 1 ? 'enabled' : 'disabled',
+        type: product.type_id || 'simple',
+        store_view: 'default'
+      };
+
+      const { data: existing, error: fetchErr } = await supabase
+        .from('products')
+        .select('*')
+        .eq('store_id', storeId)
+        .eq('external_id', product.id.toString())
+        .maybeSingle();
+
+      if (fetchErr) {
+        console.error(`Error fetching product: ${fetchErr.message}`);
+        continue;
+      }
+
+      if (existing) {
+        await supabase.from('products').update({
+          ...productData,
+          updated_at: new Date().toISOString()
+        }).eq('id', existing.id);
+      } else {
+        await supabase.from('products').insert({
+          ...productData,
+          store_id: storeId
+        });
+      }
     }
+
+    return products;
+  } catch (error) {
+    console.error(`❌ Error fetching or storing Magento products: ${error.message}`);
+    throw error;
   }
-
-  return products;
 }

@@ -115,40 +115,7 @@ export const useSyncProcess = () => {
     updateSyncStatus('products', 'syncing');
     setSyncProgress(5);
     
-    // If we don't get real progress data, we'll use this fallback
-    if (!realSyncProgress) {
-      setTimeout(() => {
-        updateSyncStatus('products', 'completed');
-        updateSyncStatus('orders', 'syncing');
-        setSyncProgress(30);
-        
-        setTimeout(() => {
-          updateSyncStatus('orders', 'completed');
-          updateSyncStatus('customers', 'syncing');
-          setSyncProgress(60);
-          
-          setTimeout(() => {
-            updateSyncStatus('customers', 'completed');
-            updateSyncStatus('statistics', 'syncing');
-            setSyncProgress(80);
-            
-            setTimeout(() => {
-              updateSyncStatus('statistics', 'completed');
-              setSyncProgress(100);
-              
-              triggerInitialSync();
-              
-              setTimeout(() => {
-                setStep(3);
-              }, 1000);
-            }, 1000);
-          }, 1500);
-        }, 1500);
-      }, 1500);
-    } else {
-      // If we have real progress data, we'll use that directly
-      triggerInitialSync();
-    }
+    triggerInitialSync();
   };
 
   const resetSyncProcess = () => {

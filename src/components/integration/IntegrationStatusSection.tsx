@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/context/AuthContext';
@@ -5,15 +6,7 @@ import { fetchMagentoConnections, triggerMagentoSync } from '@/services/magentoS
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { MagentoConnection } from '@/types/magento';
-import { CircleCheck, CircleX, RefreshCw, Clock, Download, Database, Info } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { 
-  Tooltip, 
-  TooltipContent, 
-  TooltipProvider, 
-  TooltipTrigger 
-} from "@/components/ui/tooltip";
+import { CircleCheck, CircleX, RefreshCw, Clock, Download } from 'lucide-react';
 import SyncStatus from '../connect/SyncStatus';
 
 const IntegrationStatusSection = () => {
@@ -22,7 +15,6 @@ const IntegrationStatusSection = () => {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [fetchingChanges, setFetchingChanges] = useState(false);
-  const [useMockData, setUseMockData] = useState(false);
   const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [selectedConnection, setSelectedConnection] = useState<MagentoConnection | null>(null);
 
@@ -227,39 +219,6 @@ const IntegrationStatusSection = () => {
                 </div>
               </div>
             ))}
-          </div>
-          
-          <div className="mt-6 border-t pt-4">
-            <div className="flex items-center space-x-2">
-              <Database className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium">Testtilstand</span>
-              
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-4 w-4 text-gray-400 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs max-w-xs">
-                      Når testtilstand er aktiveret, bruges simulerede data i stedet for at hente fra Magento API.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <div className="flex items-center space-x-2 mt-2">
-              <Switch
-                id="useMockData"
-                checked={useMockData}
-                onCheckedChange={setUseMockData}
-              />
-              <Label htmlFor="useMockData" className="text-sm text-gray-600">
-                Brug testdata {useMockData ? '(aktiveret)' : '(deaktiveret)'}
-              </Label>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Aktivér denne indstilling for at teste integrationen med genereret data i stedet for at kalde Magento API.
-            </p>
           </div>
         </CardContent>
       </Card>
