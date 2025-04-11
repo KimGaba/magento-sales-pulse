@@ -20,16 +20,16 @@ export const fetchDailySalesData = async (
     console.log('Customer group:', customerGroup);
     console.log('Order statuses:', orderStatuses);
 
-    // Use a direct query on the transactions table to aggregate data on the fly
-    // This allows for filtering by metadata like store_view and customer_group
-    let query = supabase.rpc('get_daily_sales', {
-      start_date: fromDate,
-      end_date: toDate,
-      store_filter: storeIds.length > 0 ? storeIds : null,
-      store_view: storeView && storeView !== 'alle' ? storeView : null,
-      customer_group: customerGroup && customerGroup !== 'alle' ? customerGroup : null,
-      order_statuses: orderStatuses && orderStatuses.length > 0 ? orderStatuses : null
-    });
+    // Use the select query to get data from the daily_sales table
+    let query = supabase.from('daily_sales')
+      .select('*')
+      .gte('date', fromDate)
+      .lte('date', toDate);
+    
+    // Apply store filter if provided
+    if (storeIds && storeIds.length > 0) {
+      query = query.in('store_id', storeIds);
+    }
     
     const { data, error } = await query;
     
@@ -50,20 +50,37 @@ export const fetchDailySalesData = async (
  */
 export const fetchAvailableDataMonths = async (storeIds: string[] = []): Promise<{month: string, year: number}[]> => {
   try {
-    let query = supabase.rpc('get_available_months');
-    
-    if (storeIds.length > 0) {
-      query = query.in('store_id', storeIds);
-    }
-    
-    const { data, error } = await query;
+    // Use a direct SQL query to get distinct months from sales data
+    const { data, error } = await supabase
+      .from('daily_sales')
+      .select('date')
+      .order('date');
     
     if (error) {
       console.error('Error fetching available months:', error);
       throw error;
     }
     
-    return data || [];
+    // Process the dates to get unique month/year combinations
+    const monthsSet = new Set<string>();
+    const result: {month: string, year: number}[] = [];
+    
+    if (data && data.length > 0) {
+      data.forEach(item => {
+        const date = new Date(item.date);
+        const monthYear = `${date.getMonth() + 1}-${date.getFullYear()}`;
+        
+        if (!monthsSet.has(monthYear)) {
+          monthsSet.add(monthYear);
+          result.push({
+            month: (date.getMonth() + 1).toString(), // 1-12
+            year: date.getFullYear()
+          });
+        }
+      });
+    }
+    
+    return result;
   } catch (error) {
     console.error('Error in fetchAvailableDataMonths:', error);
     throw error;

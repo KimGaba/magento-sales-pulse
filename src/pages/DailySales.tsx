@@ -18,9 +18,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format, startOfMonth, endOfMonth, isSameMonth, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { fetchDailySalesData, fetchAvailableDataMonths, fetchTransactionCount, testDatabase } from '@/services/salesService';
+import { fetchDailySalesData, fetchAvailableDataMonths } from '@/services/salesService';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { testDatabaseConnection, getTransactionCount } from '@/services/transactionService';
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -37,12 +38,12 @@ const DailySales = () => {
   // Add DB connection test
   const { data: isConnected = false, isLoading: isTestingConnection } = useQuery({
     queryKey: ['databaseTest'],
-    queryFn: () => testDatabase(),
+    queryFn: () => testDatabaseConnection(),
   });
 
   const { data: transactionCount = 0, isLoading: isCountLoading } = useQuery({
     queryKey: ['transactionCount'],
-    queryFn: () => fetchTransactionCount(),
+    queryFn: () => getTransactionCount(),
   });
 
   const { data: availableMonths = [], isLoading: isLoadingMonths } = useQuery({
@@ -122,7 +123,10 @@ const DailySales = () => {
   }, [dailySalesData]);
 
   const hasDataForMonth = (day: Date) => {
-    return availableMonths.some(availMonth => isSameMonth(availMonth, day));
+    return availableMonths.some(availMonth => {
+      const availMonthDate = new Date(availMonth.year, parseInt(availMonth.month) - 1);
+      return isSameMonth(availMonthDate, day);
+    });
   };
 
   if (error) {

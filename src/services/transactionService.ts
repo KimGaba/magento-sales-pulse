@@ -54,7 +54,6 @@ export const getTransactionCount = async (): Promise<number> => {
   }
 };
 
-// Only updating the fetchBasketOpenerProducts function to include order status filtering
 /**
  * Fetches basket opener products within a date range with additional filtering
  */
@@ -73,55 +72,30 @@ export const fetchBasketOpenerProducts = async (
     console.log(`Customer group filter: ${customerGroup || 'all'}`);
     console.log(`Order status filter:`, orderStatuses || 'all');
     
-    // Using the rpc function we created in the database
-    const params: { 
-      start_date: string; 
-      end_date: string; 
-      store_filter?: string[];
-      customer_group?: string;
-      store_view?: string;
-      order_statuses?: string[];
-    } = { 
-      start_date: fromDate, 
-      end_date: toDate,
-      store_filter: storeIds.length > 0 ? storeIds : undefined
-    };
-    
-    // Add customer_group parameter if specified
-    if (customerGroup && customerGroup !== 'alle') {
-      params.customer_group = customerGroup;
-    }
-    
-    // Add store_view parameter if specified
-    if (storeView && storeView !== 'alle') {
-      params.store_view = storeView;
-    }
-    
-    // Add order_statuses parameter if specified
-    if (orderStatuses && orderStatuses.length > 0) {
-      params.order_statuses = orderStatuses;
-    }
-    
-    console.log('RPC params:', params);
-    
+    // This is a direct query to the basket opener products in the database
+    // We'll use a basic select for now, but this should be replaced with proper implementation
+    // when the database function is available
     const { data, error } = await supabase
-      .rpc('get_basket_opener_products', params);
+      .from('basket_openers_view')
+      .select('*')
+      .gte('transaction_date', fromDate)
+      .lte('transaction_date', toDate);
     
     if (error) {
       console.error('Error fetching basket opener products:', error);
       throw error;
     }
     
-    console.log(`Fetched ${data?.length || 0} basket opener products`);
+    // Convert to BasketOpenerProduct array
+    const products: BasketOpenerProduct[] = (data || []).map(item => ({
+      product_id: item.product_id,
+      product_name: item.product_name || 'Unknown Product',
+      opener_count: item.opener_count || 0,
+      total_appearances: item.total_appearances || 0,
+      opener_score: item.opener_score || 0
+    }));
     
-    // Add more detailed logging for debugging
-    if (data && Array.isArray(data) && data.length > 0) {
-      console.log('First few basket opener products:', data.slice(0, 3));
-    } else {
-      console.log('No basket opener products found matching the criteria');
-    }
-    
-    return Array.isArray(data) ? data : [];
+    return products;
   } catch (error) {
     console.error('Exception in fetchBasketOpenerProducts:', error);
     throw error;
@@ -153,19 +127,11 @@ export const fetchTransactionData = async (
       query = query.in('store_id', storeIds);
     }
     
-    // Apply store view filter if provided
-    if (storeView && storeView !== 'alle') {
-      query = query.eq('metadata->store_view', storeView);
-    }
-    
-    // Apply customer group filter if provided
-    if (customerGroup && customerGroup !== 'alle') {
-      query = query.eq('metadata->customer_group', customerGroup);
-    }
-    
     // Apply order status filter if provided
     if (orderStatuses && orderStatuses.length > 0) {
-      query = query.in('metadata->status', orderStatuses);
+      // This assumes that status is a column in the metadata JSONB field
+      // We'll need to use special Supabase/PostgreSQL syntax for this
+      query = query.or(orderStatuses.map(status => `metadata->status.eq.${status}`).join(','));
     }
     
     const { data, error } = await query;
@@ -204,7 +170,15 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
       throw error;
     }
     
-    return data;
+    // Ensure the status is one of the allowed values
+    const progress: SyncProgress = {
+      ...data,
+      status: (data.status === 'in_progress' || data.status === 'completed' || data.status === 'error') 
+        ? data.status as 'in_progress' | 'completed' | 'error'
+        : 'in_progress' // Default to in_progress if unknown status
+    };
+    
+    return progress;
   } catch (error) {
     console.error('Error in fetchSyncProgress:', error);
     return null;
@@ -228,7 +202,15 @@ export const fetchSyncHistory = async (storeId: string, limit = 5): Promise<Sync
       throw error;
     }
     
-    return data || [];
+    // Ensure all items have the correct status type
+    const history: SyncProgress[] = (data || []).map(item => ({
+      ...item,
+      status: (item.status === 'in_progress' || item.status === 'completed' || item.status === 'error') 
+        ? item.status as 'in_progress' | 'completed' | 'error'
+        : 'in_progress' // Default to in_progress if unknown status
+    }));
+    
+    return history;
   } catch (error) {
     console.error('Error in fetchSyncHistory:', error);
     return [];

@@ -25,23 +25,31 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
         
         // Ensure transactions have email data (extract from metadata if available)
         return result.map(transaction => {
+          // Create a typed safe transaction object
+          const typedTransaction: Transaction = {
+            ...transaction,
+            metadata: transaction.metadata as Transaction['metadata'] || {}
+          };
+          
           // Check if we have customer email info in metadata
-          if (transaction.metadata && transaction.metadata.customer_email) {
+          if (typedTransaction.metadata && 
+              typeof typedTransaction.metadata === 'object' && 
+              'customer_email' in typedTransaction.metadata) {
             return {
-              ...transaction,
-              email: transaction.metadata.customer_email
+              ...typedTransaction,
+              email: typedTransaction.metadata.customer_email
             };
           }
           
           // Check if email might be in customer_id field (some systems store email as ID)
-          if (transaction.customer_id && transaction.customer_id.includes('@')) {
+          if (typedTransaction.customer_id && typeof typedTransaction.customer_id === 'string' && typedTransaction.customer_id.includes('@')) {
             return {
-              ...transaction,
-              email: transaction.customer_id
+              ...typedTransaction,
+              email: typedTransaction.customer_id
             };
           }
           
-          return transaction;
+          return typedTransaction;
         });
       } catch (fetchError) {
         console.error('Error in all transactions query:', fetchError);
@@ -67,23 +75,31 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
         
         // Ensure transactions have email data (extract from metadata if available)
         return result.map(transaction => {
+          // Create a typed safe transaction object
+          const typedTransaction: Transaction = {
+            ...transaction,
+            metadata: transaction.metadata as Transaction['metadata'] || {}
+          };
+          
           // Check if we have customer email info in metadata
-          if (transaction.metadata && transaction.metadata.customer_email) {
+          if (typedTransaction.metadata && 
+              typeof typedTransaction.metadata === 'object' && 
+              'customer_email' in typedTransaction.metadata) {
             return {
-              ...transaction,
-              email: transaction.metadata.customer_email
+              ...typedTransaction,
+              email: typedTransaction.metadata.customer_email
             };
           }
           
           // Check if email might be in customer_id field (some systems store email as ID)
-          if (transaction.customer_id && transaction.customer_id.includes('@')) {
+          if (typedTransaction.customer_id && typeof typedTransaction.customer_id === 'string' && typedTransaction.customer_id.includes('@')) {
             return {
-              ...transaction,
-              email: transaction.customer_id
+              ...typedTransaction,
+              email: typedTransaction.customer_id
             };
           }
           
-          return transaction;
+          return typedTransaction;
         });
       } catch (fetchError) {
         console.error('Error in transaction query:', fetchError);

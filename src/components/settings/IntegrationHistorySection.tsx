@@ -29,9 +29,24 @@ const IntegrationHistorySection = () => {
   const loadSyncHistory = async () => {
     setLoading(true);
     try {
-      // Use the mock data for now, will be replaced with actual API call
-      const historyData = await fetchSyncHistory();
-      setHistory(historyData);
+      // Pass a default store ID for now - this should be updated with the actual store ID when available
+      const historyData = await fetchSyncHistory('default-store-id');
+      
+      // Convert the SyncProgress[] to SyncHistoryItem[]
+      const formattedHistory: SyncHistoryItem[] = historyData.map(item => ({
+        id: item.id,
+        timestamp: item.started_at,
+        end_timestamp: item.status !== 'in_progress' ? item.updated_at : undefined,
+        status: item.status === 'completed' ? 'success' : 
+               item.status === 'error' ? 'error' : 'in_progress',
+        items_synced: item.orders_processed,
+        duration_seconds: item.status !== 'in_progress' ? 
+          (new Date(item.updated_at).getTime() - new Date(item.started_at).getTime()) / 1000 : undefined,
+        trigger_type: 'scheduled', // Default value, should be updated with real data when available
+        store_id: item.store_id
+      }));
+      
+      setHistory(formattedHistory);
     } catch (error) {
       console.error("Error loading sync history:", error);
     } finally {
