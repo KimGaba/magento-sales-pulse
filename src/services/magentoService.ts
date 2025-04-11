@@ -128,15 +128,24 @@ export const fetchOrderStatuses = async (): Promise<string[]> => {
   try {
     console.log("Fetching available order statuses");
     
-    // Query transactions table to extract unique order statuses from metadata
-    const { data, error } = await supabase.rpc('get_unique_order_statuses');
+    // Query directly from transactions table metadata
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('metadata->status')
+      .not('metadata->status', 'is', null);
     
     if (error) {
       console.error("Error fetching order statuses:", error);
       throw error;
     }
     
-    return data || [];
+    // Extract unique statuses from the results
+    const statuses = data
+      .map(item => item.metadata?.status)
+      .filter(Boolean)
+      .filter((value, index, self) => self.indexOf(value) === index);
+    
+    return statuses.length > 0 ? statuses : ["pending", "processing", "complete", "canceled"]; // Fallback to common statuses
   } catch (error) {
     console.error("Error in fetchOrderStatuses:", error);
     return ["pending", "processing", "complete", "canceled"]; // Fallback to common statuses

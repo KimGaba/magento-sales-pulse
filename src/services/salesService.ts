@@ -1,174 +1,71 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import { Transaction } from '@/utils/repeatPurchaseCalculator';
-import { fetchTransactionData, getTransactionCount, testDatabaseConnection } from './transactionService';
-import { format, parseISO } from 'date-fns';
+import { DailySales } from '@/types/sales';
 
 /**
- * Tests if the database connection is working
- */
-export const testDatabase = async () => {
-  return await testDatabaseConnection();
-};
-
-/**
- * Fetches daily sales data from transactions
+ * Fetches daily sales data for the specified date range and stores
  */
 export const fetchDailySalesData = async (
   fromDate: string, 
-  toDate: string,
-  storeIds: string[] = []
-) => {
+  toDate: string, 
+  storeIds: string[] = [],
+  storeView?: string,
+  customerGroup?: string,
+  orderStatuses?: string[]
+): Promise<DailySales[]> => {
   try {
-    console.log(`Fetching daily sales from ${fromDate} to ${toDate}, storeIds:`, storeIds);
+    console.log(`Fetching daily sales data from ${fromDate} to ${toDate}`);
+    console.log('Store IDs:', storeIds);
+    console.log('Store view:', storeView);
+    console.log('Customer group:', customerGroup);
+    console.log('Order statuses:', orderStatuses);
+
+    // Use a direct query on the transactions table to aggregate data on the fly
+    // This allows for filtering by metadata like store_view and customer_group
+    let query = supabase.rpc('get_daily_sales', {
+      start_date: fromDate,
+      end_date: toDate,
+      store_filter: storeIds.length > 0 ? storeIds : null,
+      store_view: storeView && storeView !== 'alle' ? storeView : null,
+      customer_group: customerGroup && customerGroup !== 'alle' ? customerGroup : null,
+      order_statuses: orderStatuses && orderStatuses.length > 0 ? orderStatuses : null
+    });
     
-    // Directly use the Supabase client for fetching transactions to bypass any service abstraction issues
-    let query = supabase
-      .from('transactions')
-      .select('id, store_id, amount, transaction_date, customer_id, external_id, created_at, product_id')
-      .gte('transaction_date', fromDate)
-      .lte('transaction_date', toDate);
-    
-    // Apply store_id filter if needed
-    if (storeIds && storeIds.length > 0) {
-      console.log('Filtering by store IDs:', storeIds);
-      query = query.in('store_id', storeIds);
-    }
-    
-    const { data: transactions, error } = await query.order('transaction_date', { ascending: false });
+    const { data, error } = await query;
     
     if (error) {
-      console.error('Error fetching transaction data for daily sales:', error);
+      console.error('Error fetching daily sales data:', error);
       throw error;
     }
     
-    console.log(`Fetched ${transactions?.length || 0} transactions for daily sales calculation`);
-    
-    if (!transactions || transactions.length === 0) {
-      return [];
-    }
-    
-    // Group transactions by date to create daily sales data
-    const salesByDate = transactions.reduce((acc, transaction) => {
-      // Extract just the date part (YYYY-MM-DD)
-      const date = format(parseISO(transaction.transaction_date), 'yyyy-MM-dd');
-      
-      if (!acc[date]) {
-        acc[date] = {
-          date: date,
-          total_sales: 0,
-          order_count: 0
-        };
-      }
-      
-      acc[date].total_sales += transaction.amount;
-      acc[date].order_count += 1;
-      
-      return acc;
-    }, {} as Record<string, {
-      date: string;
-      total_sales: number;
-      order_count: number;
-    }>);
-    
-    const dailySalesData = Object.values(salesByDate);
-    console.log(`Calculated ${dailySalesData.length} daily sales records from transactions`);
-    
-    return dailySalesData;
+    return data || [];
   } catch (error) {
-    console.error('Error fetching daily sales data:', error);
-    toast({
-      title: "Error fetching daily sales data",
-      description: error instanceof Error ? error.message : "An unknown error occurred",
-      variant: "destructive"
-    });
-    return [];
+    console.error('Error in fetchDailySalesData:', error);
+    throw error;
   }
 };
 
 /**
- * Fetches total transaction count from the database
- * A simple function to check if we can access any data
+ * Fetches available data months 
  */
-export const fetchTransactionCount = async () => {
+export const fetchAvailableDataMonths = async (storeIds: string[] = []): Promise<{month: string, year: number}[]> => {
   try {
-    // Direct Supabase query to bypass potential abstraction issues
-    const { count, error } = await supabase
-      .from('transactions')
-      .select('*', { count: 'exact', head: true });
-      
-    if (error) {
-      console.error('Error getting transaction count:', error);
-      throw error;
-    }
+    let query = supabase.rpc('get_available_months');
     
-    return count || 0;
-  } catch (error) {
-    console.error('Exception in fetchTransactionCount:', error);
-    return 0; // Return 0 instead of throwing to avoid breaking the UI
-  }
-};
-
-/**
- * Fetches months that have sales data available
- * Returns an array of dates (first day of each month that has data)
- */
-export const fetchAvailableDataMonths = async (storeIds: string[] = []) => {
-  try {
-    console.log('Fetching available data months, storeIds:', storeIds);
-    
-    // We'll just get the past 24 months to keep the query small
-    const fromDate = format(new Date(new Date().setMonth(new Date().getMonth() - 24)), 'yyyy-MM-dd');
-    const toDate = format(new Date(), 'yyyy-MM-dd');
-    
-    // Direct Supabase query
-    let query = supabase
-      .from('transactions')
-      .select('transaction_date')
-      .gte('transaction_date', fromDate)
-      .lte('transaction_date', toDate);
-      
-    // Apply store_id filter if needed
-    if (storeIds && storeIds.length > 0) {
-      console.log('Filtering months by store IDs:', storeIds);
+    if (storeIds.length > 0) {
       query = query.in('store_id', storeIds);
     }
     
-    const { data: transactions, error } = await query;
+    const { data, error } = await query;
     
     if (error) {
-      console.error('Error fetching transaction dates:', error);
+      console.error('Error fetching available months:', error);
       throw error;
     }
     
-    if (!transactions || transactions.length === 0) {
-      return [];
-    }
-    
-    // Process the dates to get unique months (first day of each month)
-    const uniqueMonths = new Set<string>();
-    transactions.forEach(transaction => {
-      const date = new Date(transaction.transaction_date);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      uniqueMonths.add(monthKey);
-    });
-    
-    // Convert to array of Date objects (first day of each month)
-    const monthsWithData = Array.from(uniqueMonths).map(monthKey => {
-      const [year, month] = monthKey.split('-');
-      return new Date(parseInt(year), parseInt(month) - 1, 1);
-    }).sort((a, b) => a.getTime() - b.getTime());
-    
-    console.log(`Found ${monthsWithData.length} months with data:`, 
-      monthsWithData.map(d => format(d, 'MMM yyyy')).join(', '));
-    return monthsWithData;
+    return data || [];
   } catch (error) {
-    console.error('Error fetching available data months:', error);
-    toast({
-      title: "Error fetching available months",
-      description: error instanceof Error ? error.message : "An unknown error occurred",
-      variant: "destructive"
-    });
-    return [];
+    console.error('Error in fetchAvailableDataMonths:', error);
+    throw error;
   }
 };

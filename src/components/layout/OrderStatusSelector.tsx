@@ -82,7 +82,8 @@ const OrderStatusSelector: React.FC<OrderStatusSelectorProps> = ({ className }) 
             <Checkbox
               id="select-all-statuses"
               checked={allSelected}
-              indeterminate={someSelected}
+              // For the indeterminate state, use data attribute instead
+              data-state={someSelected ? "indeterminate" : undefined}
               onCheckedChange={(checked) => toggleAll(!!checked)}
             />
             <Label htmlFor="select-all-statuses" className="ml-2 cursor-pointer">

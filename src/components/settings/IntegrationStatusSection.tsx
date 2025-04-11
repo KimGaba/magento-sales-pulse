@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/context/AuthContext';
@@ -60,7 +59,7 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = () => 
     toast.success("Starter synkronisering af ændringer - vi henter dine data...");
     
     try {
-      await triggerMagentoSync('changes_only', false);
+      await triggerMagentoSync(selectedStore || '');
       toast.success("Henter ændringer fra din butik. Dette vil blive opdateret om et øjeblik.");
       
       setTimeout(() => {
@@ -73,39 +72,6 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = () => 
       setFetchingChanges(false);
     }
   };
-  
-  if (loading) {
-    return (
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Aktuel status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-center items-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-magento-600"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-  
-  if (connections.length === 0) {
-    return (
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Aktuel status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <p className="text-gray-500 mb-4">Ingen Magento butikker forbundet</p>
-            <Button variant="outline" onClick={() => window.location.href = "/connect"}>
-              Forbind en butik
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
   
   return (
     <>

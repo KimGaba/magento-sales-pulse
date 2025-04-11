@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/context/AuthContext';
@@ -67,7 +66,7 @@ const IntegrationStatusSection = () => {
   const handleManualSync = async () => {
     setSyncing(true);
     try {
-      await triggerMagentoSync('full', useMockData);
+      await triggerMagentoSync(selectedStore || '');
       toast.success("Synkronisering er igangsat. Det kan tage et par minutter at fuldføre.");
       
       setTimeout(() => {
@@ -84,7 +83,7 @@ const IntegrationStatusSection = () => {
   const handleFetchChanges = async () => {
     setFetchingChanges(true);
     try {
-      await triggerMagentoSync('changes_only', useMockData);
+      await triggerMagentoSync(selectedStore || '');
       toast.success("Henter ændringer fra din butik. Dette vil blive opdateret om et øjeblik.");
       
       setTimeout(() => {
