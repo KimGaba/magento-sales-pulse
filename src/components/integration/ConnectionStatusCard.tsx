@@ -91,6 +91,9 @@ const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
               <div>
                 <h3 className="font-medium">{connection.store_name}</h3>
                 <p className="text-sm text-gray-500">{connection.store_url}</p>
+                {!connection.store_id && (
+                  <p className="text-sm text-red-500 mt-1">Mangler Store ID!</p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {getStatusIndicator(connection.status)}

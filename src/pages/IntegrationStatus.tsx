@@ -3,6 +3,7 @@ import React from 'react';
 import Layout from '@/components/layout/Layout';
 import IntegrationStatusSection from '@/components/integration/IntegrationStatusSection';
 import IntegrationHistorySection from '@/components/integration/IntegrationHistorySection';
+import { Toaster } from 'sonner';
 
 const IntegrationStatus = () => {
   return (
@@ -17,6 +18,9 @@ const IntegrationStatus = () => {
       
       {/* Integration History */}
       <IntegrationHistorySection />
+
+      {/* Global toast container */}
+      <Toaster position="top-center" />
     </Layout>
   );
 };

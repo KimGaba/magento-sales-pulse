@@ -61,18 +61,33 @@ export const addMagentoConnection = async (connection: Omit<MagentoConnection, '
 /**
  * Triggers a Magento synchronization for a specific store
  */
-export const triggerMagentoSync = async (storeId: string): Promise<void> => {
+export const triggerMagentoSync = async (storeId: string): Promise<any> => {
+  // Validate storeId
+  if (!storeId || storeId.trim() === '') {
+    console.error('Error triggering Magento sync: storeId is empty or undefined');
+    throw new Error('Store ID is required for synchronization');
+  }
+  
+  console.log(`Triggering Magento sync for store ${storeId}`);
+  
   try {
-    // This is a placeholder for the actual implementation
-    // In a real implementation, this would call a Supabase Edge Function or similar
-    console.log(`Triggering Magento sync for store ${storeId}`);
+    // Call the Supabase Edge Function with the store ID and trigger type
+    const { data, error } = await supabase.functions.invoke('magento-sync', {
+      body: { 
+        store_id: storeId,
+        trigger: 'manual_sync'
+      }
+    });
     
-    // Simulate a successful sync trigger
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (error) {
+      console.error('Error triggering Magento sync:', error);
+      throw error;
+    }
     
-    return;
+    console.log('Magento sync triggered successfully:', data);
+    return data;
   } catch (error) {
-    console.error('Error triggering Magento sync:', error);
+    console.error('Error in triggerMagentoSync:', error);
     throw error;
   }
 };
