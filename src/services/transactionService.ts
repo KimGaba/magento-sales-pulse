@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 // Type definitions
@@ -193,7 +194,7 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
       .eq('store_id', storeId)
       .order('updated_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
     
     if (error) {
       if (error.code === 'PGRST116') {

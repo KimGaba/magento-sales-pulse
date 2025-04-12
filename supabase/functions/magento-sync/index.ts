@@ -5,6 +5,31 @@ import { corsHeaders, createCorsResponse } from "../_shared/cors_utils.ts";
 import { synchronizeMagentoData, getSyncProgress } from "./sync_service.ts";
 import { supabase } from "../_shared/db_client.ts";
 
+// Implement retry logic for database operations
+async function withRetry<T>(operation: () => Promise<T>, maxRetries = 3, delay = 1000): Promise<T> {
+  let retries = 0;
+  let lastError;
+  
+  while (retries < maxRetries) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      console.log(`Retry ${retries + 1}/${maxRetries} failed: ${error.message}`);
+      retries++;
+      
+      // Wait before retrying
+      if (retries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+        // Exponential backoff
+        delay *= 2;
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
 // Helper function to test a Magento connection
 async function testMagentoConnection(storeUrl: string, accessToken: string, connectionId?: string, storeName?: string, userId?: string) {
   try {
@@ -60,53 +85,68 @@ async function testMagentoConnection(storeUrl: string, accessToken: string, conn
       
       if (storeName) {
         console.log(`Setting up store: ${storeName}`);
-        const { data: existingStore, error: storeCheckError } = await supabase
-          .from('stores')
-          .select('id')
-          .eq('name', storeName)
-          .maybeSingle();
+        
+        // Using retry logic for database operations
+        const existingStore = await withRetry(async () => {
+          const { data, error } = await supabase
+            .from('stores')
+            .select('id')
+            .eq('name', storeName)
+            .maybeSingle();
+            
+          if (error) {
+            console.error('Error checking for existing store:', error);
+            throw error;
+          }
           
-        if (storeCheckError) {
-          console.error('Error checking for existing store:', storeCheckError);
-        }
+          return data;
+        });
         
         if (existingStore) {
           console.log(`Found existing store with ID: ${existingStore.id}`);
           storeId = existingStore.id;
         } else {
-          const { data: newStore, error: storeCreateError } = await supabase
-            .from('stores')
-            .insert({ 
-              name: storeName,
-              url: storeUrl
-            })
-            .select()
-            .single();
+          const newStore = await withRetry(async () => {
+            const { data, error } = await supabase
+              .from('stores')
+              .insert({ 
+                name: storeName,
+                url: storeUrl
+              })
+              .select()
+              .single();
+              
+            if (error || !data) {
+              console.error('Error creating store:', error);
+              throw error || new Error('Failed to create store: No data returned');
+            }
             
-          if (storeCreateError || !newStore) {
-            console.error('Error creating store:', storeCreateError);
-            throw new Error(`Failed to create store: ${storeCreateError?.message || 'Unknown error'}`);
-          }
+            return data;
+          });
           
           console.log(`Created new store with ID: ${newStore.id}`);
           storeId = newStore.id;
         }
         
         // 2. Opdatér forbindelsen med store_id og status 'active'
-        const { data: updatedConnection, error: updateError } = await supabase
-          .from('magento_connections')
-          .update({
-            store_id: storeId,
-            status: 'active',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', connectionId)
-          .select();
+        await withRetry(async () => {
+          const { data, error } = await supabase
+            .from('magento_connections')
+            .update({
+              store_id: storeId,
+              status: 'active',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', connectionId)
+            .select();
+            
+          if (error || !data || data.length === 0) {
+            console.error('❌ Failed to activate connection:', error?.message || 'No rows updated');
+            throw error || new Error('No rows updated');
+          }
           
-        if (updateError || !updatedConnection || updatedConnection.length === 0) {
-          console.error('❌ Failed to activate connection:', updateError?.message || 'No rows updated');
-          throw new Error(`Failed to activate connection: ${updateError?.message || 'No rows updated'}`);
-        }
+          return data;
+        });
         
         console.log('✅ Successfully activated connection with store_id:', storeId);
         
@@ -262,7 +302,8 @@ serve(async (req) => {
           startPage: continuationData.startPage || 1,
           storeId: continuationData.storeId,
           connectionId: continuationData.connectionId,
-          maxPages: 5 // Process fewer pages in continuation to reduce timeout risk
+          maxPages: 5, // Process fewer pages in continuation to reduce timeout risk
+          changesOnly: continuationData.changesOnly || false
         };
 
         console.log('Continuing sync with options:', syncOptions);
@@ -275,14 +316,40 @@ serve(async (req) => {
       const syncType = requestBody.syncType || 'full';
       const useMock = requestBody.useMock === true;
       const maxPages = requestBody.maxPages || 10; // Allow customizing page count
+      const storeId = requestBody.store_id;
 
-      console.log(`Received sync request with type: ${syncType}, useMock: ${useMock}, maxPages: ${maxPages}`);
+      console.log(`Received sync request with type: ${syncType}, useMock: ${useMock}, maxPages: ${maxPages}, storeId: ${storeId}`);
 
       try {
+        if (!storeId) {
+          console.error('Missing required parameter: store_id');
+          return createCorsResponse({
+            success: false,
+            error: "Missing required parameter: store_id"
+          }, 400);
+        }
+        
+        // Get the connection ID for this store
+        const { data: connection, error: connectionError } = await supabase
+          .from('magento_connections')
+          .select('id')
+          .eq('store_id', storeId)
+          .maybeSingle();
+          
+        if (connectionError || !connection) {
+          console.error('Error fetching connection for store:', connectionError?.message || 'No connection found');
+          return createCorsResponse({
+            success: false,
+            error: `Could not find connection for store: ${connectionError?.message || 'No connection found'}`
+          }, 400);
+        }
+        
         const syncOptions = {
           changesOnly: syncType === 'changes_only',
           useMock: useMock,
-          maxPages: maxPages
+          maxPages: maxPages,
+          storeId: storeId,
+          connectionId: connection.id
         };
 
         const result = await processSyncWithContinuation(syncOptions);

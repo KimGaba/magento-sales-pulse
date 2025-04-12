@@ -2,18 +2,89 @@
 import { MagentoConnection } from "../_shared/database_types.ts";
 import { supabase } from "../_shared/db_client.ts";
 
-// Function to fetch orders from Magento API
-export async function fetchMagentoOrdersData(connection: MagentoConnection, page = 1, pageSize = 100) {
+// Function to determine date range based on subscription level
+function getDateRangeForSubscription(connectionId: string, subscriptionLevel = 'free'): { from: string, to: string } {
+  const now = new Date();
+  
+  let monthsBack = 3; // Default for 'free' plan
+  
+  // Adjust months back based on subscription level
+  if (subscriptionLevel.toLowerCase() === 'premium') {
+    monthsBack = 12;
+  } else if (subscriptionLevel.toLowerCase() === 'business') {
+    monthsBack = 36; // 3 years
+  } else if (subscriptionLevel.toLowerCase() === 'enterprise') {
+    monthsBack = 60; // 5 years
+  }
+  
+  // Calculate the from date
+  const fromDate = new Date(now);
+  fromDate.setMonth(now.getMonth() - monthsBack);
+  
+  return {
+    from: fromDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+    to: now.toISOString().split('T')[0] // Today
+  };
+}
+
+// Function to get user's subscription level
+async function getUserSubscriptionLevel(connectionId: string): Promise<string> {
+  try {
+    // Get the user_id from the connection
+    const { data: connection, error: connectionError } = await supabase
+      .from('magento_connections')
+      .select('user_id')
+      .eq('id', connectionId)
+      .maybeSingle();
+      
+    if (connectionError || !connection) {
+      console.error('Error fetching connection:', connectionError?.message || 'No connection found');
+      return 'free'; // Default to free if there's an error
+    }
+    
+    // Here you would typically fetch the user's subscription from a profiles or subscriptions table
+    // For now we'll return 'free' as default
+    return 'free';
+  } catch (error) {
+    console.error('Error fetching subscription level:', error.message);
+    return 'free';
+  }
+}
+
+// Function to fetch orders from Magento API with subscription-based date filtering
+export async function fetchMagentoOrdersData(connection: MagentoConnection, page = 1, pageSize = 100, subscriptionLevel?: string) {
   try {
     console.log(`📦 Fetching Magento orders from ${connection.store_url}, page ${page}`);
-    const url = `${connection.store_url}/rest/V1/orders?searchCriteria[pageSize]=${pageSize}&searchCriteria[currentPage]=${page}`;
-
+    
+    // Get subscription level if not provided
+    if (!subscriptionLevel) {
+      subscriptionLevel = await getUserSubscriptionLevel(connection.id);
+    }
+    
+    // Get date range based on subscription
+    const dateRange = getDateRangeForSubscription(connection.id, subscriptionLevel);
+    console.log(`Using date range for ${subscriptionLevel} subscription: ${dateRange.from} to ${dateRange.to}`);
+    
+    // Construct URL with date filters
+    let url = `${connection.store_url}/rest/V1/orders?searchCriteria[pageSize]=${pageSize}&searchCriteria[currentPage]=${page}`;
+    
+    // Add date filter conditions
+    url += `&searchCriteria[filter_groups][0][filters][0][field]=created_at`;
+    url += `&searchCriteria[filter_groups][0][filters][0][condition_type]=gteq`;
+    url += `&searchCriteria[filter_groups][0][filters][0][value]=${dateRange.from} 00:00:00`;
+    
+    url += `&searchCriteria[filter_groups][1][filters][0][field]=created_at`;
+    url += `&searchCriteria[filter_groups][1][filters][0][condition_type]=lteq`;
+    url += `&searchCriteria[filter_groups][1][filters][0][value]=${dateRange.to} 23:59:59`;
+    
     const headers = {
       'Authorization': `Bearer ${connection.access_token}`,
       'Content-Type': 'application/json'
     };
 
+    console.log(`Making request to: ${url}`);
     const response = await fetch(url, { method: 'GET', headers });
+    
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Magento API error (${response.status}): ${errorText}`);
@@ -22,6 +93,9 @@ export async function fetchMagentoOrdersData(connection: MagentoConnection, page
 
     const data = await response.json();
     const orders = data.items || [];
+    
+    console.log(`📊 Retrieved ${orders.length} orders from page ${page}, total count: ${data.total_count || 'unknown'}`);
+    
     return {
       orders: orders.map((order: any) => ({
         external_id: order.increment_id,

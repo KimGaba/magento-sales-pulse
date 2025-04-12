@@ -9,6 +9,7 @@ import NoConnectionsCard from './NoConnectionsCard';
 import StoreSelector from './StoreSelector';
 import SyncStatus from '../connect/SyncStatus';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import EdgeFunctionUnavailable from '../connect/EdgeFunctionUnavailable';
 
 const IntegrationStatusSection = () => {
   const { user } = useAuth();
@@ -18,6 +19,7 @@ const IntegrationStatusSection = () => {
   const [fetchingChanges, setFetchingChanges] = useState(false);
   const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [edgeFunctionError, setEdgeFunctionError] = useState<boolean>(false);
 
   useEffect(() => {
     if (user) {
@@ -43,6 +45,7 @@ const IntegrationStatusSection = () => {
 
     setLoading(true);
     setError(null);
+    setEdgeFunctionError(false);
     
     try {
       const connectionsData = await fetchMagentoConnections(user.id);
@@ -73,8 +76,16 @@ const IntegrationStatusSection = () => {
     }
     
     setSyncing(true);
+    setEdgeFunctionError(false);
+    
     try {
       console.log('Triggering full sync for store ID:', selectedStore);
+      
+      // Show immediate feedback to user
+      toast.info("Starter synkronisering...", {
+        duration: 2000,
+      });
+      
       const result = await triggerMagentoSync(selectedStore);
       console.log('Sync result:', result);
       
@@ -90,6 +101,7 @@ const IntegrationStatusSection = () => {
       // Specific error handling for edge function connection errors
       if (error instanceof Error && error.message.includes('Edge Function')) {
         toast.error(error.message);
+        setEdgeFunctionError(true);
       } else {
         toast.error(`Der opstod en fejl ved start af synkronisering: ${error instanceof Error ? error.message : 'Ukendt fejl'}`);
       }
@@ -105,10 +117,17 @@ const IntegrationStatusSection = () => {
     }
     
     setFetchingChanges(true);
+    setEdgeFunctionError(false);
     
     try {
       console.log('Fetching changes for store ID:', selectedStore);
-      const result = await triggerMagentoSync(selectedStore);
+      
+      // Show immediate feedback to user
+      toast.info("Starter hentning af ændringer...", {
+        duration: 2000,
+      });
+      
+      const result = await triggerMagentoSync(selectedStore, true); // Pass true for changes_only
       console.log('Fetch changes result:', result);
       
       toast.success("Henter ændringer fra din butik. Dette vil blive opdateret om et øjeblik.");
@@ -123,6 +142,7 @@ const IntegrationStatusSection = () => {
       // Specific error handling for edge function connection errors
       if (error instanceof Error && error.message.includes('Edge Function')) {
         toast.error(error.message);
+        setEdgeFunctionError(true);
       } else {
         toast.error(`Der opstod en fejl ved hentning af ændringer: ${error instanceof Error ? error.message : 'Ukendt fejl'}`);
       }
@@ -160,6 +180,8 @@ const IntegrationStatusSection = () => {
         syncing={syncing}
         fetchingChanges={fetchingChanges}
       />
+
+      {edgeFunctionError && <EdgeFunctionUnavailable />}
 
       {/* Connection selection for sync status */}
       {connections.length > 0 && (

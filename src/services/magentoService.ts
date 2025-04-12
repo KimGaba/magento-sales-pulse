@@ -61,21 +61,22 @@ export const addMagentoConnection = async (connection: Omit<MagentoConnection, '
 /**
  * Triggers a Magento synchronization for a specific store
  */
-export const triggerMagentoSync = async (storeId: string): Promise<any> => {
+export const triggerMagentoSync = async (storeId: string, changesOnly = false): Promise<any> => {
   // Validate storeId
   if (!storeId || storeId.trim() === '') {
     console.error('Error triggering Magento sync: storeId is empty or undefined');
     throw new Error('Store ID is required for synchronization');
   }
   
-  console.log(`Triggering Magento sync for store ${storeId}`);
+  console.log(`Triggering Magento sync for store ${storeId}, changesOnly: ${changesOnly}`);
   
   try {
     // Call the Supabase Edge Function with the store ID and trigger type
     const { data, error } = await supabase.functions.invoke('magento-sync', {
       body: { 
         store_id: storeId,
-        trigger: 'manual_sync'
+        trigger: 'manual_sync',
+        syncType: changesOnly ? 'changes_only' : 'full'
       }
     });
     
