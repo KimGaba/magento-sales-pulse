@@ -11,12 +11,15 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
     let skippedCount = 0;
     let updatedCount = 0;
     let errorCount = 0;
+    let invalidDateCount = 0;
+    let invalidExternalIdCount = 0;
     
     for (const order of ordersData) {
       try {
         // Skip if no external_id is present
         if (!order.external_id) {
-          console.warn(`Skipping order without external_id: ${JSON.stringify(order, null, 2)}`);
+          console.warn(`Skipping order without external_id`);
+          invalidExternalIdCount++;
           errorCount++;
           continue;
         }
@@ -66,25 +69,33 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
         };
 
         let transactionDate = order.transaction_date;
+        let validDate = true;
+        
         if (transactionDate) {
           try {
-            transactionDate = new Date(transactionDate).toISOString();
+            // Check if the date is valid
+            const dateObj = new Date(transactionDate);
+            if (isNaN(dateObj.getTime())) {
+              validDate = false;
+            } else {
+              transactionDate = dateObj.toISOString();
+            }
           } catch (e) {
-            console.warn(`⚠️ Skipping order with invalid transaction_date: ${JSON.stringify(order, null, 2)}`);
-            errorCount++;
-            continue;
+            validDate = false;
           }
         } else {
+          validDate = false;
+        }
+        
+        // If the date is invalid, use current date but mark it in logs
+        if (!validDate) {
+          invalidDateCount++;
+          console.warn(`⚠️ Using current date for order with invalid transaction_date: ${order.external_id}`);
           transactionDate = new Date().toISOString();
         }
 
         if (existingTransaction) {
-          // Explicitly log that we're skipping this transaction
-          console.log(`Skipping existing transaction for order ${order.external_id}`);
-          skippedCount++;
-          
           // Update the existing transaction with new data
-          // This ensures we have the latest information even for existing orders
           const { error: updateError } = await supabase
             .from('transactions')
             .update({
@@ -98,7 +109,6 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
             console.error(`Error updating transaction for order ${order.external_id}: ${updateError.message}`);
             errorCount++;
           } else {
-            console.log(`Updated transaction for order ${order.external_id}`);
             updatedCount++;
           }
           
@@ -121,7 +131,6 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
           console.error(`Error inserting transaction for order ${order.external_id}: ${insertError.message}`);
           errorCount++;
         } else {
-          console.log(`Inserted transaction for order ${order.external_id}`);
           newCount++;
         }
       } catch (orderError) {
@@ -130,8 +139,12 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
       }
     }
 
+    // Calculate skipped orders (those not processed due to errors or issues)
+    skippedCount = errorCount;
+    
     console.log(`Completed processing ${ordersData.length} transactions.`);
-    console.log(`Results: ${newCount} new, ${skippedCount} skipped, ${updatedCount} updated, ${errorCount} errors`);
+    console.log(`Results: ${newCount} new, ${updatedCount} updated, ${skippedCount} skipped, ${errorCount} errors`);
+    console.log(`Invalid data details: ${invalidDateCount} invalid dates, ${invalidExternalIdCount} missing external IDs`);
     
     return { 
       success: true, 
@@ -140,7 +153,9 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
         new: newCount,
         skipped: skippedCount,
         updated: updatedCount,
-        errors: errorCount
+        errors: errorCount,
+        invalidDates: invalidDateCount,
+        invalidIds: invalidExternalIdCount
       }
     };
   } catch (error) {

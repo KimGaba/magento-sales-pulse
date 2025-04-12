@@ -6,7 +6,6 @@ import { processDailySalesData } from "./sales_aggregator.ts";
 
 interface SyncOptions {
   changesOnly?: boolean;
-  useMock?: boolean;
   startPage?: number;
   maxPages?: number;
   storeId?: string;
@@ -24,6 +23,8 @@ interface SyncProgress {
   started_at: string;
   updated_at: string;
   error_message?: string;
+  skipped_orders?: number;
+  warning_message?: string;
 }
 
 // Check if sync_progress table exists, create it if it doesn't
@@ -52,7 +53,6 @@ async function ensureSyncProgressTable() {
 
 export async function synchronizeMagentoData(options: SyncOptions = {}) {
   const { 
-    useMock = false, 
     startPage = 1, 
     maxPages = 10, // Process at most 10 pages per run 
     storeId, 
@@ -145,12 +145,17 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
       let shouldContinue = false;
       let currentPage = currentStartPage;
       let totalCount = 0;
+      let totalSkippedOrders = existingProgress?.skipped_orders || 0;
       let progress: SyncProgress | null = null;
-
-      // Removed mock data handling - always use real API data
+      let consecutiveEmptyPages = 0;
+      const maxConsecutiveEmptyPages = 3; // Stop after 3 consecutive empty pages
+      
+      // Set up page processing parameters
       const pageSize = 100;
       let totalFetched = 0;
       let pagesProcessed = 0;
+      let highSkipRatePages = 0;
+      const skipRateThreshold = 0.8; // 80% threshold for high skip rate warning
 
       // Create or update progress record
       if (existingProgress) {
@@ -168,7 +173,8 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
           total_orders: 0, // Will be updated once we know
           status: "in_progress",
           started_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          skipped_orders: 0
         };
 
         // Save initial progress
@@ -203,16 +209,62 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
             }
           }
 
-          if (!orders.length) break;
+          // Check for empty results
+          if (!orders.length) {
+            console.log(`📋 Page ${currentPage} returned 0 orders`);
+            consecutiveEmptyPages++;
+            
+            if (consecutiveEmptyPages >= maxConsecutiveEmptyPages) {
+              console.log(`⚠️ Received ${maxConsecutiveEmptyPages} consecutive empty pages. Assuming end of data.`);
+              break;
+            }
+            
+            // Try next page even if this one was empty
+            currentPage++;
+            pagesProcessed++;
+            continue;
+          } else {
+            // Reset consecutive empty pages counter
+            consecutiveEmptyPages = 0;
+          }
 
+          // Process this batch of orders
+          console.log(`🧮 Processing ${orders.length} orders from page ${currentPage}`);
+          
+          // Store transactions and get statistics
+          const storeResult = await storeTransactions(orders, currentStoreId);
+          
+          // Track skipped orders for reporting
+          const skippedInThisBatch = storeResult.stats.skipped || 0;
+          totalSkippedOrders += skippedInThisBatch;
+          
+          // Check if this page had a high skip rate
+          const skipRate = skippedInThisBatch / orders.length;
+          if (skipRate >= skipRateThreshold) {
+            highSkipRatePages++;
+            console.warn(`⚠️ High skip rate on page ${currentPage}: ${Math.round(skipRate * 100)}% of orders skipped (${skippedInThisBatch}/${orders.length})`);
+          }
+          
+          console.log(`📊 Page ${currentPage} results: ${storeResult.stats.new} new, ${storeResult.stats.updated} updated, ${skippedInThisBatch} skipped`);
+          
+          // Add the successfully processed orders to our collection
           allOrders.push(...orders);
-          totalFetched += orders.length;
+          
+          // Count only non-skipped orders toward progress
+          const successfullyProcessed = orders.length - skippedInThisBatch;
+          totalFetched += successfullyProcessed;
           
           // Update progress
           if (progress) {
             progress.orders_processed = totalFetched;
             progress.current_page = currentPage;
             progress.updated_at = new Date().toISOString();
+            progress.skipped_orders = totalSkippedOrders;
+            
+            // Add warning message if there's a high skip rate
+            if (highSkipRatePages > 0) {
+              progress.warning_message = `⚠️ ${highSkipRatePages} page(s) had high skip rates. Total ${totalSkippedOrders} orders skipped due to invalid data.`;
+            }
             
             // Save progress update
             try {
@@ -225,7 +277,7 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
               if (updateError) {
                 console.error("❌ Error updating sync progress:", updateError.message);
               } else {
-                console.log(`✅ Updated sync progress: ${totalFetched}/${totalCount} orders`);
+                console.log(`✅ Updated sync progress: ${totalFetched}/${totalCount} orders processed, ${totalSkippedOrders} skipped`);
               }
             } catch (updateError) {
               console.error("❌ Error updating sync progress:", updateError.message);
@@ -236,7 +288,7 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
           pagesProcessed++;
 
           // Check if we've processed the maximum number of pages for this execution
-          if (pagesProcessed >= maxPages && totalFetched < totalCount) {
+          if (pagesProcessed >= maxPages && (totalFetched + totalSkippedOrders) < totalCount) {
             console.log(`⏸️ Reached maximum pages per execution (${maxPages}). Will resume from page ${currentPage} in next execution.`);
             shouldContinue = true;
             nextConnectionId = connection.id;
@@ -269,16 +321,16 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
           }
           
           // Still try to process the orders we've managed to fetch so far
+          console.log(`⚠️ Continuing with ${allOrders.length} orders fetched before the error`);
           break;
         }
         
-      } while (totalFetched < totalCount && !shouldContinue);
+      } while ((totalFetched + totalSkippedOrders) < totalCount && !shouldContinue);
 
       console.log(`📦 Processing ${allOrders.length} orders for store: ${connection.store_name}`);
       
       // Only process the data if we have any orders
       if (allOrders.length > 0) {
-        await storeTransactions(allOrders, currentStoreId);
         await processDailySalesData(allOrders, currentStoreId);
       }
 
@@ -303,7 +355,13 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
         }
       }
 
-      console.log(`✅ Finished processing ${allOrders.length} orders for ${connection.store_name}`);
+      // Prepare a summary of what happened
+      let syncSummary = `✅ Finished processing ${allOrders.length} orders for ${connection.store_name}`;
+      if (totalSkippedOrders > 0) {
+        syncSummary += `. ${totalSkippedOrders} orders were skipped due to invalid data.`;
+      }
+      
+      console.log(syncSummary);
       
       // If we need to continue with this store, break out of the loop so we don't process other stores
       if (shouldContinue) {

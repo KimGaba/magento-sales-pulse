@@ -21,6 +21,8 @@ export interface SyncProgress {
   started_at: string;
   updated_at: string;
   error_message?: string;
+  skipped_orders?: number;
+  warning_message?: string;
 }
 
 /**
