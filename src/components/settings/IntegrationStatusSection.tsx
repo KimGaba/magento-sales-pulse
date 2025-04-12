@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/context/AuthContext';
@@ -31,7 +30,6 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ sho
   }, [user]);
   
   useEffect(() => {
-    // Set the first connection's store_id as selected by default
     if (connections.length > 0 && !selectedStore) {
       const firstValidStore = connections.find(conn => conn.store_id)?.store_id || null;
       if (firstValidStore) {
@@ -52,7 +50,6 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ sho
     try {
       const connectionsData = await fetchMagentoConnections(user.id);
       
-      // Filter out connections without store_id
       const validConnections = connectionsData.filter(
         (conn) => conn.store_id !== null
       );
@@ -85,7 +82,6 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ sho
       
       toast.success("Synkronisering er igangsat. Det kan tage et par minutter at fuldføre.");
       
-      // Refresh the connections list after a delay
       setTimeout(() => {
         loadConnections();
       }, 3000);
@@ -112,7 +108,6 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ sho
       
       toast.success("Henter ændringer fra din butik. Dette vil blive opdateret om et øjeblik.");
       
-      // Refresh the connections list after a delay
       setTimeout(() => {
         loadConnections();
       }, 3000);
@@ -209,12 +204,10 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ sho
           <ConnectionsList 
             connections={connections}
             loadingConnections={false}
-            onDisconnect={() => {}}
           />
         </CardContent>
       </Card>
 
-      {/* Connection selection for sync status */}
       {connections.length > 0 && (
         <div>
           {connections.length > 1 && (

@@ -5,9 +5,14 @@ import { CircleCheck, CircleX, Clock } from 'lucide-react';
 
 interface ConnectionsListProps {
   connections: MagentoConnection[];
+  loadingConnections?: boolean; // Added to match the props being passed
+  onDisconnect?: () => void; // Made optional since it's not always used
 }
 
-const ConnectionsList: React.FC<ConnectionsListProps> = ({ connections }) => {
+const ConnectionsList: React.FC<ConnectionsListProps> = ({ 
+  connections,
+  loadingConnections = false // Default value to avoid undefined
+}) => {
   const getStatusIndicator = (status: string) => {
     if (status === 'active') {
       return <CircleCheck className="h-6 w-6 text-green-500" />;
@@ -27,6 +32,15 @@ const ConnectionsList: React.FC<ConnectionsListProps> = ({ connections }) => {
       return "Afventer";
     }
   };
+
+  if (loadingConnections) {
+    return (
+      <div className="flex justify-center items-center py-4">
+        <div className="w-6 h-6 rounded-full border-2 border-magento-600 border-t-transparent animate-spin mr-2"></div>
+        <p>Indlæser forbindelser...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
