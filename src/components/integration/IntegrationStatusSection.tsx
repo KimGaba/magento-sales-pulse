@@ -86,7 +86,13 @@ const IntegrationStatusSection = () => {
       }, 3000);
     } catch (error) {
       console.error("Error triggering sync:", error);
-      toast.error(`Der opstod en fejl ved start af synkronisering: ${error instanceof Error ? error.message : 'Ukendt fejl'}`);
+      
+      // Specific error handling for edge function connection errors
+      if (error instanceof Error && error.message.includes('Edge Function')) {
+        toast.error(error.message);
+      } else {
+        toast.error(`Der opstod en fejl ved start af synkronisering: ${error instanceof Error ? error.message : 'Ukendt fejl'}`);
+      }
     } finally {
       setSyncing(false);
     }
@@ -113,7 +119,13 @@ const IntegrationStatusSection = () => {
       }, 3000);
     } catch (error) {
       console.error("Error fetching changes:", error);
-      toast.error(`Der opstod en fejl ved hentning af ændringer: ${error instanceof Error ? error.message : 'Ukendt fejl'}`);
+      
+      // Specific error handling for edge function connection errors
+      if (error instanceof Error && error.message.includes('Edge Function')) {
+        toast.error(error.message);
+      } else {
+        toast.error(`Der opstod en fejl ved hentning af ændringer: ${error instanceof Error ? error.message : 'Ukendt fejl'}`);
+      }
     } finally {
       setFetchingChanges(false);
     }

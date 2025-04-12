@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 // Type definitions
@@ -11,17 +10,16 @@ export interface BasketOpenerProduct {
 }
 
 export interface SyncProgress {
-  id: string;
   store_id: string;
   connection_id: string;
   current_page: number;
   total_pages: number | null;
   orders_processed: number;
   total_orders: number | null;
+  status: "in_progress" | "completed" | "error";
   started_at: string;
   updated_at: string;
-  status: 'in_progress' | 'completed' | 'error';
-  error_message: string | null;
+  error_message?: string;
 }
 
 /**
@@ -146,6 +144,46 @@ export const fetchTransactionData = async (
  */
 export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress | null> => {
   try {
+    console.log(`Fetching sync progress for store: ${storeId}`);
+    
+    // First try to use the Edge Function to get more detailed progress
+    try {
+      const { data, error } = await supabase.functions.invoke('magento-sync', {
+        body: { 
+          action: 'get_sync_progress',
+          storeId: storeId
+        }
+      });
+      
+      if (error) {
+        console.error('Error invoking Edge Function for sync progress:', error);
+        
+        // Special handling for Edge Function connection errors
+        if (error.message && error.message.includes('Failed to send a request to the Edge Function')) {
+          throw new Error('Der opstod en fejl ved forbindelse til Edge Function. Dette kan skyldes, at du kører i et udviklingsmiljø.');
+        }
+        
+        throw error;
+      }
+      
+      if (data && data.success && data.progress) {
+        console.log('Sync progress from Edge Function:', data.progress);
+        return data.progress;
+      }
+    } catch (edgeFunctionError) {
+      console.error('Edge Function error:', edgeFunctionError);
+      
+      // If it's not the special Edge Function error, rethrow it
+      if (!(edgeFunctionError instanceof Error && edgeFunctionError.message.includes('Edge Function'))) {
+        // Fall through to database query
+        console.log('Falling back to database query for sync progress');
+      } else {
+        // Rethrow the Edge Function error
+        throw edgeFunctionError;
+      }
+    }
+    
+    // Fallback: query the sync_progress table directly
     const { data, error } = await supabase
       .from('sync_progress')
       .select('*')
@@ -156,25 +194,20 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
     
     if (error) {
       if (error.code === 'PGRST116') {
-        // No rows returned, which is fine
+        // No data found (single row expected)
+        console.log('No sync progress found in database');
         return null;
       }
-      console.error('Error fetching sync progress:', error);
+      
+      console.error('Error fetching sync progress from database:', error);
       throw error;
     }
     
-    // Ensure the status is one of the allowed values
-    const progress: SyncProgress = {
-      ...data,
-      status: (data.status === 'in_progress' || data.status === 'completed' || data.status === 'error') 
-        ? data.status as 'in_progress' | 'completed' | 'error'
-        : 'in_progress' // Default to in_progress if unknown status
-    };
-    
-    return progress;
+    console.log('Sync progress from database:', data);
+    return data as SyncProgress;
   } catch (error) {
     console.error('Error in fetchSyncProgress:', error);
-    return null;
+    throw error;
   }
 };
 

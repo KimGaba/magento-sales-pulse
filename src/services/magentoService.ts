@@ -81,6 +81,12 @@ export const triggerMagentoSync = async (storeId: string): Promise<any> => {
     
     if (error) {
       console.error('Error triggering Magento sync:', error);
+      
+      // Special handling for Edge Function connection errors
+      if (error.message && error.message.includes('Failed to send a request to the Edge Function')) {
+        throw new Error('Der opstod en fejl ved forbindelse til Edge Function. Dette kan skyldes, at du kører i et udviklingsmiljø.');
+      }
+      
       throw error;
     }
     
