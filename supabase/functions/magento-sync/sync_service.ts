@@ -1,6 +1,6 @@
 
 import { supabase } from "../_shared/db_client.ts";
-import { fetchMagentoOrdersData, fetchMagentoStoreViews, mockMagentoOrdersData } from "./magento_api.ts";
+import { fetchMagentoOrdersData, fetchMagentoStoreViews } from "./magento_api.ts";
 import { storeTransactions } from "./store_transactions.ts";
 import { processDailySalesData } from "./sales_aggregator.ts";
 
@@ -147,135 +147,132 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
       let totalCount = 0;
       let progress: SyncProgress | null = null;
 
-      if (useMock) {
-        allOrders = await mockMagentoOrdersData();
+      // Removed mock data handling - always use real API data
+      const pageSize = 100;
+      let totalFetched = 0;
+      let pagesProcessed = 0;
+
+      // Create or update progress record
+      if (existingProgress) {
+        // Update existing progress
+        progress = existingProgress as SyncProgress;
+        progress.updated_at = new Date().toISOString();
       } else {
-        const pageSize = 100;
-        let totalFetched = 0;
-        let pagesProcessed = 0;
+        // Create new progress record
+        progress = {
+          store_id: currentStoreId,
+          connection_id: connection.id,
+          current_page: currentStartPage,
+          total_pages: 0, // Will be updated once we know
+          orders_processed: 0,
+          total_orders: 0, // Will be updated once we know
+          status: "in_progress",
+          started_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
 
-        // Create or update progress record
-        if (existingProgress) {
-          // Update existing progress
-          progress = existingProgress as SyncProgress;
-          progress.updated_at = new Date().toISOString();
-        } else {
-          // Create new progress record
-          progress = {
-            store_id: currentStoreId,
-            connection_id: connection.id,
-            current_page: currentStartPage,
-            total_pages: 0, // Will be updated once we know
-            orders_processed: 0,
-            total_orders: 0, // Will be updated once we know
-            status: "in_progress",
-            started_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
+        // Save initial progress
+        try {
+          const { error: saveError } = await supabase
+            .from("sync_progress")
+            .insert(progress);
 
-          // Save initial progress
-          try {
-            const { error: saveError } = await supabase
-              .from("sync_progress")
-              .insert(progress);
-
-            if (saveError) {
-              console.error("❌ Error saving sync progress:", saveError.message);
-            } else {
-              console.log("✅ Created initial sync progress record");
-            }
-          } catch (insertError) {
-            console.error("❌ Error creating sync progress:", insertError.message);
+          if (saveError) {
+            console.error("❌ Error saving sync progress:", saveError.message);
+          } else {
+            console.log("✅ Created initial sync progress record");
           }
+        } catch (insertError) {
+          console.error("❌ Error creating sync progress:", insertError.message);
         }
+      }
 
-        // Fetch orders page by page, with a limit on how many pages we process per execution
-        do {
-          console.log(`📦 Fetching Magento orders from ${connection.store_url}, page ${currentPage}`);
+      // Fetch orders page by page, with a limit on how many pages we process per execution
+      do {
+        console.log(`📦 Fetching Magento orders from ${connection.store_url}, page ${currentPage}`);
+        
+        try {
+          const { orders, totalCount: count } = await fetchMagentoOrdersData(connection, currentPage, pageSize);
           
-          try {
-            const { orders, totalCount: count } = await fetchMagentoOrdersData(connection, currentPage, pageSize);
-            
-            // Update the total count if we have it
-            if (count && count > 0) {
-              totalCount = count;
-              if (progress) {
-                progress.total_orders = count;
-                progress.total_pages = Math.ceil(count / pageSize);
-              }
-            }
-  
-            if (!orders.length) break;
-  
-            allOrders.push(...orders);
-            totalFetched += orders.length;
-            
-            // Update progress
+          // Update the total count if we have it
+          if (count && count > 0) {
+            totalCount = count;
             if (progress) {
-              progress.orders_processed = totalFetched;
-              progress.current_page = currentPage;
-              progress.updated_at = new Date().toISOString();
-              
-              // Save progress update
-              try {
-                const { error: updateError } = await supabase
-                  .from("sync_progress")
-                  .update(progress)
-                  .eq("connection_id", connection.id)
-                  .eq("status", "in_progress");
-    
-                if (updateError) {
-                  console.error("❌ Error updating sync progress:", updateError.message);
-                } else {
-                  console.log(`✅ Updated sync progress: ${totalFetched}/${totalCount} orders`);
-                }
-              } catch (updateError) {
+              progress.total_orders = count;
+              progress.total_pages = Math.ceil(count / pageSize);
+            }
+          }
+
+          if (!orders.length) break;
+
+          allOrders.push(...orders);
+          totalFetched += orders.length;
+          
+          // Update progress
+          if (progress) {
+            progress.orders_processed = totalFetched;
+            progress.current_page = currentPage;
+            progress.updated_at = new Date().toISOString();
+            
+            // Save progress update
+            try {
+              const { error: updateError } = await supabase
+                .from("sync_progress")
+                .update(progress)
+                .eq("connection_id", connection.id)
+                .eq("status", "in_progress");
+  
+              if (updateError) {
                 console.error("❌ Error updating sync progress:", updateError.message);
+              } else {
+                console.log(`✅ Updated sync progress: ${totalFetched}/${totalCount} orders`);
               }
+            } catch (updateError) {
+              console.error("❌ Error updating sync progress:", updateError.message);
             }
-  
-            currentPage++;
-            pagesProcessed++;
-  
-            // Check if we've processed the maximum number of pages for this execution
-            if (pagesProcessed >= maxPages && totalFetched < totalCount) {
-              console.log(`⏸️ Reached maximum pages per execution (${maxPages}). Will resume from page ${currentPage} in next execution.`);
-              shouldContinue = true;
-              nextConnectionId = connection.id;
-              nextStoreId = currentStoreId;
-              nextStartPage = currentPage;
-              continuationNeeded = true;
-              break;
-            }
-          } catch (fetchError) {
-            console.error(`❌ Error fetching page ${currentPage}:`, fetchError);
-            
-            // Update progress with error
-            if (progress) {
-              progress.error_message = `Error fetching page ${currentPage}: ${fetchError.message}`;
-              progress.updated_at = new Date().toISOString();
-              
-              try {
-                const { error: updateError } = await supabase
-                  .from("sync_progress")
-                  .update(progress)
-                  .eq("connection_id", connection.id)
-                  .eq("status", "in_progress");
-    
-                if (updateError) {
-                  console.error("❌ Error updating sync progress with error:", updateError.message);
-                }
-              } catch (updateError) {
-                console.error("❌ Error updating sync progress with error:", updateError.message);
-              }
-            }
-            
-            // Still try to process the orders we've managed to fetch so far
+          }
+
+          currentPage++;
+          pagesProcessed++;
+
+          // Check if we've processed the maximum number of pages for this execution
+          if (pagesProcessed >= maxPages && totalFetched < totalCount) {
+            console.log(`⏸️ Reached maximum pages per execution (${maxPages}). Will resume from page ${currentPage} in next execution.`);
+            shouldContinue = true;
+            nextConnectionId = connection.id;
+            nextStoreId = currentStoreId;
+            nextStartPage = currentPage;
+            continuationNeeded = true;
             break;
           }
+        } catch (fetchError) {
+          console.error(`❌ Error fetching page ${currentPage}:`, fetchError);
           
-        } while (totalFetched < totalCount && !shouldContinue);
-      }
+          // Update progress with error
+          if (progress) {
+            progress.error_message = `Error fetching page ${currentPage}: ${fetchError.message}`;
+            progress.updated_at = new Date().toISOString();
+            
+            try {
+              const { error: updateError } = await supabase
+                .from("sync_progress")
+                .update(progress)
+                .eq("connection_id", connection.id)
+                .eq("status", "in_progress");
+  
+              if (updateError) {
+                console.error("❌ Error updating sync progress with error:", updateError.message);
+              }
+            } catch (updateError) {
+              console.error("❌ Error updating sync progress with error:", updateError.message);
+            }
+          }
+          
+          // Still try to process the orders we've managed to fetch so far
+          break;
+        }
+        
+      } while (totalFetched < totalCount && !shouldContinue);
 
       console.log(`📦 Processing ${allOrders.length} orders for store: ${connection.store_name}`);
       
