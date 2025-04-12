@@ -83,9 +83,8 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
           console.log(`Skipping existing transaction for order ${order.external_id}`);
           skippedCount++;
           
-          // Optionally update the transaction if needed
-          // Uncomment this section if you want to update existing transactions
-          /*
+          // Update the existing transaction with new data
+          // This ensures we have the latest information even for existing orders
           const { error: updateError } = await supabase
             .from('transactions')
             .update({
@@ -102,7 +101,6 @@ export async function storeTransactions(ordersData: any[], storeId: string) {
             console.log(`Updated transaction for order ${order.external_id}`);
             updatedCount++;
           }
-          */
           
           continue;
         }
