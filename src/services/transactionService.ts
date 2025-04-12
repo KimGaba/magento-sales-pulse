@@ -10,13 +10,14 @@ export interface BasketOpenerProduct {
 }
 
 export interface SyncProgress {
+  id: string;
   store_id: string;
   connection_id: string;
   current_page: number;
   total_pages: number | null;
   orders_processed: number;
   total_orders: number | null;
-  status: "in_progress" | "completed" | "error";
+  status: 'in_progress' | 'completed' | 'error';
   started_at: string;
   updated_at: string;
   error_message?: string;
