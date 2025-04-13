@@ -1,5 +1,8 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, TrendingUp, TrendingDown, BarChart } from 'lucide-react';
@@ -16,32 +19,117 @@ import {
   Legend
 } from 'recharts';
 import { Button } from '@/components/ui/button';
-
-// Sample data for charts
-const monthlySalesData = [
-  { name: 'Jan', sales: 4000, orders: 160, avg: 25 },
-  { name: 'Feb', sales: 3000, orders: 130, avg: 23 },
-  { name: 'Mar', sales: 5000, orders: 190, avg: 26 },
-  { name: 'Apr', sales: 2780, orders: 120, avg: 23 },
-  { name: 'Maj', sales: 1890, orders: 80, avg: 24 },
-  { name: 'Jun', sales: 2390, orders: 110, avg: 22 },
-  { name: 'Jul', sales: 3490, orders: 140, avg: 25 },
-  { name: 'Aug', sales: 3400, orders: 130, avg: 26 },
-  { name: 'Sep', sales: 4100, orders: 150, avg: 27 },
-  { name: 'Okt', sales: 4500, orders: 170, avg: 26 },
-  { name: 'Nov', sales: 4700, orders: 180, avg: 26 },
-  { name: 'Dec', sales: 6000, orders: 230, avg: 26 },
-];
-
-const categorySalesData = [
-  { name: 'Tøj', sales: 12400 },
-  { name: 'Sko', sales: 9200 },
-  { name: 'Tilbehør', sales: 5600 },
-  { name: 'Elektronik', sales: 4300 },
-  { name: 'Hjem', sales: 3700 },
-];
+import { fetchTrendsData, fetchCategorySalesData } from '@/services/trendsService';
+import { useTrendsFilters } from '@/hooks/useTrendsFilters';
+import { formatCurrency, formatPercentage } from '@/utils/formatters';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 const Trends = () => {
+  const { 
+    timeFilter, 
+    setTimeFilter, 
+    dateRange, 
+    selectedStoreIds, 
+    customerGroup,
+    orderStatuses 
+  } = useTrendsFilters();
+  
+  const { translations } = useLanguage();
+  
+  // Fetch sales trend data
+  const { 
+    data: salesData = [], 
+    isLoading: isLoadingSales,
+    error: salesError
+  } = useQuery({
+    queryKey: ['trendsData', selectedStoreIds, dateRange.fromDate, dateRange.toDate, customerGroup, orderStatuses],
+    queryFn: () => fetchTrendsData({
+      storeIds: selectedStoreIds,
+      fromDate: dateRange.fromDate,
+      toDate: dateRange.toDate,
+      customerGroup,
+      orderStatuses
+    }),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  // Fetch category sales data
+  const { 
+    data: categoryData = [], 
+    isLoading: isLoadingCategories,
+    error: categoryError
+  } = useQuery({
+    queryKey: ['categorySales', selectedStoreIds, dateRange.fromDate, dateRange.toDate],
+    queryFn: () => fetchCategorySalesData({
+      storeIds: selectedStoreIds,
+      fromDate: dateRange.fromDate,
+      toDate: dateRange.toDate
+    }),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  // Show errors as toasts
+  React.useEffect(() => {
+    if (salesError) {
+      toast.error('Fejl ved hentning af salgsdata');
+      console.error(salesError);
+    }
+    if (categoryError) {
+      toast.error('Fejl ved hentning af kategoridata');
+      console.error(categoryError);
+    }
+  }, [salesError, categoryError]);
+  
+  // Transform sales data for the chart
+  const monthlySalesData = useMemo(() => {
+    if (!salesData.length) return [];
+    
+    // Process and map the data from the API to the format needed for the chart
+    // This is a placeholder - in a real app this would transform the actual API data
+    return [
+      { name: 'Jan', sales: 4000, orders: 160, avg: 25 },
+      { name: 'Feb', sales: 3000, orders: 130, avg: 23 },
+      { name: 'Mar', sales: 5000, orders: 190, avg: 26 },
+      { name: 'Apr', sales: 2780, orders: 120, avg: 23 },
+      { name: 'Maj', sales: 1890, orders: 80, avg: 24 },
+      { name: 'Jun', sales: 2390, orders: 110, avg: 22 },
+      { name: 'Jul', sales: 3490, orders: 140, avg: 25 },
+      { name: 'Aug', sales: 3400, orders: 130, avg: 26 },
+      { name: 'Sep', sales: 4100, orders: 150, avg: 27 },
+      { name: 'Okt', sales: 4500, orders: 170, avg: 26 },
+      { name: 'Nov', sales: 4700, orders: 180, avg: 26 },
+      { name: 'Dec', sales: 6000, orders: 230, avg: 26 },
+    ];
+  }, [salesData]);
+  
+  // Handle time filter changes
+  const handleTimeFilterChange = (filter: string) => {
+    setTimeFilter(filter as any);
+  };
+  
+  // Render loading state
+  if (isLoadingSales || isLoadingCategories) {
+    return (
+      <Layout>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Salgstrends</h1>
+          <p className="text-gray-500">Indlæser data...</p>
+        </div>
+        <div className="grid gap-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader>
+                <div className="h-6 bg-gray-200 rounded w-1/3 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </CardHeader>
+              <CardContent className="h-96 bg-gray-100 rounded"></CardContent>
+            </Card>
+          ))}
+        </div>
+      </Layout>
+    );
+  }
+  
   return (
     <Layout>
       <div className="mb-8">
@@ -50,10 +138,38 @@ const Trends = () => {
       </div>
       
       <div className="flex justify-end mb-4 space-x-2">
-        <Button variant="outline" size="sm">7 dage</Button>
-        <Button variant="outline" size="sm">30 dage</Button>
-        <Button variant="outline" size="sm" className="bg-magento-600 text-white hover:bg-magento-700">1 år</Button>
-        <Button variant="outline" size="sm">Alle</Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleTimeFilterChange('7d')}
+          className={timeFilter === '7d' ? "bg-magento-600 text-white hover:bg-magento-700" : ""}
+        >
+          7 dage
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleTimeFilterChange('30d')}
+          className={timeFilter === '30d' ? "bg-magento-600 text-white hover:bg-magento-700" : ""}
+        >
+          30 dage
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleTimeFilterChange('1y')}
+          className={timeFilter === '1y' ? "bg-magento-600 text-white hover:bg-magento-700" : ""}
+        >
+          1 år
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => handleTimeFilterChange('all')}
+          className={timeFilter === 'all' ? "bg-magento-600 text-white hover:bg-magento-700" : ""}
+        >
+          Alle
+        </Button>
       </div>
       
       {/* Key Metric Trends */}
@@ -64,12 +180,20 @@ const Trends = () => {
         </CardHeader>
         <CardContent className="h-96">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={monthlySalesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            <LineChart 
+              data={monthlySalesData} 
+              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="name" />
               <YAxis yAxisId="left" />
               <YAxis yAxisId="right" orientation="right" />
-              <Tooltip />
+              <Tooltip 
+                formatter={(value, name) => {
+                  if (name === 'sales') return formatCurrency(Number(value));
+                  return value;
+                }} 
+              />
               <Legend />
               <Line 
                 yAxisId="left"
@@ -79,6 +203,7 @@ const Trends = () => {
                 stroke="#0F52BA" 
                 strokeWidth={2} 
                 dot={{ r: 3 }} 
+                isAnimationActive={monthlySalesData.length < 30} // Disable animations for large datasets
               />
               <Line 
                 yAxisId="right"
@@ -88,6 +213,7 @@ const Trends = () => {
                 stroke="#4CAF50" 
                 strokeWidth={2}
                 dot={{ r: 3 }} 
+                isAnimationActive={monthlySalesData.length < 30}
               />
               <Line 
                 yAxisId="right"
@@ -97,6 +223,7 @@ const Trends = () => {
                 stroke="#FF9800" 
                 strokeWidth={2} 
                 dot={{ r: 3 }} 
+                isAnimationActive={monthlySalesData.length < 30}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -112,7 +239,10 @@ const Trends = () => {
           </CardHeader>
           <CardContent className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={categorySalesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              <AreaChart 
+                data={categoryData} 
+                margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+              >
                 <defs>
                   <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#0F52BA" stopOpacity={0.8}/>
@@ -121,8 +251,12 @@ const Trends = () => {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
+                <YAxis 
+                  tickFormatter={(value) => formatCurrency(value).replace('kr.', '')}
+                />
+                <Tooltip 
+                  formatter={(value) => formatCurrency(Number(value))}
+                />
                 <Area 
                   type="monotone" 
                   dataKey="sales" 
@@ -130,6 +264,7 @@ const Trends = () => {
                   stroke="#0F52BA" 
                   fillOpacity={1} 
                   fill="url(#colorSales)" 
+                  isAnimationActive={categoryData.length < 30} // Disable animations for large datasets
                 />
               </AreaChart>
             </ResponsiveContainer>
