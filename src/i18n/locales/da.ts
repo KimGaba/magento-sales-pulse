@@ -1,3 +1,4 @@
+
 export const da = {
   login: {
     title: 'Log ind',
@@ -107,5 +108,32 @@ export const da = {
     settings: 'Indstillinger',
     integrationStatus: 'Integrationsstatus',
     logout: 'Log ud'
+  },
+  dailySales: {
+    title: 'Dagligt Salg',
+    subtitle: 'Detaljer om dine daglige salgsresultater',
+    dailyAvgSales: 'DAGLIG GNS. OMSÆTNING',
+    dailyAvgOrders: 'DAGLIG GNS. ORDRER',
+    bestDayInMonth: 'BEDSTE DAG I MÅNEDEN', 
+    revenue: 'Omsætning',
+    orders: 'Ordrer',
+    averageOrderValue: 'Gns. ordreværdi',
+    trend: 'Tendens',
+    increasingTrend: 'Stigende',
+    decreasingTrend: 'Faldende',
+    baseline: 'Baseline',
+    noData: 'Ingen data for den valgte periode',
+    tryAgain: 'Prøv igen',
+    exportData: 'Eksportér data',
+    printReport: 'Print rapport',
+    insight: 'Indsigt',
+    insightText: '{day1} og {day2} er dine bedste salgsdage. Overvej at øge markedsføringsindsatsen og lagerbeholdningen på disse dage for at maksimere omsætningen.',
+    salesByHour: 'Salgsoversigt efter tidspunkt',
+    salesDistributionByDay: 'Omsætning fordelt over dagen',
+    bestPerformingDays: 'Bedst præsterende dage',
+    topDaysDescription: 'De dage med højeste omsætning i måneden',
+    dailySummary: 'Daglig opsummering',
+    detailedSalesByDay: 'Detaljeret overblik over salg per dag',
+    day: 'Dag'
   }
 };

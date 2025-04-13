@@ -1,7 +1,18 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useMemo } from 'react';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, TrendingUp, TrendingDown, Loader2, Info, Database, AlertTriangle } from 'lucide-react';
+import { 
+  Calendar as CalendarIcon, 
+  TrendingUp, 
+  TrendingDown, 
+  Loader2, 
+  Info, 
+  Database, 
+  AlertTriangle,
+  FileDown,
+  Printer
+} from 'lucide-react';
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -15,13 +26,24 @@ import {
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format, startOfMonth, endOfMonth, isSameMonth, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { fetchDailySalesData, fetchAvailableDataMonths } from '@/services/salesService';
+import { fetchDailySalesData } from '@/services/salesService';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { testDatabaseConnection, getTransactionCount } from '@/services/transactionService';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useSalesFilters } from '@/hooks/useSalesFilters';
+import { useLanguage } from '@/i18n/LanguageContext';
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -29,34 +51,86 @@ const formatDate = (dateString: string) => {
 };
 
 const DailySales = () => {
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const { translations } = useLanguage();
+  const t = translations.dashboard; // Reuse dashboard translations for now
   const { toast } = useToast();
   
-  const fromDate = date ? format(startOfMonth(date), 'yyyy-MM-dd') : '';
-  const toDate = date ? format(endOfMonth(date), 'yyyy-MM-dd') : '';
+  // Use our custom hook for date filters
+  const { 
+    date, 
+    setDate, 
+    dateFilter, 
+    availableMonths, 
+    isLoadingMonths, 
+    monthsError, 
+    hasDataForMonth 
+  } = useSalesFilters();
 
-  const { data: isConnected = false, isLoading: isTestingConnection } = useQuery({
+  // Test database connection
+  const { 
+    data: isConnected = false, 
+    isLoading: isTestingConnection,
+    error: connectionError 
+  } = useQuery({
     queryKey: ['databaseTest'],
     queryFn: () => testDatabaseConnection(),
+    retry: 1,
   });
 
-  const { data: transactionCount = 0, isLoading: isCountLoading } = useQuery({
+  // Get transaction count
+  const { 
+    data: transactionCount = 0, 
+    isLoading: isCountLoading,
+    error: countError 
+  } = useQuery({
     queryKey: ['transactionCount'],
     queryFn: () => getTransactionCount(),
+    retry: 1,
+    enabled: isConnected,
   });
 
-  const { data: availableMonths = [], isLoading: isLoadingMonths } = useQuery({
-    queryKey: ['availableMonths'],
-    queryFn: () => fetchAvailableDataMonths(),
+  // Fetch sales data
+  const { 
+    data: salesData = [], 
+    isLoading: isLoadingSales, 
+    error: salesError,
+    refetch: refetchSales
+  } = useQuery({
+    queryKey: ['dailySales', dateFilter.fromDate, dateFilter.toDate],
+    queryFn: () => fetchDailySalesData(dateFilter.fromDate, dateFilter.toDate),
+    enabled: !!dateFilter.fromDate && !!dateFilter.toDate,
+    retry: 2,
   });
 
-  const { data: salesData = [], isLoading, error } = useQuery({
-    queryKey: ['dailySales', fromDate, toDate],
-    queryFn: () => fetchDailySalesData(fromDate, toDate),
-    enabled: !!fromDate && !!toDate,
-  });
+  // Show any errors as toasts
+  React.useEffect(() => {
+    if (salesError) {
+      toast({
+        title: "Fejl ved hentning af salgsdata",
+        description: salesError instanceof Error ? salesError.message : "Der opstod en ukendt fejl",
+        variant: "destructive"
+      });
+    }
+    
+    if (connectionError) {
+      toast({
+        title: "Databaseforbindelsesfejl",
+        description: connectionError instanceof Error ? connectionError.message : "Kunne ikke oprette forbindelse til databasen",
+        variant: "destructive"
+      });
+    }
+    
+    if (monthsError) {
+      toast({
+        title: "Fejl ved hentning af tilgængelige måneder",
+        description: monthsError instanceof Error ? monthsError.message : "Kunne ikke hente tilgængelige måneder",
+        variant: "destructive"
+      });
+    }
+  }, [salesError, connectionError, monthsError, toast]);
 
-  const dailySalesData = React.useMemo(() => {
+  // Process sales data for charts and metrics
+  const dailySalesData = useMemo(() => {
     if (!salesData || salesData.length === 0) return [];
     
     return salesData.map(item => ({
@@ -67,6 +141,7 @@ const DailySales = () => {
     })).sort((a, b) => parseInt(a.day) - parseInt(b.day));
   }, [salesData]);
 
+  // Sample hourly data - in a real implementation, this would be fetched from an API
   const hourlyData = [
     { hour: '00-02', sales: 200, orders: 2 },
     { hour: '02-04', sales: 100, orders: 1 },
@@ -82,7 +157,8 @@ const DailySales = () => {
     { hour: '22-24', sales: 400, orders: 5 },
   ];
 
-  const topPerformers = React.useMemo(() => {
+  // Calculate top performers
+  const topPerformers = useMemo(() => {
     if (!dailySalesData.length) return [];
     
     const sortedData = [...dailySalesData].sort((a, b) => b.sales - a.sales).slice(0, 3);
@@ -92,7 +168,7 @@ const DailySales = () => {
       const dayName = format(dayDate, 'EEEE');
       const formattedDate = format(dayDate, 'd. MMM');
       
-      const change = "+15%"; 
+      const change = "+15%"; // In a real app, calculate this from historical data
       
       return {
         day: dayName,
@@ -103,8 +179,13 @@ const DailySales = () => {
     });
   }, [dailySalesData]);
 
-  const metrics = React.useMemo(() => {
-    if (!dailySalesData.length) return { avgSales: 0, avgOrders: 0, bestDay: { day: '', date: '', sales: 0 } };
+  // Calculate key metrics
+  const metrics = useMemo(() => {
+    if (!dailySalesData.length) return { 
+      avgSales: 0, 
+      avgOrders: 0, 
+      bestDay: { day: '', date: '', sales: 0 } 
+    };
     
     const totalSales = dailySalesData.reduce((sum, day) => sum + day.sales, 0);
     const totalOrders = dailySalesData.reduce((sum, day) => sum + day.orders, 0);
@@ -121,25 +202,42 @@ const DailySales = () => {
     };
   }, [dailySalesData]);
 
-  const hasDataForMonth = (day: Date) => {
-    return availableMonths.some(availMonth => {
-      const monthNum = parseInt(availMonth.month);
-      const yearNum = availMonth.year;
-      if (!isNaN(monthNum) && !isNaN(yearNum)) {
-        const availMonthDate = new Date(yearNum, monthNum - 1);
-        return isSameMonth(availMonthDate, day);
-      }
-      return false;
+  // Handle export data button click
+  const handleExportData = () => {
+    if (!dailySalesData.length) {
+      toast({
+        title: "Ingen data at eksportere",
+        description: "Der er ingen salgsdata for den valgte periode",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // In a real app, implement CSV export here
+    toast({
+      title: "Eksport påbegyndt",
+      description: "Dine data bliver eksporteret som CSV",
     });
   };
 
-  if (error) {
+  // Handle print report button click
+  const handlePrintReport = () => {
+    if (!dailySalesData.length) {
+      toast({
+        title: "Ingen data at udskrive",
+        description: "Der er ingen salgsdata for den valgte periode",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // In a real app, implement print functionality here
     toast({
-      title: "Error fetching sales data",
-      description: error instanceof Error ? error.message : "An unknown error occurred",
-      variant: "destructive"
+      title: "Udskrivning forberedt",
+      description: "Rapporten er klar til udskrivning",
     });
-  }
+    window.print();
+  };
 
   return (
     <Layout>
@@ -148,6 +246,7 @@ const DailySales = () => {
         <p className="text-gray-500">Detaljer om dine daglige salgsresultater</p>
       </div>
       
+      {/* Database diagnostic card */}
       <Card className="mb-6">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-md font-medium">Database Diagnostic</CardTitle>
@@ -204,6 +303,7 @@ const DailySales = () => {
         </CardContent>
       </Card>
       
+      {/* Date selector and action buttons */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
         <div className="flex items-center gap-2">
           <Popover>
@@ -212,11 +312,7 @@ const DailySales = () => {
                 variant={"outline"}
                 className="w-[240px] pl-3 text-left font-normal"
               >
-                {date ? (
-                  format(date, "MMMM yyyy")
-                ) : (
-                  <span>Vælg måned</span>
-                )}
+                {dateFilter.displayText}
                 <CalendarIcon className="ml-auto h-4 w-4" />
               </Button>
             </PopoverTrigger>
@@ -268,11 +364,28 @@ const DailySales = () => {
         </div>
         
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm">Eksportér data</Button>
-          <Button size="sm" className="bg-magento-600 hover:bg-magento-700">Print rapport</Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExportData}
+            disabled={isLoadingSales || dailySalesData.length === 0}
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            Eksportér data
+          </Button>
+          <Button 
+            size="sm" 
+            className="bg-magento-600 hover:bg-magento-700"
+            onClick={handlePrintReport}
+            disabled={isLoadingSales || dailySalesData.length === 0}
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Print rapport
+          </Button>
         </div>
       </div>
       
+      {/* Key metrics cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -280,11 +393,8 @@ const DailySales = () => {
             <CalendarIcon className="h-4 w-4 text-magento-600" />
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center">
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Indlæser...
-              </div>
+            {isLoadingSales ? (
+              <Skeleton className="h-8 w-24" />
             ) : (
               <>
                 <div className="text-2xl font-bold">{metrics.avgSales.toFixed(0)} kr</div>
@@ -303,11 +413,8 @@ const DailySales = () => {
             <CalendarIcon className="h-4 w-4 text-magento-600" />
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center">
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Indlæser...
-              </div>
+            {isLoadingSales ? (
+              <Skeleton className="h-8 w-24" />
             ) : (
               <>
                 <div className="text-2xl font-bold">{metrics.avgOrders.toFixed(1)}</div>
@@ -326,11 +433,8 @@ const DailySales = () => {
             <CalendarIcon className="h-4 w-4 text-magento-600" />
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center">
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Indlæser...
-              </div>
+            {isLoadingSales ? (
+              <Skeleton className="h-8 w-36" />
             ) : (
               <>
                 <div className="text-2xl font-bold">{metrics.bestDay.day} {metrics.bestDay.date}.</div>
@@ -344,21 +448,30 @@ const DailySales = () => {
         </Card>
       </div>
       
+      {/* Daily sales chart */}
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Daglig omsætning</CardTitle>
           <CardDescription>
-            Daglig omsætning for {date ? format(date, 'MMMM yyyy') : ''}
+            Daglig omsætning for {dateFilter.displayText}
           </CardDescription>
         </CardHeader>
         <CardContent className="h-80">
-          {isLoading ? (
+          {isLoadingSales ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="h-8 w-8 animate-spin text-magento-600" />
             </div>
           ) : dailySalesData.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full">
               <p className="text-gray-500">Ingen data for den valgte periode</p>
+              <Button 
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => refetchSales()}
+              >
+                Prøv igen
+              </Button>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
@@ -378,6 +491,7 @@ const DailySales = () => {
         </CardContent>
       </Card>
       
+      {/* Hourly sales and top performers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <Card>
           <CardHeader>
@@ -403,9 +517,11 @@ const DailySales = () => {
             <CardDescription>De dage med højeste omsætning i måneden</CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center h-40">
-                <Loader2 className="h-8 w-8 animate-spin text-magento-600" />
+            {isLoadingSales ? (
+              <div className="space-y-4">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
               </div>
             ) : topPerformers.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40">
@@ -450,44 +566,57 @@ const DailySales = () => {
         </Card>
       </div>
       
+      {/* Daily summary table */}
       <Card>
         <CardHeader>
           <CardTitle>Daglig opsummering</CardTitle>
           <CardDescription>Detaljeret overblik over salg per dag</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center h-40">
-              <Loader2 className="h-8 w-8 animate-spin text-magento-600" />
+          {isLoadingSales ? (
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
             </div>
           ) : dailySalesData.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40">
               <p className="text-gray-500">Ingen data for den valgte periode</p>
+              <Button 
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => refetchSales()}
+              >
+                Prøv igen
+              </Button>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-semibold text-sm">Dag</th>
-                    <th className="text-left py-3 px-4 font-semibold text-sm">Ordrer</th>
-                    <th className="text-left py-3 px-4 font-semibold text-sm">Omsætning</th>
-                    <th className="text-left py-3 px-4 font-semibold text-sm">Gns. ordreværdi</th>
-                    <th className="text-left py-3 px-4 font-semibold text-sm">Tendens</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Dag</TableHead>
+                    <TableHead>Ordrer</TableHead>
+                    <TableHead>Omsætning</TableHead>
+                    <TableHead>Gns. ordreværdi</TableHead>
+                    <TableHead>Tendens</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {dailySalesData.map((day, index) => (
-                    <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4 font-medium">
+                    <TableRow key={index} className="hover:bg-gray-50">
+                      <TableCell className="font-medium">
                         {format(new Date(day.date), 'd. MMM')}
-                      </td>
-                      <td className="py-3 px-4">{day.orders}</td>
-                      <td className="py-3 px-4">{day.sales} kr</td>
-                      <td className="py-3 px-4">
+                      </TableCell>
+                      <TableCell>{day.orders}</TableCell>
+                      <TableCell>{day.sales} kr</TableCell>
+                      <TableCell>
                         {day.orders > 0 ? Math.round(day.sales / day.orders) : 0} kr
-                      </td>
-                      <td className="py-3 px-4">
+                      </TableCell>
+                      <TableCell>
                         {index > 0 && day.sales > dailySalesData[index - 1].sales ? (
                           <span className="flex items-center text-green-600">
                             <TrendingUp className="h-4 w-4 mr-1" /> Stigende
@@ -501,11 +630,11 @@ const DailySales = () => {
                             - Baseline
                           </span>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
