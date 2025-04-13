@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { DailySales } from '@/types/sales';
 
@@ -25,6 +26,23 @@ export const fetchDailySalesData = async (
     console.log('- Customer group:', customerGroup);
     console.log('- Order statuses:', orderStatuses);
 
+    // Check if the daily_sales table exists
+    const { data: tableExists, error: tableCheckError } = await supabase.rpc(
+      'check_table_exists',
+      { table_name: 'daily_sales' }
+    );
+    
+    if (tableCheckError) {
+      console.error('Error checking if daily_sales table exists:', tableCheckError);
+      // Continue with the fallback approach
+      return await fetchDailySalesFromTransactions(fromDate, toDate, storeIds);
+    }
+    
+    if (!tableExists) {
+      console.log('daily_sales table does not exist, using fallback to transactions table');
+      return await fetchDailySalesFromTransactions(fromDate, toDate, storeIds);
+    }
+
     // Use the select query to get data from the daily_sales table
     let query = supabase.from('daily_sales')
       .select('*')
@@ -49,7 +67,13 @@ export const fetchDailySalesData = async (
       return await fetchDailySalesFromTransactions(fromDate, toDate, storeIds);
     }
     
-    return data;
+    // Ensure numeric types are consistent
+    return data.map(item => ({
+      ...item,
+      total_sales: Number(item.total_sales),
+      order_count: Number(item.order_count),
+      average_order_value: item.average_order_value ? Number(item.average_order_value) : null
+    }));
   } catch (error) {
     console.error('Error in fetchDailySalesData:', error);
     throw error instanceof Error 
@@ -154,6 +178,23 @@ export const fetchAvailableDataMonths = async (storeIds: string[] = []): Promise
   try {
     console.log('Fetching available data months');
     console.log('Store IDs filter:', storeIds);
+    
+    // Check if daily_sales table exists
+    const { data: tableExists, error: tableCheckError } = await supabase.rpc(
+      'check_table_exists',
+      { table_name: 'daily_sales' }
+    );
+    
+    if (tableCheckError) {
+      console.error('Error checking if daily_sales table exists:', tableCheckError);
+      // Continue with fallback
+      return await fetchAvailableMonthsFromTransactions(storeIds);
+    }
+    
+    if (!tableExists) {
+      console.log('daily_sales table does not exist, using fallback');
+      return await fetchAvailableMonthsFromTransactions(storeIds);
+    }
     
     // Build the query to get distinct dates from sales data
     let query = supabase

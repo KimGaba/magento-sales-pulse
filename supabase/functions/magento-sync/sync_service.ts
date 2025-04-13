@@ -64,16 +64,102 @@ export async function synchronizeMagentoData(options: {
       'Fetching orders from Magento'
     );
     
-    // Now, fetch orders
+    // Now, fetch orders with improved error handling
     console.log(`Fetching orders from Magento, pages ${startPage} to ${startPage + maxPages - 1}...`);
     
-    // Use the new fetchAllMagentoOrders function
-    const ordersResult = await fetchAllMagentoOrders(
-      connection,
-      maxPages,
-      100, // pageSize
-      undefined // Use default subscription level logic
-    );
+    let ordersResult;
+    try {
+      // Use the fetchAllMagentoOrders function with error handling
+      ordersResult = await fetchAllMagentoOrders(
+        connection,
+        maxPages,
+        100, // pageSize
+        undefined // Use default subscription level logic
+      );
+      
+      // Validate totalCount to prevent undefined errors
+      if (typeof ordersResult.totalCount !== 'number') {
+        console.error(`Invalid totalCount received: ${ordersResult.totalCount}`);
+        throw new Error(`Expected totalCount to be a number but got: ${typeof ordersResult.totalCount}`);
+      }
+    } catch (fetchError) {
+      console.error(`Failed to fetch orders: ${fetchError.message}`);
+      
+      // Update progress with failure information
+      await updateSyncProgress(
+        storeId, 
+        'failed', 
+        0, 
+        0, 
+        `Failed to fetch orders: ${fetchError.message}`
+      );
+      
+      // Record sync history
+      await recordSyncHistory(
+        storeId, 
+        0, 
+        0, 
+        'failed', 
+        `Failed to fetch orders: ${fetchError.message}`
+      );
+      
+      return {
+        success: false,
+        error: `Failed to fetch orders: ${fetchError.message}`
+      };
+    }
+    
+    // Check if we got any orders
+    if (!ordersResult.orders || ordersResult.orders.length === 0) {
+      console.log('No orders found for the specified criteria');
+      
+      // Update progress
+      await updateSyncProgress(
+        storeId, 
+        'completed', 
+        0, 
+        0, 
+        'No orders found for the specified criteria'
+      );
+      
+      // Record sync history
+      await recordSyncHistory(
+        storeId, 
+        0, 
+        0, 
+        'success', 
+        'No orders found'
+      );
+      
+      try {
+        // Update the last_sync_date on the store to show we at least tried
+        const { error: updateError } = await supabase
+          .from('stores')
+          .update({ 
+            last_sync_date: new Date().toISOString(),
+            last_sync_result: 'success'
+          })
+          .eq('id', storeId);
+          
+        if (updateError) {
+          console.error(`Error updating store last_sync_date: ${updateError.message}`);
+        }
+      } catch (updateError) {
+        console.error(`Error updating store last_sync_date: ${updateError.message}`);
+      }
+      
+      return {
+        success: true,
+        stats: {
+          ordersCount: 0,
+          processedCount: 0,
+          skippedCount: 0,
+          errorCount: 0,
+          productsCount: 0
+        },
+        message: 'No orders found for the specified criteria'
+      };
+    }
     
     // Update progress with total count
     const totalOrders = ordersResult.totalCount;
@@ -85,19 +171,50 @@ export async function synchronizeMagentoData(options: {
       `Retrieved ${ordersResult.orders.length} orders from Magento`
     );
     
-    // Store the orders as transactions
+    // Store the orders as transactions with error handling
     console.log(`Storing ${ordersResult.orders.length} orders as transactions...`);
     
-    // Update progress
-    await updateSyncProgress(
-      storeId, 
-      'in_progress', 
-      0, 
-      ordersResult.orders.length, 
-      'Storing transactions'
-    );
-    
-    const storeResult = await storeTransactions(ordersResult.orders, storeId);
+    let storeResult;
+    try {
+      // Update progress
+      await updateSyncProgress(
+        storeId, 
+        'in_progress', 
+        0, 
+        ordersResult.orders.length, 
+        'Storing transactions'
+      );
+      
+      storeResult = await storeTransactions(ordersResult.orders, storeId);
+      
+      // Log transaction storage results
+      console.log(`Transaction storage results: ${storeResult.stats.new} new, ${storeResult.stats.updated} updated, ${storeResult.stats.skipped} skipped, ${storeResult.stats.errors} errors`);
+    } catch (storeError) {
+      console.error(`Failed to store transactions: ${storeError.message}`);
+      
+      // Update progress with failure information
+      await updateSyncProgress(
+        storeId, 
+        'failed', 
+        0, 
+        ordersResult.orders.length, 
+        `Failed to store transactions: ${storeError.message}`
+      );
+      
+      // Record sync history
+      await recordSyncHistory(
+        storeId, 
+        0, 
+        0, 
+        'failed', 
+        `Failed to store transactions: ${storeError.message}`
+      );
+      
+      return {
+        success: false,
+        error: `Failed to store transactions: ${storeError.message}`
+      };
+    }
     
     // Update progress
     const processedCount = storeResult.stats.new + storeResult.stats.updated;
@@ -109,7 +226,7 @@ export async function synchronizeMagentoData(options: {
       `Stored ${processedCount} transactions`
     );
     
-    // Fetch and store product data
+    // Fetch and store product data with error handling
     let productsCount = 0;
     try {
       console.log('Fetching products...');
@@ -121,10 +238,11 @@ export async function synchronizeMagentoData(options: {
       // Continue anyway, as this is not critical
     }
     
-    // Aggregate sales data
+    // Aggregate sales data with error handling
     try {
       console.log('Aggregating sales data...');
       await aggregateSalesData(storeId);
+      console.log('Sales data aggregation complete');
     } catch (error) {
       console.error(`Error aggregating sales data: ${error.message}`);
       // Continue anyway, as this is not critical
@@ -147,8 +265,10 @@ export async function synchronizeMagentoData(options: {
       `Sync completed successfully. ${processedCount} transactions processed.`
     );
     
-    // Update the last_sync_date on the store
+    // Update the last_sync_date on the store with error handling
     try {
+      console.log(`Updating last_sync_date for store ${storeId}`);
+      
       const { error: updateError } = await supabase
         .from('stores')
         .update({ 
@@ -159,9 +279,11 @@ export async function synchronizeMagentoData(options: {
         
       if (updateError) {
         console.error(`Error updating store last_sync_date: ${updateError.message}`);
+      } else {
+        console.log('Successfully updated last_sync_date');
       }
     } catch (updateError) {
-      console.error(`Error updating store last_sync_date: ${updateError.message}`);
+      console.error(`Error updating store last_sync_date: ${updateError.message}`, updateError);
     }
     
     console.log('Magento sync completed successfully');
@@ -174,28 +296,37 @@ export async function synchronizeMagentoData(options: {
         skippedCount: storeResult.stats.skipped,
         errorCount: storeResult.stats.errors,
         productsCount
-      }
+      },
+      message: `Sync completed successfully. ${processedCount} transactions processed.`
     };
   } catch (error) {
     console.error(`Error in synchronizeMagentoData: ${error.message}`);
     
     // Update sync progress to failed
-    await updateSyncProgress(
-      options.storeId, 
-      'failed', 
-      0, 
-      0, 
-      `Sync failed: ${error.message}`
-    );
+    try {
+      await updateSyncProgress(
+        options.storeId, 
+        'failed', 
+        0, 
+        0, 
+        `Sync failed: ${error.message}`
+      );
+    } catch (progressError) {
+      console.error(`Error updating sync progress: ${progressError.message}`);
+    }
     
     // Record sync history
-    await recordSyncHistory(
-      options.storeId, 
-      0, 
-      0, 
-      'failed', 
-      error.message
-    );
+    try {
+      await recordSyncHistory(
+        options.storeId, 
+        0, 
+        0, 
+        'failed', 
+        error.message
+      );
+    } catch (historyError) {
+      console.error(`Error recording sync history: ${historyError.message}`);
+    }
     
     // Update the last_sync_date on the store
     try {

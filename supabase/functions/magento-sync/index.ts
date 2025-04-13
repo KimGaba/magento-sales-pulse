@@ -1,4 +1,3 @@
-
 // Follow Deno and Supabase Edge runtime conventions
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, createCorsResponse } from "../_shared/cors_utils.ts";
@@ -246,7 +245,8 @@ serve(async (req) => {
         console.error('Error parsing request body:', parseError);
         return createCorsResponse({
           success: false,
-          error: "Invalid JSON in request body"
+          error: "Invalid JSON in request body",
+          message: "The request couldn't be processed because it contains invalid JSON. Please check your request format."
         }, 400);
       }
 
@@ -259,7 +259,8 @@ serve(async (req) => {
           console.error('Missing required parameters for test_connection');
           return createCorsResponse({
             success: false,
-            error: "Missing required parameters: storeUrl and accessToken"
+            error: "Missing required parameters: storeUrl and accessToken",
+            message: "Store URL og API nøgle er påkrævet for at teste forbindelsen."
           }, 400);
         }
 
@@ -277,12 +278,22 @@ serve(async (req) => {
           console.error('Missing required parameter for get_sync_progress: storeId');
           return createCorsResponse({
             success: false,
-            error: "Missing required parameter: storeId"
+            error: "Missing required parameter: storeId",
+            message: "Store ID er påkrævet for at hente synkroniseringsstatus."
           }, 400);
         }
 
-        const progressResult = await handleGetSyncProgress(storeId);
-        return createCorsResponse(progressResult, progressResult.success ? 200 : 500);
+        try {
+          const progressResult = await handleGetSyncProgress(storeId);
+          return createCorsResponse(progressResult, progressResult.success ? 200 : 500);
+        } catch (progressError) {
+          console.error('Error getting sync progress:', progressError);
+          return createCorsResponse({
+            success: false,
+            error: `Failed to get sync progress: ${progressError.message}`,
+            message: "Der opstod en fejl under hentning af synkroniseringsstatus. Prøv igen senere."
+          }, 500);
+        }
       }
       
       // Handle sync continuation
@@ -294,7 +305,8 @@ serve(async (req) => {
           console.error('Missing required parameters for continue_sync');
           return createCorsResponse({
             success: false,
-            error: "Missing required continuation data"
+            error: "Missing required continuation data",
+            message: "Der mangler data for at fortsætte synkroniseringen."
           }, 400);
         }
 
@@ -307,9 +319,18 @@ serve(async (req) => {
         };
 
         console.log('Continuing sync with options:', syncOptions);
-        const result = await processSyncWithContinuation(syncOptions);
         
-        return createCorsResponse(result, result.success ? 200 : 500);
+        try {
+          const result = await processSyncWithContinuation(syncOptions);
+          return createCorsResponse(result, result.success ? 200 : 500);
+        } catch (syncError) {
+          console.error('Error continuing sync:', syncError);
+          return createCorsResponse({
+            success: false,
+            error: `Failed to continue sync: ${syncError.message}`,
+            message: "Der opstod en fejl under fortsættelse af synkroniseringen. Prøv igen senere."
+          }, 500);
+        }
       }
 
       // Handle regular sync requests
@@ -320,27 +341,38 @@ serve(async (req) => {
 
       console.log(`Received sync request with type: ${syncType}, useMock: ${useMock}, maxPages: ${maxPages}, storeId: ${storeId}`);
 
+      if (!storeId) {
+        console.error('Missing required parameter: store_id');
+        return createCorsResponse({
+          success: false,
+          error: "Missing required parameter: store_id",
+          message: "Store ID er påkrævet for at starte synkronisering."
+        }, 400);
+      }
+      
+      // Get the connection ID for this store
       try {
-        if (!storeId) {
-          console.error('Missing required parameter: store_id');
-          return createCorsResponse({
-            success: false,
-            error: "Missing required parameter: store_id"
-          }, 400);
-        }
-        
-        // Get the connection ID for this store
         const { data: connection, error: connectionError } = await supabase
           .from('magento_connections')
           .select('id')
           .eq('store_id', storeId)
           .maybeSingle();
           
-        if (connectionError || !connection) {
-          console.error('Error fetching connection for store:', connectionError?.message || 'No connection found');
+        if (connectionError) {
+          console.error('Error fetching connection for store:', connectionError.message);
           return createCorsResponse({
             success: false,
-            error: `Could not find connection for store: ${connectionError?.message || 'No connection found'}`
+            error: `Error fetching connection: ${connectionError.message}`,
+            message: "Kunne ikke finde forbindelse til Magento. Kontroller at du har oprettet en forbindelse."
+          }, 400);
+        }
+        
+        if (!connection) {
+          console.error('No connection found for store:', storeId);
+          return createCorsResponse({
+            success: false,
+            error: 'No connection found for store',
+            message: "Ingen Magento-forbindelse fundet for denne butik. Opret en forbindelse først."
           }, 400);
         }
         
@@ -360,16 +392,24 @@ serve(async (req) => {
         console.error('Error during sync process:', syncError);
         return createCorsResponse({
           success: false,
-          error: `Sync process failed: ${syncError.message}`
+          error: `Sync process failed: ${syncError.message}`,
+          message: "Der opstod en fejl under synkronisering. Se detaljerne i systemmeddelelser."
         }, 500);
       }
     } catch (error) {
       console.error('Error processing sync request:', error);
-      return createCorsResponse({ success: false, error: error.message }, 500);
+      return createCorsResponse({ 
+        success: false, 
+        error: error.message,
+        message: "Der opstod en uventet fejl. Prøv igen senere eller kontakt support."
+      }, 500);
     }
   }
 
   // Handle unauthorized or incorrect methods
   console.error(`Method not allowed: ${req.method}`);
-  return createCorsResponse({ error: 'Method not allowed' }, 405);
+  return createCorsResponse({ 
+    error: 'Method not allowed',
+    message: "Denne metode er ikke tilladt. Brug POST."
+  }, 405);
 });

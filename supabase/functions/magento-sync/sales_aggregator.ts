@@ -4,6 +4,8 @@ import { supabase } from "../_shared/db_client.ts";
 // Aggregate sales data by date
 export async function aggregateSalesData(storeId: string) {
   try {
+    console.log(`Aggregating sales data for store ${storeId}`);
+    
     // Fetch all transactions for the store
     const { data: transactions, error } = await supabase
       .from('transactions')
@@ -12,16 +14,18 @@ export async function aggregateSalesData(storeId: string) {
       
     if (error) {
       console.error(`Error fetching transactions: ${error.message}`);
-      return;
+      throw error;
     }
     
     if (!transactions || transactions.length === 0) {
       console.log(`No transactions found for store ${storeId}`);
-      return;
+      return false;
     }
     
-    await processDailySalesData(transactions, storeId);
-    console.log(`Successfully aggregated sales data for store ${storeId}`);
+    console.log(`Found ${transactions.length} transactions to aggregate`);
+    
+    const result = await processDailySalesData(transactions, storeId);
+    console.log(`Successfully aggregated sales data for store ${storeId}: ${result.inserted} inserted, ${result.updated} updated`);
     
     return true;
   } catch (error) {
@@ -32,7 +36,26 @@ export async function aggregateSalesData(storeId: string) {
 
 // Store daily sales data (aggregated)
 export async function processDailySalesData(salesData: any[], storeId: string) {
+  let inserted = 0;
+  let updated = 0;
+  
   try {
+    // Check if the daily_sales table exists
+    const { data: tableExists, error: tableCheckError } = await supabase.rpc(
+      'check_table_exists',
+      { table_name: 'daily_sales' }
+    );
+    
+    if (tableCheckError) {
+      console.error(`Error checking if daily_sales table exists: ${tableCheckError.message}`);
+      throw new Error(`Failed to check if daily_sales table exists: ${tableCheckError.message}`);
+    }
+    
+    if (!tableExists) {
+      console.error('daily_sales table does not exist');
+      throw new Error('The daily_sales table does not exist in the database');
+    }
+    
     // Group sales by date
     const salesByDate = salesData.reduce((acc, order) => {
       const createdAt = order.transaction_date;
@@ -50,7 +73,14 @@ export async function processDailySalesData(salesData: any[], storeId: string) {
         };
       }
 
-      acc[orderDate].total_sales += parseFloat(order.amount);
+      // Ensure amount is a number before adding
+      const orderAmount = parseFloat(order.amount || 0);
+      if (isNaN(orderAmount)) {
+        console.warn(`⚠️ Skipping order with invalid amount:`, order);
+        return acc;
+      }
+
+      acc[orderDate].total_sales += orderAmount;
       acc[orderDate].order_count += 1;
       acc[orderDate].orders.push(order);
 
@@ -59,11 +89,17 @@ export async function processDailySalesData(salesData: any[], storeId: string) {
 
     // Store daily sales for each date
     for (const [date, data] of Object.entries(salesByDate)) {
+      if (data.order_count === 0) {
+        console.warn(`⚠️ Skipping date ${date} with 0 orders`);
+        continue;
+      }
+      
       const avgOrderValue = data.total_sales / data.order_count;
 
+      // Check if we already have a record for this date and store
       const { data: existingRecord, error: checkError } = await supabase
         .from('daily_sales')
-        .select('*')
+        .select('id')
         .eq('store_id', storeId)
         .eq('date', date)
         .maybeSingle();
@@ -74,6 +110,7 @@ export async function processDailySalesData(salesData: any[], storeId: string) {
       }
 
       if (existingRecord) {
+        // Update existing record
         const { error: updateError } = await supabase
           .from('daily_sales')
           .update({
@@ -88,8 +125,10 @@ export async function processDailySalesData(salesData: any[], storeId: string) {
           console.error(`Error updating daily sales record: ${updateError.message}`);
         } else {
           console.log(`Updated daily sales for ${date}`);
+          updated++;
         }
       } else {
+        // Create new record
         const { error: insertError } = await supabase
           .from('daily_sales')
           .insert({
@@ -104,10 +143,12 @@ export async function processDailySalesData(salesData: any[], storeId: string) {
           console.error(`Error inserting daily sales record: ${insertError.message}`);
         } else {
           console.log(`Inserted daily sales for ${date}`);
+          inserted++;
         }
       }
     }
-
+    
+    return { inserted, updated };
   } catch (error) {
     console.error(`Error processing daily sales data: ${error.message}`);
     throw error;
