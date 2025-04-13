@@ -21,7 +21,8 @@ export const fetchMagentoConnections = async (userId: string): Promise<MagentoCo
     const { data, error } = await supabase
       .from('magento_connections')
       .select('*')
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
     
     if (error) {
       console.error('Error fetching Magento connections:', error);
@@ -31,6 +32,30 @@ export const fetchMagentoConnections = async (userId: string): Promise<MagentoCo
     return data || [];
   } catch (error) {
     console.error('Error in fetchMagentoConnections:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches only active Magento connections for a specific user
+ */
+export const fetchActiveMagentoConnections = async (userId: string): Promise<MagentoConnection[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('magento_connections')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching active Magento connections:', error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error in fetchActiveMagentoConnections:', error);
     throw error;
   }
 };

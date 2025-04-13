@@ -51,6 +51,20 @@ async function getUserSubscriptionLevel(connectionId: string): Promise<string> {
   }
 }
 
+// Function to check if a date is within the subscription window
+export function isDateWithinSubscriptionWindow(dateStr: string, fromDate: string, toDate: string): boolean {
+  try {
+    const date = new Date(dateStr);
+    const from = new Date(fromDate + ' 00:00:00');
+    const to = new Date(toDate + ' 23:59:59');
+    
+    return date >= from && date <= to;
+  } catch (e) {
+    console.error('Error parsing date for subscription window check:', e);
+    return false;
+  }
+}
+
 // Function to fetch orders from Magento API with subscription-based date filtering
 export async function fetchMagentoOrdersData(connection: MagentoConnection, page = 1, pageSize = 100, subscriptionLevel?: string) {
   try {
@@ -94,10 +108,28 @@ export async function fetchMagentoOrdersData(connection: MagentoConnection, page
     const data = await response.json();
     const orders = data.items || [];
     
-    console.log(`📊 Retrieved ${orders.length} orders from page ${page}, total count: ${data.total_count || 'unknown'}`);
+    // Filter out orders outside the date range (additional validation)
+    const filteredOrders = orders.filter(order => {
+      if (!order.created_at) {
+        console.warn(`⚠️ Order ${order.increment_id} missing created_at date`);
+        return false;
+      }
+      
+      const isWithinWindow = isDateWithinSubscriptionWindow(order.created_at, dateRange.from, dateRange.to);
+      if (!isWithinWindow) {
+        console.log(`⚠️ Order ${order.increment_id} outside subscription window (${order.created_at})`);
+      }
+      return isWithinWindow;
+    });
+    
+    if (filteredOrders.length < orders.length) {
+      console.log(`📊 Filtered out ${orders.length - filteredOrders.length} orders outside the subscription window`);
+    }
+    
+    console.log(`📊 Retrieved ${filteredOrders.length} orders from page ${page}, total count: ${data.total_count || 'unknown'}`);
     
     return {
-      orders: orders.map((order: any) => ({
+      orders: filteredOrders.map((order: any) => ({
         external_id: order.increment_id,
         transaction_date: order.created_at,
         amount: parseFloat(order.grand_total),
@@ -114,7 +146,9 @@ export async function fetchMagentoOrdersData(connection: MagentoConnection, page
           shipping_method: order.shipping_description || 'unknown'
         }
       })),
-      totalCount: data.total_count || orders.length
+      totalCount: data.total_count || orders.length,
+      filteredOutCount: orders.length - filteredOrders.length,
+      subscriptionWindow: dateRange
     };
   } catch (error) {
     console.error(`❌ Error fetching Magento orders: ${error.message}`);

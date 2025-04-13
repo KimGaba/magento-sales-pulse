@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { fetchSyncProgress, SyncProgress } from '@/services/transactionService';
 import { Button } from "@/components/ui/button"
@@ -15,6 +16,7 @@ const SyncStatus = ({ storeId, onRefresh }: SyncStatusProps) => {
   const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoRefreshActive, setAutoRefreshActive] = useState(false);
 
   useEffect(() => {
     if (storeId) {
@@ -23,6 +25,24 @@ const SyncStatus = ({ storeId, onRefresh }: SyncStatusProps) => {
       setSyncProgress(null);
     }
   }, [storeId]);
+
+  // Set up auto-refresh when sync is in progress
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    
+    if (syncProgress?.status === 'in_progress' && storeId) {
+      setAutoRefreshActive(true);
+      interval = setInterval(() => {
+        loadSyncStatus(storeId);
+      }, 5000); // Refresh every 5 seconds
+    } else {
+      setAutoRefreshActive(false);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [syncProgress?.status, storeId]);
 
   const loadSyncStatus = async (storeId: string) => {
     setLoading(true);
@@ -77,7 +97,7 @@ const SyncStatus = ({ storeId, onRefresh }: SyncStatusProps) => {
   
   return (
     <div className="mt-4 bg-white rounded-lg border p-4 shadow-sm">
-      {loading ? (
+      {loading && !syncProgress ? (
         <div className="flex justify-center items-center py-6">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-magento-600"></div>
         </div>
@@ -104,10 +124,11 @@ const SyncStatus = ({ storeId, onRefresh }: SyncStatusProps) => {
       ) : (
         <div>
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium">
+            <h3 className="text-lg font-medium flex items-center">
               Synkroniseringsstatus
               {syncProgress.status === 'in_progress' && (
                 <Badge variant="outline" className="ml-2 bg-blue-50">
+                  {autoRefreshActive && <span className="mr-1 inline-block h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>}
                   I gang
                 </Badge>
               )}
@@ -155,7 +176,7 @@ const SyncStatus = ({ storeId, onRefresh }: SyncStatusProps) => {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Bemærk</AlertTitle>
               <AlertDescription>
-                {syncProgress.skipped_orders} ordrer blev sprunget over på grund af ugyldige data (f.eks. manglende datoer).
+                {syncProgress.skipped_orders} ordrer blev sprunget over på grund af ugyldige data eller var udenfor dit abonnements tidsvindue.
                 {syncProgress.warning_message && (
                   <p className="mt-1 text-sm">{syncProgress.warning_message}</p>
                 )}

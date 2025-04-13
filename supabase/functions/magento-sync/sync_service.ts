@@ -1,4 +1,3 @@
-
 import { supabase } from "../_shared/db_client.ts";
 import { fetchMagentoOrdersData, fetchMagentoStoreViews } from "./magento_api.ts";
 import { storeTransactions } from "./store_transactions.ts";
@@ -27,7 +26,6 @@ interface SyncProgress {
   warning_message?: string;
 }
 
-// Check if sync_progress table exists, create it if it doesn't
 async function ensureSyncProgressTable() {
   try {
     const { count, error } = await supabase
@@ -35,10 +33,8 @@ async function ensureSyncProgressTable() {
       .select('*', { count: 'exact', head: true });
     
     if (error) {
-      // Only attempt table creation if the error is specifically about relation not existing
       if (error.message && error.message.includes('relation "sync_progress" does not exist')) {
         console.log("sync_progress table doesn't exist, attempting to create it");
-        // We need the sync_progress table to be created via SQL migration
         console.error("sync_progress table needs to be created via SQL migration");
       } else {
         console.error("Error checking sync_progress table:", error.message);
@@ -54,21 +50,24 @@ async function ensureSyncProgressTable() {
 export async function synchronizeMagentoData(options: SyncOptions = {}) {
   const { 
     startPage = 1, 
-    maxPages = 10, // Process at most 10 pages per run 
+    maxPages = 10, 
     storeId, 
-    connectionId 
+    connectionId,
+    changesOnly = false
   } = options;
 
   console.log("\n🔄 Starting Magento data synchronization", options);
   
-  // Ensure sync_progress table exists
   await ensureSyncProgressTable();
 
   let query = supabase.from("magento_connections").select("*").eq("status", "active");
   
-  // If we're continuing a sync, only process the specified connection
   if (connectionId) {
     query = query.eq("id", connectionId);
+  }
+
+  if (storeId) {
+    query = query.eq("store_id", storeId);
   }
 
   const { data: connections, error } = await query;
@@ -85,7 +84,6 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
     return { success: true, message: "No connections to process" };
   }
 
-  // Log the first connection for debugging
   if (connections.length > 0) {
     console.log("First connection:", {
       id: connections[0].id,
@@ -95,18 +93,12 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
     });
   }
 
-  // If we're continuing a sync for a specific store, only process that one
-  const connectionsToProcess = storeId 
-    ? connections.filter(c => c.store_id === storeId) 
-    : connections;
-
-  // Will track if we need to continue syncing after this run
   let continuationNeeded = false;
   let nextConnectionId = null;
   let nextStoreId = null;
   let nextStartPage = 1;
 
-  for (const connection of connectionsToProcess) {
+  for (const connection of connections) {
     const currentStoreId = connection.store_id;
     if (!currentStoreId) {
       console.warn(`⚠️ Skipping connection ${connection.id} - missing store_id`);
@@ -116,16 +108,13 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
     console.log(`\n🔧 Processing connection for store: ${connection.store_name} (ID: ${currentStoreId})`);
 
     try {
-      // Fetch and store store views for this connection
       try {
         console.log("🏬 Fetching store views for this connection");
         await fetchMagentoStoreViews(connection);
       } catch (storeViewError) {
         console.error("❌ Error fetching store views:", storeViewError.message);
-        // Continue with order sync even if store view fetch fails
       }
 
-      // Check if there's an existing progress record for this connection
       const { data: existingProgress, error: progressError } = await supabase
         .from("sync_progress")
         .select("*")
@@ -137,7 +126,6 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
         console.error("❌ Error checking sync progress:", progressError.message);
       }
 
-      // Determine the starting page based on existing progress
       const currentStartPage = existingProgress?.current_page || startPage;
       console.log(`📑 Starting from page ${currentStartPage}`);
 
@@ -146,38 +134,34 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
       let currentPage = currentStartPage;
       let totalCount = 0;
       let totalSkippedOrders = existingProgress?.skipped_orders || 0;
+      let outsideWindowOrders = 0;
       let progress: SyncProgress | null = null;
       let consecutiveEmptyPages = 0;
-      const maxConsecutiveEmptyPages = 3; // Stop after 3 consecutive empty pages
-      
-      // Set up page processing parameters
+      const maxConsecutiveEmptyPages = 3;
+
       const pageSize = 100;
       let totalFetched = 0;
       let pagesProcessed = 0;
       let highSkipRatePages = 0;
-      const skipRateThreshold = 0.8; // 80% threshold for high skip rate warning
+      const skipRateThreshold = 0.8;
 
-      // Create or update progress record
       if (existingProgress) {
-        // Update existing progress
         progress = existingProgress as SyncProgress;
         progress.updated_at = new Date().toISOString();
       } else {
-        // Create new progress record
         progress = {
           store_id: currentStoreId,
           connection_id: connection.id,
           current_page: currentStartPage,
-          total_pages: 0, // Will be updated once we know
+          total_pages: 0,
           orders_processed: 0,
-          total_orders: 0, // Will be updated once we know
+          total_orders: 0,
           status: "in_progress",
           started_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           skipped_orders: 0
         };
 
-        // Save initial progress
         try {
           const { error: saveError } = await supabase
             .from("sync_progress")
@@ -193,14 +177,16 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
         }
       }
 
-      // Fetch orders page by page, with a limit on how many pages we process per execution
       do {
         console.log(`📦 Fetching Magento orders from ${connection.store_url}, page ${currentPage}`);
         
         try {
-          const { orders, totalCount: count } = await fetchMagentoOrdersData(connection, currentPage, pageSize);
+          const { orders, totalCount: count, filteredOutCount } = await fetchMagentoOrdersData(connection, currentPage, pageSize);
           
-          // Update the total count if we have it
+          if (filteredOutCount) {
+            outsideWindowOrders += filteredOutCount;
+          }
+          
           if (count && count > 0) {
             totalCount = count;
             if (progress) {
@@ -209,7 +195,6 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
             }
           }
 
-          // Check for empty results
           if (!orders.length) {
             console.log(`📋 Page ${currentPage} returned 0 orders`);
             consecutiveEmptyPages++;
@@ -219,26 +204,20 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
               break;
             }
             
-            // Try next page even if this one was empty
             currentPage++;
             pagesProcessed++;
             continue;
           } else {
-            // Reset consecutive empty pages counter
             consecutiveEmptyPages = 0;
           }
 
-          // Process this batch of orders
           console.log(`🧮 Processing ${orders.length} orders from page ${currentPage}`);
           
-          // Store transactions and get statistics
           const storeResult = await storeTransactions(orders, currentStoreId);
           
-          // Track skipped orders for reporting
           const skippedInThisBatch = storeResult.stats.skipped || 0;
           totalSkippedOrders += skippedInThisBatch;
           
-          // Check if this page had a high skip rate
           const skipRate = skippedInThisBatch / orders.length;
           if (skipRate >= skipRateThreshold) {
             highSkipRatePages++;
@@ -247,47 +226,75 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
           
           console.log(`📊 Page ${currentPage} results: ${storeResult.stats.new} new, ${storeResult.stats.updated} updated, ${skippedInThisBatch} skipped`);
           
-          // Add the successfully processed orders to our collection
           allOrders.push(...orders);
           
-          // Count only non-skipped orders toward progress
           const successfullyProcessed = orders.length - skippedInThisBatch;
           totalFetched += successfullyProcessed;
           
-          // Update progress
           if (progress) {
             progress.orders_processed = totalFetched;
             progress.current_page = currentPage;
             progress.updated_at = new Date().toISOString();
             progress.skipped_orders = totalSkippedOrders;
             
-            // Add warning message if there's a high skip rate
+            let warningMsg = '';
+            
             if (highSkipRatePages > 0) {
-              progress.warning_message = `⚠️ ${highSkipRatePages} page(s) had high skip rates. Total ${totalSkippedOrders} orders skipped due to invalid data.`;
+              warningMsg += `${highSkipRatePages} page(s) had high skip rates. `;
             }
             
-            // Save progress update
-            try {
-              const { error: updateError } = await supabase
-                .from("sync_progress")
-                .update(progress)
-                .eq("connection_id", connection.id)
-                .eq("status", "in_progress");
+            if (outsideWindowOrders > 0) {
+              warningMsg += `${outsideWindowOrders} orders were outside your subscription time window. `;
+            }
+            
+            if (totalSkippedOrders > 0) {
+              warningMsg += `Total ${totalSkippedOrders} orders skipped due to invalid data or subscription limits.`;
+            }
+            
+            progress.warning_message = warningMsg;
+            
+            let progressSaved = false;
+            let retryCount = 0;
+            const maxRetries = 3;
+            
+            while (!progressSaved && retryCount < maxRetries) {
+              try {
+                const { error: updateError } = await supabase
+                  .from("sync_progress")
+                  .update(progress)
+                  .eq("store_id", currentStoreId)
+                  .eq("connection_id", connection.id)
+                  .eq("status", "in_progress");
   
-              if (updateError) {
-                console.error("❌ Error updating sync progress:", updateError.message);
-              } else {
-                console.log(`✅ Updated sync progress: ${totalFetched}/${totalCount} orders processed, ${totalSkippedOrders} skipped`);
+                if (updateError) {
+                  console.error(`❌ Error updating sync progress (attempt ${retryCount + 1}):`, updateError.message);
+                  retryCount++;
+                  if (retryCount < maxRetries) {
+                    console.log(`Retrying progress update in 1 second...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                  }
+                } else {
+                  console.log(`✅ Updated sync progress: ${totalFetched}/${totalCount} orders processed, ${totalSkippedOrders} skipped`);
+                  progressSaved = true;
+                }
+              } catch (updateError) {
+                console.error(`❌ Error updating sync progress (attempt ${retryCount + 1}):`, updateError);
+                retryCount++;
+                if (retryCount < maxRetries) {
+                  console.log(`Retrying progress update in 1 second...`);
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                }
               }
-            } catch (updateError) {
-              console.error("❌ Error updating sync progress:", updateError.message);
+            }
+            
+            if (!progressSaved) {
+              console.error(`❌ Failed to update sync progress after ${maxRetries} attempts. Continuing sync anyway.`);
             }
           }
 
           currentPage++;
           pagesProcessed++;
 
-          // Check if we've processed the maximum number of pages for this execution
           if (pagesProcessed >= maxPages && (totalFetched + totalSkippedOrders) < totalCount) {
             console.log(`⏸️ Reached maximum pages per execution (${maxPages}). Will resume from page ${currentPage} in next execution.`);
             shouldContinue = true;
@@ -300,7 +307,6 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
         } catch (fetchError) {
           console.error(`❌ Error fetching page ${currentPage}:`, fetchError);
           
-          // Update progress with error
           if (progress) {
             progress.error_message = `Error fetching page ${currentPage}: ${fetchError.message}`;
             progress.updated_at = new Date().toISOString();
@@ -309,6 +315,7 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
               const { error: updateError } = await supabase
                 .from("sync_progress")
                 .update(progress)
+                .eq("store_id", currentStoreId)
                 .eq("connection_id", connection.id)
                 .eq("status", "in_progress");
   
@@ -316,11 +323,10 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
                 console.error("❌ Error updating sync progress with error:", updateError.message);
               }
             } catch (updateError) {
-              console.error("❌ Error updating sync progress with error:", updateError.message);
+              console.error("❌ Error updating sync progress with error:", updateError);
             }
           }
           
-          // Still try to process the orders we've managed to fetch so far
           console.log(`⚠️ Continuing with ${allOrders.length} orders fetched before the error`);
           break;
         }
@@ -329,41 +335,62 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
 
       console.log(`📦 Processing ${allOrders.length} orders for store: ${connection.store_name}`);
       
-      // Only process the data if we have any orders
       if (allOrders.length > 0) {
         await processDailySalesData(allOrders, currentStoreId);
       }
 
-      // If we completed the sync (didn't need to continue), mark progress as completed
       if (!shouldContinue && progress) {
         progress.status = "completed";
         progress.updated_at = new Date().toISOString();
         
-        try {
-          const { error: updateError } = await supabase
-            .from("sync_progress")
-            .update(progress)
-            .eq("connection_id", connection.id);
-  
-          if (updateError) {
-            console.error("❌ Error updating sync progress to completed:", updateError.message);
-          } else {
-            console.log(`✅ Marked sync progress as completed for ${connection.store_name}`);
+        let completionSaved = false;
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        while (!completionSaved && retryCount < maxRetries) {
+          try {
+            const { error: updateError } = await supabase
+              .from("sync_progress")
+              .update(progress)
+              .eq("store_id", currentStoreId)
+              .eq("connection_id", connection.id);
+    
+            if (updateError) {
+              console.error(`❌ Error updating sync progress to completed (attempt ${retryCount + 1}):`, updateError.message);
+              retryCount++;
+              if (retryCount < maxRetries) {
+                console.log(`Retrying completion update in 1 second...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+            } else {
+              console.log(`✅ Marked sync progress as completed for ${connection.store_name}`);
+              completionSaved = true;
+            }
+          } catch (updateError) {
+            console.error(`❌ Error updating sync progress to completed (attempt ${retryCount + 1}):`, updateError);
+            retryCount++;
+            if (retryCount < maxRetries) {
+              console.log(`Retrying completion update in 1 second...`);
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
           }
-        } catch (updateError) {
-          console.error("❌ Error updating sync progress to completed:", updateError.message);
+        }
+        
+        if (!completionSaved) {
+          console.error(`❌ Failed to mark sync as completed after ${maxRetries} attempts.`);
         }
       }
 
-      // Prepare a summary of what happened
       let syncSummary = `✅ Finished processing ${allOrders.length} orders for ${connection.store_name}`;
       if (totalSkippedOrders > 0) {
         syncSummary += `. ${totalSkippedOrders} orders were skipped due to invalid data.`;
       }
+      if (outsideWindowOrders > 0) {
+        syncSummary += `. ${outsideWindowOrders} orders were outside the subscription time window.`;
+      }
       
       console.log(syncSummary);
       
-      // If we need to continue with this store, break out of the loop so we don't process other stores
       if (shouldContinue) {
         break;
       }
@@ -371,7 +398,6 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
     } catch (syncError) {
       console.error(`❌ Error processing orders for ${connection.store_name}:`, syncError);
       
-      // Update progress with error
       try {
         const { error: updateError } = await supabase
           .from("sync_progress")
@@ -380,6 +406,7 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
             error_message: `Error processing orders: ${syncError.message}`,
             updated_at: new Date().toISOString()
           })
+          .eq("store_id", currentStoreId)
           .eq("connection_id", connection.id)
           .eq("status", "in_progress");
   
@@ -387,12 +414,11 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
           console.error("❌ Error updating sync progress with error:", updateError.message);
         }
       } catch (updateError) {
-        console.error("❌ Error updating sync progress with error:", updateError.message);
+        console.error("❌ Error updating sync progress with error:", updateError);
       }
     }
   }
 
-  // If we need to continue syncing, return the information needed for the next run
   if (continuationNeeded) {
     return {
       success: true,
@@ -411,7 +437,6 @@ export async function synchronizeMagentoData(options: SyncOptions = {}) {
   };
 }
 
-// Function to check sync progress for a specific store
 export async function getSyncProgress(storeId: string) {
   try {
     const { data, error } = await supabase

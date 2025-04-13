@@ -1,165 +1,158 @@
-
-// Import from the shared DB client
 import { supabase } from "../_shared/db_client.ts";
 
-// Store individual transactions from Magento orders
-export async function storeTransactions(ordersData: any[], storeId: string) {
-  try {
-    console.log(`Storing ${ordersData.length} transactions for store ${storeId}`);
-    
-    let newCount = 0;
-    let skippedCount = 0;
-    let updatedCount = 0;
-    let errorCount = 0;
-    let invalidDateCount = 0;
-    let invalidExternalIdCount = 0;
-    
-    for (const order of ordersData) {
-      try {
-        // Skip if no external_id is present
-        if (!order.external_id) {
-          console.warn(`Skipping order without external_id`);
-          invalidExternalIdCount++;
-          errorCount++;
-          continue;
+export async function storeTransactions(transactions: any[], storeId: string): Promise<{ success: boolean; stats: any }> {
+  console.log(`Storing ${transactions.length} transactions for store ${storeId}`);
+  
+  if (!storeId) {
+    console.error("No store ID provided for transactions");
+    return { success: false, stats: { new: 0, updated: 0, skipped: 0, errors: 0 } };
+  }
+  
+  // Stats tracking
+  let newCount = 0;
+  let updatedCount = 0;
+  let skippedCount = 0;
+  let errorCount = 0;
+  
+  // Track invalid data for reporting
+  let invalidDates = 0;
+  let missingExternalIds = 0;
+  let outsideSyncWindow = 0;
+  
+  // Process each transaction
+  const processedTransactions: any[] = [];
+  
+  for (const transaction of transactions) {
+    try {
+      // Extract essential data
+      const externalId = transaction.external_id;
+      let transactionDate = transaction.transaction_date;
+      const amount = parseFloat(transaction.amount) || 0;
+      const customerId = transaction.customer_id || null;
+      const customerName = transaction.customer_name || null;
+      const storeView = transaction.store_view?.toString() || 'default';
+      const customerGroup = transaction.customer_group?.toString() || null;
+      const status = transaction.status || 'unknown';
+      const productId = transaction.product_id || null;
+      const items = transaction.items || 0;
+      const metadata = {
+        items_data: transaction.items_data || [],
+        status: status,
+        store_view: storeView,
+        customer_group: customerGroup,
+        ...transaction.order_data
+      };
+      
+      // Validate critical fields
+      if (!externalId) {
+        console.warn("Skipping transaction without external ID:", transaction);
+        skippedCount++;
+        missingExternalIds++;
+        continue;
+      }
+      
+      // Parse and validate transaction date
+      let parsedDate: Date | null = null;
+      if (transactionDate) {
+        try {
+          parsedDate = new Date(transactionDate);
+          // Check if date is valid
+          if (isNaN(parsedDate.getTime())) {
+            console.warn(`⚠️ Invalid date format in order ${externalId}: ${transactionDate}`);
+            invalidDates++;
+            // Use current date as fallback
+            parsedDate = new Date();
+            transactionDate = parsedDate.toISOString();
+          }
+        } catch (e) {
+          console.warn(`⚠️ Invalid date format in order ${externalId}: ${transactionDate}`);
+          invalidDates++;
+          // Use current date as fallback
+          parsedDate = new Date();
+          transactionDate = parsedDate.toISOString();
         }
-
-        // Check if transaction already exists
-        const { data: existingTransaction, error: checkError } = await supabase
+      } else {
+        console.warn(`⚠️ Missing transaction date in order ${externalId}`);
+        invalidDates++;
+        // Use current date as fallback
+        parsedDate = new Date();
+        transactionDate = parsedDate.toISOString();
+      }
+      
+      // Check if the transaction exists
+      const { data: existingTransaction, error: fetchError } = await supabase
+        .from('transactions')
+        .select('id, external_id, transaction_date')
+        .eq('store_id', storeId)
+        .eq('external_id', externalId)
+        .maybeSingle();
+      
+      if (fetchError) {
+        console.error(`Error fetching transaction ${externalId}:`, fetchError.message);
+        errorCount++;
+        continue;
+      }
+      
+      // Prepare transaction data
+      const transactionData = {
+        external_id: externalId,
+        transaction_date: transactionDate,
+        amount,
+        store_id: storeId,
+        customer_id: customerId,
+        customer_name: customerName,
+        product_id: productId,
+        items,
+        metadata
+      };
+      
+      // Insert or update the transaction
+      if (existingTransaction) {
+        const { error: updateError } = await supabase
           .from('transactions')
-          .select('id, external_id, amount, transaction_date, metadata')
-          .eq('store_id', storeId)
-          .eq('external_id', order.external_id)
-          .maybeSingle();
-
-        if (checkError) {
-          console.error(`Error checking for existing transaction: ${checkError.message}`);
+          .update(transactionData)
+          .eq('id', existingTransaction.id);
+        
+        if (updateError) {
+          console.error(`Error updating transaction ${externalId}:`, updateError.message);
           errorCount++;
-          continue;
-        }
-
-        // Prepare order items data in a structured format
-        const orderItems = Array.isArray(order.items) ? order.items.map(item => ({
-          sku: item.sku || '',
-          name: item.name || '',
-          price: parseFloat(item.price) || 0,
-          qty_ordered: parseFloat(item.qty_ordered) || 1,
-          row_total: parseFloat(item.row_total) || 0,
-          product_id: item.product_id || null,
-          product_type: item.product_type || ''
-        })) : [];
-
-        // Extract payment and shipping information
-        const paymentMethod = order.payment?.method || order.order_data?.payment_method || 'unknown';
-        const shippingMethod = order.shipping_description || order.order_data?.shipping_method || 'unknown';
-        const orderStatus = order.status || 'unknown';
-
-        // Create a detailed metadata object with all the information we want to store
-        const metadata = {
-          store_view: order.store_view,
-          customer_group: order.customer_group,
-          status: orderStatus,
-          items_count: order.items_count || orderItems.length,
-          payment_method: paymentMethod,
-          shipping_method: shippingMethod,
-          customer_name: order.customer_name,
-          customer_email: order.customer_email,
-          // Add the new detailed order items
-          order_items: orderItems
-        };
-
-        let transactionDate = order.transaction_date;
-        let validDate = true;
-        
-        if (transactionDate) {
-          try {
-            // Check if the date is valid
-            const dateObj = new Date(transactionDate);
-            if (isNaN(dateObj.getTime())) {
-              validDate = false;
-            } else {
-              transactionDate = dateObj.toISOString();
-            }
-          } catch (e) {
-            validDate = false;
-          }
         } else {
-          validDate = false;
+          updatedCount++;
+          processedTransactions.push(transactionData);
         }
-        
-        // If the date is invalid, use current date but mark it in logs
-        if (!validDate) {
-          invalidDateCount++;
-          console.warn(`⚠️ Using current date for order with invalid transaction_date: ${order.external_id}`);
-          transactionDate = new Date().toISOString();
-        }
-
-        if (existingTransaction) {
-          // Update the existing transaction with new data
-          const { error: updateError } = await supabase
-            .from('transactions')
-            .update({
-              amount: order.amount,
-              transaction_date: transactionDate,
-              metadata: metadata
-            })
-            .eq('id', existingTransaction.id);
-            
-          if (updateError) {
-            console.error(`Error updating transaction for order ${order.external_id}: ${updateError.message}`);
-            errorCount++;
-          } else {
-            updatedCount++;
-          }
-          
-          continue;
-        }
-
-        // Insert new transaction
+      } else {
         const { error: insertError } = await supabase
           .from('transactions')
-          .insert({
-            store_id: storeId,
-            external_id: order.external_id,
-            amount: order.amount,
-            transaction_date: transactionDate,
-            customer_id: order.customer_id,
-            metadata: metadata
-          });
-
+          .insert(transactionData);
+        
         if (insertError) {
-          console.error(`Error inserting transaction for order ${order.external_id}: ${insertError.message}`);
+          console.error(`Error inserting transaction ${externalId}:`, insertError.message);
           errorCount++;
         } else {
           newCount++;
+          processedTransactions.push(transactionData);
         }
-      } catch (orderError) {
-        console.error(`Error processing order ${order?.external_id || 'unknown'}: ${orderError.message}`);
-        errorCount++;
       }
+    } catch (error) {
+      console.error(`Error processing transaction:`, error);
+      errorCount++;
     }
-
-    // Calculate skipped orders (those not processed due to errors or issues)
-    skippedCount = errorCount;
-    
-    console.log(`Completed processing ${ordersData.length} transactions.`);
-    console.log(`Results: ${newCount} new, ${updatedCount} updated, ${skippedCount} skipped, ${errorCount} errors`);
-    console.log(`Invalid data details: ${invalidDateCount} invalid dates, ${invalidExternalIdCount} missing external IDs`);
-    
-    return { 
-      success: true, 
-      count: ordersData.length,
-      stats: {
-        new: newCount,
-        skipped: skippedCount,
-        updated: updatedCount,
-        errors: errorCount,
-        invalidDates: invalidDateCount,
-        invalidIds: invalidExternalIdCount
-      }
-    };
-  } catch (error) {
-    console.error(`Error storing transactions: ${error.message}`);
-    throw error;
   }
+  
+  console.log(`Completed processing ${transactions.length} transactions.`);
+  console.log(`Results: ${newCount} new, ${updatedCount} updated, ${skippedCount} skipped, ${errorCount} errors`);
+  console.log(`Invalid data details: ${invalidDates} invalid dates, ${missingExternalIds} missing external IDs, ${outsideSyncWindow} outside sync window`);
+  
+  return {
+    success: true,
+    stats: {
+      new: newCount,
+      updated: updatedCount,
+      skipped: skippedCount,
+      errors: errorCount,
+      invalidDates,
+      missingExternalIds,
+      outsideSyncWindow
+    }
+  };
 }

@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { fetchMagentoConnections, triggerMagentoSync } from '@/services/magentoService';
+import { fetchMagentoConnections, fetchActiveMagentoConnections, triggerMagentoSync } from '@/services/magentoService';
 import { toast } from 'sonner';
 import { MagentoConnection } from '@/types/magento';
 import ConnectionStatusCard from './ConnectionStatusCard';
@@ -20,12 +19,13 @@ const IntegrationStatusSection = () => {
   const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [edgeFunctionError, setEdgeFunctionError] = useState<boolean>(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     if (user) {
       loadConnections();
     }
-  }, [user]);
+  }, [user, refreshTrigger]);
   
   useEffect(() => {
     // Set the first connection's store_id as selected by default
@@ -48,7 +48,7 @@ const IntegrationStatusSection = () => {
     setEdgeFunctionError(false);
     
     try {
-      const connectionsData = await fetchMagentoConnections(user.id);
+      const connectionsData = await fetchActiveMagentoConnections(user.id);
       
       // Filter out connections without store_id
       const validConnections = connectionsData.filter(
@@ -86,15 +86,26 @@ const IntegrationStatusSection = () => {
         duration: 2000,
       });
       
-      const result = await triggerMagentoSync(selectedStore);
+      const result = await triggerMagentoSync(selectedStore, false);
       console.log('Sync result:', result);
       
-      toast.success("Synkronisering er igangsat. Det kan tage et par minutter at fuldføre.");
+      toast.success("Synkronisering er igangsat. Du kan følge status herunder.");
       
-      // Refresh the connections list after a delay
-      setTimeout(() => {
-        loadConnections();
+      // Refresh the connections list and sync status
+      setRefreshTrigger(prev => prev + 1);
+      
+      // Keep refreshing the status every few seconds
+      let refreshCount = 0;
+      const maxRefreshes = 10;
+      const interval = setInterval(() => {
+        refreshCount++;
+        setRefreshTrigger(prev => prev + 1);
+        
+        if (refreshCount >= maxRefreshes) {
+          clearInterval(interval);
+        }
       }, 3000);
+      
     } catch (error) {
       console.error("Error triggering sync:", error);
       
@@ -130,12 +141,23 @@ const IntegrationStatusSection = () => {
       const result = await triggerMagentoSync(selectedStore, true); // Pass true for changes_only
       console.log('Fetch changes result:', result);
       
-      toast.success("Henter ændringer fra din butik. Dette vil blive opdateret om et øjeblik.");
+      toast.success("Henter ændringer fra din butik. Du kan følge status herunder.");
       
-      // Refresh the connections list after a delay
-      setTimeout(() => {
-        loadConnections();
+      // Refresh the connections list and sync status
+      setRefreshTrigger(prev => prev + 1);
+      
+      // Keep refreshing the status every few seconds
+      let refreshCount = 0;
+      const maxRefreshes = 10;
+      const interval = setInterval(() => {
+        refreshCount++;
+        setRefreshTrigger(prev => prev + 1);
+        
+        if (refreshCount >= maxRefreshes) {
+          clearInterval(interval);
+        }
       }, 3000);
+      
     } catch (error) {
       console.error("Error fetching changes:", error);
       
@@ -200,7 +222,7 @@ const IntegrationStatusSection = () => {
           {selectedStore && (
             <SyncStatus 
               storeId={selectedStore} 
-              onRefresh={loadConnections}
+              onRefresh={() => setRefreshTrigger(prev => prev + 1)}
             />
           )}
         </div>
