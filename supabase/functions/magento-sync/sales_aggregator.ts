@@ -1,6 +1,35 @@
 
 import { supabase } from "../_shared/db_client.ts";
 
+// Aggregate sales data by date
+export async function aggregateSalesData(storeId: string) {
+  try {
+    // Fetch all transactions for the store
+    const { data: transactions, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('store_id', storeId);
+      
+    if (error) {
+      console.error(`Error fetching transactions: ${error.message}`);
+      return;
+    }
+    
+    if (!transactions || transactions.length === 0) {
+      console.log(`No transactions found for store ${storeId}`);
+      return;
+    }
+    
+    await processDailySalesData(transactions, storeId);
+    console.log(`Successfully aggregated sales data for store ${storeId}`);
+    
+    return true;
+  } catch (error) {
+    console.error(`Error aggregating sales data: ${error.message}`);
+    throw error;
+  }
+}
+
 // Store daily sales data (aggregated)
 export async function processDailySalesData(salesData: any[], storeId: string) {
   try {
