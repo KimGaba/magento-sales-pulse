@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActiveMagentoConnections } from '@/services/magentoService';
@@ -16,7 +15,6 @@ const IntegrationStatusSection = () => {
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [syncProgress, setSyncProgress] = useState<any>(null);
   
-  // Fetch connections with the active filter
   const { data: connections, isLoading: isLoadingConnections, refetch: refetchConnections } = useQuery({
     queryKey: ['magento-connections', user?.id, activeOnly],
     queryFn: () => user?.id ? 
@@ -25,13 +23,11 @@ const IntegrationStatusSection = () => {
     enabled: !!user?.id,
   });
 
-  // Function to fetch active connections
   const fetchMagentoConnections = async (userId: string, onlyActive: boolean = true) => {
     try {
       if (onlyActive) {
         return await fetchActiveMagentoConnections(userId);
       } else {
-        // This would need to be implemented in magentoService.ts
         return await fetchActiveMagentoConnections(userId);
       }
     } catch (error) {
@@ -40,14 +36,12 @@ const IntegrationStatusSection = () => {
     }
   };
   
-  // Set first store as selected by default when connections load
   useEffect(() => {
     if (connections && connections.length > 0 && !selectedStoreId) {
       setSelectedStoreId(connections[0].store_id);
     }
   }, [connections, selectedStoreId]);
   
-  // Fetch sync progress for the selected store
   useEffect(() => {
     const fetchProgress = async () => {
       if (selectedStoreId) {
@@ -62,13 +56,11 @@ const IntegrationStatusSection = () => {
     
     fetchProgress();
     
-    // Set up polling for sync progress
     const intervalId = setInterval(fetchProgress, 5000);
     
     return () => clearInterval(intervalId);
   }, [selectedStoreId]);
   
-  // Handler for triggering a sync
   const handleSyncTrigger = async (storeId: string, changesOnly: boolean = true) => {
     if (!storeId) return;
     
@@ -79,11 +71,9 @@ const IntegrationStatusSection = () => {
         'Henter ændringer fra Magento...' : 
         'Fuld synkronisering startet...');
       
-      // Fetch initial progress
       const progress = await fetchSyncProgress(storeId);
       setSyncProgress(progress);
       
-      // Refetch connections to update last sync time
       setTimeout(() => refetchConnections(), 2000);
     } catch (error) {
       console.error('Error triggering sync:', error);
@@ -93,7 +83,6 @@ const IntegrationStatusSection = () => {
     }
   };
   
-  // Toggle between showing all or just active connections
   const toggleActiveOnly = () => {
     setActiveOnly(!activeOnly);
   };
