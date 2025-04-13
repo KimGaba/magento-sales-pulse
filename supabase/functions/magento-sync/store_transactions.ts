@@ -67,7 +67,6 @@ export async function storeTransactions(transactions: any[], storeId: string): P
           }
           
           // Check if this date is outside the sync window - if so, we'll mark it differently
-          // This is determined elsewhere in the system by filtering out the orders
           if (transaction.outside_sync_window === true) {
             console.warn(`⚠️ Order ${externalId} is outside the subscription sync window: ${transactionDate}`);
             outsideSyncWindow++;
