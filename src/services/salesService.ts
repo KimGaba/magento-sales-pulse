@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { DailySales } from '@/types/sales';
 
@@ -113,11 +112,13 @@ export const fetchDailySalesFromTransactions = async (
         };
       }
       
+      // Ensure amount is converted to a number
+      const amount = Number(transaction.amount);
+      
       // Add the amount to total_sales
-      acc[key].total_sales += parseFloat(transaction.amount);
+      acc[key].total_sales += amount;
       
       // Count as a new order if we haven't seen this transaction before
-      // Note: In a real implementation, you'd track by actual transaction ID
       acc[key].sales.add(transaction.transaction_date);
       acc[key].order_count = acc[key].sales.size;
       
@@ -129,9 +130,9 @@ export const fetchDailySalesFromTransactions = async (
       id: `fallback-${item.date}-${item.store_id}`,
       store_id: item.store_id,
       date: item.date,
-      total_sales: item.total_sales,
+      total_sales: Number(item.total_sales.toFixed(2)), // Ensure 2 decimal places
       order_count: item.order_count,
-      average_order_value: item.order_count > 0 ? item.total_sales / item.order_count : null,
+      average_order_value: item.order_count > 0 ? Number((item.total_sales / item.order_count).toFixed(2)) : null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     })) as DailySales[];
