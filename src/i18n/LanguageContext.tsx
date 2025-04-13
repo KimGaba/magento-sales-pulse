@@ -17,6 +17,7 @@ interface LanguageContextType {
 const daWithFallbacks = {
   ...da,
   // Add missing properties from English as fallbacks for Danish
+  common: { ...en.common, ...(da.common || {}) },
   login: { ...en.login, ...(da.login || {}) },
   register: { ...en.register, ...(da.register || {}) },
   auth: { ...en.auth, ...(da.auth || {}) },
@@ -28,7 +29,8 @@ const daWithFallbacks = {
   connect: { ...en.connect, ...(da.connect || {}) },
   repeatPurchase: { ...en.repeatPurchase, ...(da.repeatPurchase || {}) },
   basketOpeners: { ...en.basketOpeners, ...(da.basketOpeners || {}) },
-  navigation: { ...en.navigation, ...(da.navigation || {}) }
+  navigation: { ...en.navigation, ...(da.navigation || {}) },
+  dailySales: { ...en.dailySales, ...(da.dailySales || {}) }
 } as Translations;
 
 const locales: Record<Locale, Translations> = {
