@@ -2,7 +2,6 @@
 import React from 'react';
 import { Sidebar, SidebarContent, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import NavigationMenu from './NavigationMenu';
-import { Button } from '@/components/ui/button';
 import { User } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -29,7 +28,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <Sidebar className="border-r">
-          <SidebarContent>
+          <SidebarContent className="flex flex-col h-full">
             <NavigationMenu />
           </SidebarContent>
         </Sidebar>
