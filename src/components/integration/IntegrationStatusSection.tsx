@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActiveMagentoConnections } from '@/services/magentoService';
@@ -77,7 +78,19 @@ const IntegrationStatusSection = () => {
       setTimeout(() => refetchConnections(), 2000);
     } catch (error) {
       console.error('Error triggering sync:', error);
-      toast.error(`Synkronisering fejlede: ${error.message}`);
+      
+      // Display a more user-friendly error message
+      let errorMessage = 'Synkronisering fejlede';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Edge Function returned a non-2xx status code')) {
+          errorMessage = 'Fejl i Magento-forbindelsen. Prøv igen senere eller kontakt support.';
+        } else {
+          errorMessage = `Synkronisering fejlede: ${error.message}`;
+        }
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
