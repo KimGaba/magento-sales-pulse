@@ -1,3 +1,4 @@
+
 import { supabase } from "../_shared/db_client.ts";
 
 export async function storeTransactions(transactions: any[], storeId: string): Promise<{ success: boolean; stats: any }> {
@@ -63,6 +64,15 @@ export async function storeTransactions(transactions: any[], storeId: string): P
             // Use current date as fallback
             parsedDate = new Date();
             transactionDate = parsedDate.toISOString();
+          }
+          
+          // Check if this date is outside the sync window - if so, we'll mark it differently
+          // This is determined elsewhere in the system by filtering out the orders
+          if (transaction.outside_sync_window === true) {
+            console.warn(`⚠️ Order ${externalId} is outside the subscription sync window: ${transactionDate}`);
+            outsideSyncWindow++;
+            skippedCount++;
+            continue;
           }
         } catch (e) {
           console.warn(`⚠️ Invalid date format in order ${externalId}: ${transactionDate}`);

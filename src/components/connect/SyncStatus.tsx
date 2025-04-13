@@ -6,13 +6,16 @@ import { RefreshCcw, AlertCircle, RefreshCw, Play } from 'lucide-react';
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { toast } from "sonner";
 
 interface SyncStatusProps {
   storeId: string | null;
   onRefresh: () => void;
+  onStartSync?: () => void;
+  onRestartSync?: () => void;
 }
 
-const SyncStatus = ({ storeId, onRefresh }: SyncStatusProps) => {
+const SyncStatus = ({ storeId, onRefresh, onStartSync, onRestartSync }: SyncStatusProps) => {
   const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,15 +70,29 @@ const SyncStatus = ({ storeId, onRefresh }: SyncStatusProps) => {
   
   const handleStartNewSync = () => {
     if (storeId) {
-      loadSyncStatus(storeId);
-      onRefresh();
+      toast.info("Starter ny synkronisering...");
+      if (onStartSync) {
+        onStartSync();
+      }
+      // Refresh status after a short delay to show updated state
+      setTimeout(() => {
+        loadSyncStatus(storeId);
+        onRefresh();
+      }, 2000);
     }
   };
   
   const handleRestartSync = () => {
     if (storeId) {
-      loadSyncStatus(storeId);
-      onRefresh();
+      toast.info("Genstarter synkronisering...");
+      if (onRestartSync) {
+        onRestartSync();
+      }
+      // Refresh status after a short delay to show updated state
+      setTimeout(() => {
+        loadSyncStatus(storeId);
+        onRefresh();
+      }, 2000);
     }
   };
 
@@ -120,6 +137,17 @@ const SyncStatus = ({ storeId, onRefresh }: SyncStatusProps) => {
           <p className="text-sm text-gray-400 mt-1">
             Start en synkronisering for at se status her.
           </p>
+          {onStartSync && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleStartNewSync} 
+              className="mt-3"
+            >
+              <Play className="h-4 w-4 mr-2" />
+              Start synkronisering nu
+            </Button>
+          )}
         </div>
       ) : (
         <div>
@@ -147,6 +175,7 @@ const SyncStatus = ({ storeId, onRefresh }: SyncStatusProps) => {
               variant="ghost" 
               size="icon"
               onClick={handleRefresh}
+              title="Opdatér status"
             >
               <RefreshCcw className="h-4 w-4" />
             </Button>
@@ -176,7 +205,7 @@ const SyncStatus = ({ storeId, onRefresh }: SyncStatusProps) => {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Bemærk</AlertTitle>
               <AlertDescription>
-                {syncProgress.skipped_orders} ordrer blev sprunget over på grund af ugyldige data eller var udenfor dit abonnements tidsvindue.
+                {syncProgress.skipped_orders} ordrer blev sprunget over.
                 {syncProgress.warning_message && (
                   <p className="mt-1 text-sm">{syncProgress.warning_message}</p>
                 )}
@@ -217,13 +246,13 @@ const SyncStatus = ({ storeId, onRefresh }: SyncStatusProps) => {
           
           {/* Sync actions */}
           <div className="mt-6 flex justify-end space-x-2">
-            {syncProgress.status === 'completed' && (
+            {syncProgress.status === 'completed' && onStartSync && (
               <Button onClick={handleStartNewSync}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Start ny synkronisering
               </Button>
             )}
-            {syncProgress.status === 'error' && (
+            {syncProgress.status === 'error' && onRestartSync && (
               <Button onClick={handleRestartSync} variant="outline">
                 <Play className="h-4 w-4 mr-2" />
                 Genstart synkronisering

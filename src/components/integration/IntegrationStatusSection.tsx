@@ -1,233 +1,170 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { fetchMagentoConnections, fetchActiveMagentoConnections, triggerMagentoSync } from '@/services/magentoService';
+import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
+import { fetchActiveMagentoConnections, fetchMagentoConnections, triggerMagentoSync } from '@/services/magentoService';
+import { fetchSyncProgress } from '@/services/transactionService';
+import { NoConnectionsCard } from '@/components/integration/NoConnectionsCard';
+import { ConnectionStatusCard } from '@/components/integration/ConnectionStatusCard';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { MagentoConnection } from '@/types/magento';
-import ConnectionStatusCard from './ConnectionStatusCard';
-import NoConnectionsCard from './NoConnectionsCard';
-import StoreSelector from './StoreSelector';
-import SyncStatus from '../connect/SyncStatus';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import EdgeFunctionUnavailable from '../connect/EdgeFunctionUnavailable';
 
 const IntegrationStatusSection = () => {
   const { user } = useAuth();
-  const [connections, setConnections] = useState<MagentoConnection[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-  const [fetchingChanges, setFetchingChanges] = useState(false);
-  const [selectedStore, setSelectedStore] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [edgeFunctionError, setEdgeFunctionError] = useState<boolean>(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
+  const [showAllConnections, setShowAllConnections] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      loadConnections();
-    }
-  }, [user, refreshTrigger]);
-  
-  useEffect(() => {
-    // Set the first connection's store_id as selected by default
-    if (connections.length > 0 && !selectedStore) {
-      const firstValidStore = connections.find(conn => conn.store_id)?.store_id || null;
-      if (firstValidStore) {
-        console.log('Setting default selected store:', firstValidStore);
-        setSelectedStore(firstValidStore);
-      } else {
-        console.warn('No valid store_id found in connections');
-      }
-    }
-  }, [connections]);
-  
-  const loadConnections = async () => {
-    if (!user) return;
+  // Fetch all connections
+  const { 
+    data: allConnections = [],
+    isLoading: allConnectionsLoading,
+    error: allConnectionsError,
+    refetch: refetchAllConnections
+  } = useQuery({
+    queryKey: ['magento-connections', user?.id],
+    queryFn: () => user?.id ? fetchMagentoConnections(user.id) : Promise.resolve([]),
+    enabled: !!user?.id,
+  });
 
-    setLoading(true);
-    setError(null);
-    setEdgeFunctionError(false);
-    
-    try {
-      const connectionsData = await fetchActiveMagentoConnections(user.id);
-      
-      // Filter out connections without store_id
-      const validConnections = connectionsData.filter(
-        (conn) => conn.store_id !== null
-      );
-      
-      if (validConnections.length === 0 && connectionsData.length > 0) {
-        setError('Du har forbindelser, men ingen har et gyldigt store_id');
-      }
-      
-      setConnections(validConnections);
-    } catch (error) {
-      console.error("Error fetching connections:", error);
-      setError('Der opstod en fejl ved indlæsning af integrationer');
-      toast.error("Der opstod en fejl ved indlæsning af integrationer");
-    } finally {
-      setLoading(false);
+  // Fetch only active connections
+  const { 
+    data: activeConnections = [],
+    isLoading: activeConnectionsLoading,
+    error: activeConnectionsError,
+    refetch: refetchActiveConnections
+  } = useQuery({
+    queryKey: ['active-magento-connections', user?.id],
+    queryFn: () => user?.id ? fetchActiveMagentoConnections(user.id) : Promise.resolve([]),
+    enabled: !!user?.id,
+  });
+
+  // Get the appropriate connections list based on the toggle
+  const connectionsToShow = showAllConnections ? allConnections : activeConnections;
+  const isConnectionsLoading = showAllConnections ? allConnectionsLoading : activeConnectionsLoading;
+  const connectionsError = showAllConnections ? allConnectionsError : activeConnectionsError;
+
+  // Set the first connection as selected when connections are loaded, if none is selected
+  useEffect(() => {
+    if (connectionsToShow.length > 0 && !selectedConnectionId) {
+      setSelectedConnectionId(connectionsToShow[0].id);
     }
+  }, [connectionsToShow, selectedConnectionId]);
+
+  // Get the selected connection object
+  const selectedConnection = connectionsToShow.find(conn => conn.id === selectedConnectionId);
+  
+  // Refresh data
+  const refreshData = () => {
+    refetchActiveConnections();
+    refetchAllConnections();
+    // Also refetch sync progress if needed
   };
-  
-  const handleManualSync = async () => {
-    if (!selectedStore) {
-      toast.error("Ingen butik valgt. Vælg venligst en butik først.");
+
+  // Handle sync start
+  const handleStartSync = async (changesOnly = false) => {
+    if (!selectedConnection || !selectedConnection.store_id) {
+      toast.error("Ingen butik valgt til synkronisering");
       return;
     }
     
-    setSyncing(true);
-    setEdgeFunctionError(false);
-    
+    setIsSyncing(true);
     try {
-      console.log('Triggering full sync for store ID:', selectedStore);
+      // Show toast notification that sync is starting
+      toast.info(changesOnly ? "Starter synkronisering af ændringer..." : "Starter fuld synkronisering...");
       
-      // Show immediate feedback to user
-      toast.info("Starter synkronisering...", {
-        duration: 2000,
-      });
+      // Trigger sync
+      await triggerMagentoSync(selectedConnection.store_id, changesOnly);
       
-      const result = await triggerMagentoSync(selectedStore, false);
-      console.log('Sync result:', result);
+      // Show success message
+      toast.success("Synkronisering startet");
       
-      toast.success("Synkronisering er igangsat. Du kan følge status herunder.");
-      
-      // Refresh the connections list and sync status
-      setRefreshTrigger(prev => prev + 1);
-      
-      // Keep refreshing the status every few seconds
-      let refreshCount = 0;
-      const maxRefreshes = 10;
-      const interval = setInterval(() => {
-        refreshCount++;
-        setRefreshTrigger(prev => prev + 1);
-        
-        if (refreshCount >= maxRefreshes) {
-          clearInterval(interval);
-        }
-      }, 3000);
-      
-    } catch (error) {
-      console.error("Error triggering sync:", error);
-      
-      // Specific error handling for edge function connection errors
-      if (error instanceof Error && error.message.includes('Edge Function')) {
-        toast.error(error.message);
-        setEdgeFunctionError(true);
-      } else {
-        toast.error(`Der opstod en fejl ved start af synkronisering: ${error instanceof Error ? error.message : 'Ukendt fejl'}`);
-      }
+      // Refresh data after a slight delay to show updated status
+      setTimeout(() => {
+        refreshData();
+      }, 2000);
+    } catch (error: any) {
+      console.error("Sync error:", error);
+      toast.error(`Fejl: ${error.message || 'Der opstod en fejl ved synkronisering'}`);
     } finally {
-      setSyncing(false);
-    }
-  };
-  
-  const handleFetchChanges = async () => {
-    if (!selectedStore) {
-      toast.error("Ingen butik valgt. Vælg venligst en butik først.");
-      return;
-    }
-    
-    setFetchingChanges(true);
-    setEdgeFunctionError(false);
-    
-    try {
-      console.log('Fetching changes for store ID:', selectedStore);
-      
-      // Show immediate feedback to user
-      toast.info("Starter hentning af ændringer...", {
-        duration: 2000,
-      });
-      
-      const result = await triggerMagentoSync(selectedStore, true); // Pass true for changes_only
-      console.log('Fetch changes result:', result);
-      
-      toast.success("Henter ændringer fra din butik. Du kan følge status herunder.");
-      
-      // Refresh the connections list and sync status
-      setRefreshTrigger(prev => prev + 1);
-      
-      // Keep refreshing the status every few seconds
-      let refreshCount = 0;
-      const maxRefreshes = 10;
-      const interval = setInterval(() => {
-        refreshCount++;
-        setRefreshTrigger(prev => prev + 1);
-        
-        if (refreshCount >= maxRefreshes) {
-          clearInterval(interval);
-        }
-      }, 3000);
-      
-    } catch (error) {
-      console.error("Error fetching changes:", error);
-      
-      // Specific error handling for edge function connection errors
-      if (error instanceof Error && error.message.includes('Edge Function')) {
-        toast.error(error.message);
-        setEdgeFunctionError(true);
-      } else {
-        toast.error(`Der opstod en fejl ved hentning af ændringer: ${error instanceof Error ? error.message : 'Ukendt fejl'}`);
-      }
-    } finally {
-      setFetchingChanges(false);
+      setIsSyncing(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-32">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-magento-600"></div>
-      </div>
-    );
-  }
-  
-  if (error) {
-    return (
-      <Alert variant="destructive" className="mb-6">
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
-  }
-  
-  if (connections.length === 0) {
-    return <NoConnectionsCard />;
-  }
-  
+  // Check current sync status
+  const { data: syncProgress } = useQuery({
+    queryKey: ['sync-progress', selectedConnection?.store_id],
+    queryFn: () => selectedConnection?.store_id ? fetchSyncProgress(selectedConnection.store_id) : Promise.resolve(null),
+    enabled: !!selectedConnection?.store_id,
+    refetchInterval: syncProgress?.status === 'in_progress' ? 5000 : false,
+  });
+
+  const syncInProgress = syncProgress?.status === 'in_progress';
+
   return (
-    <>
-      <ConnectionStatusCard 
-        connections={connections}
-        handleFetchChanges={handleFetchChanges}
-        handleManualSync={handleManualSync}
-        syncing={syncing}
-        fetchingChanges={fetchingChanges}
-      />
+    <div className="mb-8">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Integration Status</h2>
+        
+        {connectionsToShow.length > 0 && (
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="show-all" 
+                checked={showAllConnections} 
+                onCheckedChange={setShowAllConnections}
+              />
+              <Label htmlFor="show-all">Vis alle forbindelser</Label>
+            </div>
+            
+            <Button 
+              onClick={() => handleStartSync(true)} 
+              disabled={isSyncing || syncInProgress || !selectedConnection?.store_id} 
+              variant="outline"
+              size="sm"
+            >
+              {(isSyncing || syncInProgress) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Hent ændringer
+            </Button>
+            
+            <Button 
+              onClick={() => handleStartSync(false)} 
+              disabled={isSyncing || syncInProgress || !selectedConnection?.store_id}
+              size="sm"
+            >
+              {(isSyncing || syncInProgress) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Synkronisér nu
+            </Button>
+          </div>
+        )}
+      </div>
 
-      {edgeFunctionError && <EdgeFunctionUnavailable />}
-
-      {/* Connection selection for sync status */}
-      {connections.length > 0 && (
-        <div className="mt-6">
-          <h3 className="text-lg font-medium mb-4">Synkroniseringsstatus</h3>
-          
-          <StoreSelector 
-            connections={connections}
-            selectedStore={selectedStore}
-            onSelectStore={(storeId) => {
-              console.log('Store selected from selector:', storeId);
-              setSelectedStore(storeId);
-            }}
+      {isConnectionsLoading ? (
+        <div className="flex justify-center items-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin text-magento-600" />
+        </div>
+      ) : connectionsError ? (
+        <div className="text-red-500 p-4 border border-red-200 rounded-lg bg-red-50">
+          Der opstod en fejl ved hentning af forbindelser
+        </div>
+      ) : connectionsToShow.length === 0 ? (
+        <NoConnectionsCard />
+      ) : (
+        <div>
+          <ConnectionStatusCard 
+            connections={connectionsToShow}
+            selectedConnectionId={selectedConnectionId}
+            onConnectionSelect={setSelectedConnectionId}
+            onRefresh={refreshData}
+            onStartSync={() => handleStartSync(false)}
+            onFetchChanges={() => handleStartSync(true)}
           />
-          
-          {selectedStore && (
-            <SyncStatus 
-              storeId={selectedStore} 
-              onRefresh={() => setRefreshTrigger(prev => prev + 1)}
-            />
-          )}
         </div>
       )}
-    </>
+    </div>
   );
 };
 
