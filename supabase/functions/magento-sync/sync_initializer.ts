@@ -8,11 +8,13 @@ async function ensureTablesExist() {
   try {
     console.log('Checking if required tables exist...');
     
-    // Check sync_progress table
-    const { data: syncProgressExists, error: syncProgressError } = await supabase.rpc(
-      'check_table_exists',
-      { table_name: 'sync_progress' }
-    );
+    // Check sync_progress table using information_schema directly to avoid ambiguity
+    const { data: syncProgressExists, error: syncProgressError } = await supabase
+      .from('information_schema.tables')
+      .select('*')
+      .eq('table_schema', 'public')
+      .eq('table_name', 'sync_progress')
+      .maybeSingle();
     
     if (syncProgressError) {
       console.error('Error checking if sync_progress table exists:', syncProgressError.message);
@@ -22,26 +24,61 @@ async function ensureTablesExist() {
     if (!syncProgressExists) {
       console.log('sync_progress table does not exist, creating it...');
       
-      // Create sync_progress table
+      // Create sync_progress table directly
       const { error: createError } = await supabase.rpc(
         'create_sync_progress_table'
       );
       
       if (createError) {
         console.error('Error creating sync_progress table:', createError.message);
-        throw new Error(`Failed to create sync_progress table: ${createError.message}`);
+        
+        // Fallback: Try to create the table directly with a SQL query if the function fails
+        try {
+          console.log('Attempting fallback table creation...');
+          
+          const { error: fallbackError } = await supabase.query(`
+            CREATE TABLE IF NOT EXISTS public.sync_progress (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              store_id UUID NOT NULL,
+              connection_id UUID NOT NULL,
+              current_page INTEGER NOT NULL DEFAULT 1,
+              total_pages INTEGER,
+              orders_processed INTEGER NOT NULL DEFAULT 0,
+              total_orders INTEGER,
+              skipped_orders INTEGER DEFAULT 0,
+              warning_message TEXT,
+              started_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+              updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+              status TEXT NOT NULL,
+              error_message TEXT,
+              notes TEXT
+            )
+          `);
+          
+          if (fallbackError) {
+            console.error('Fallback table creation failed:', fallbackError.message);
+            throw new Error(`Failed to create sync_progress table: ${fallbackError.message}`);
+          } else {
+            console.log('✅ sync_progress table created with fallback method');
+          }
+        } catch (fallbackCreateError) {
+          console.error('Fallback creation error:', fallbackCreateError.message);
+          throw new Error(`Failed to create sync_progress table: ${createError.message}`);
+        }
+      } else {
+        console.log('✅ sync_progress table created successfully');
       }
-      
-      console.log('✅ sync_progress table created successfully');
     } else {
       console.log('✅ sync_progress table already exists');
     }
     
-    // Check stores table
-    const { data: storesExists, error: storesError } = await supabase.rpc(
-      'check_table_exists',
-      { table_name: 'stores' }
-    );
+    // Check stores table with explicit schema reference to avoid ambiguity
+    const { data: storesExists, error: storesError } = await supabase
+      .from('information_schema.tables')
+      .select('*')
+      .eq('table_schema', 'public')
+      .eq('table_name', 'stores')
+      .maybeSingle();
     
     if (storesError) {
       console.error('Error checking if stores table exists:', storesError.message);

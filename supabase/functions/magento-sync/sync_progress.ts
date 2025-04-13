@@ -36,11 +36,13 @@ export async function getSyncProgress(storeId: string) {
   try {
     console.log(`Getting sync progress for store: ${storeId}`);
     
-    // Check if the sync_progress table exists
-    const { data: tableExists, error: tableCheckError } = await supabase.rpc(
-      'check_table_exists',
-      { table_name: 'sync_progress' }
-    );
+    // Check if the sync_progress table exists using information_schema directly
+    const { data: tableExists, error: tableCheckError } = await supabase
+      .from('information_schema.tables')
+      .select('*')
+      .eq('table_schema', 'public')
+      .eq('table_name', 'sync_progress')
+      .maybeSingle();
     
     if (tableCheckError) {
       console.error('Error checking if sync_progress table exists:', tableCheckError.message);
@@ -134,6 +136,34 @@ export async function updateSyncProgress(
   notes?: string
 ) {
   try {
+    // First ensure the sync_progress table exists
+    // Check if the sync_progress table exists
+    const { data: tableExists, error: tableCheckError } = await supabase
+      .from('information_schema.tables')
+      .select('*')
+      .eq('table_schema', 'public')
+      .eq('table_name', 'sync_progress')
+      .maybeSingle();
+    
+    if (tableCheckError || !tableExists) {
+      console.error(`Error or missing sync_progress table: ${tableCheckError?.message || 'Table not found'}`);
+      
+      try {
+        // Try to create the table using the RPC function
+        const { error: createError } = await supabase.rpc('create_sync_progress_table');
+        
+        if (createError) {
+          console.error(`Failed to create sync_progress table: ${createError.message}`);
+          return;
+        }
+        
+        console.log('✅ Created sync_progress table successfully');
+      } catch (createError) {
+        console.error(`Error creating sync_progress table: ${createError.message}`);
+        return;
+      }
+    }
+    
     // Check if we already have a progress record for this store
     const { data: existing, error: fetchError } = await supabase
       .from('sync_progress')
@@ -150,8 +180,8 @@ export async function updateSyncProgress(
     const progressData = {
       store_id: storeId,
       status,
-      current_count: current,
-      total_count: total,
+      orders_processed: current,
+      total_orders: total,
       updated_at: new Date().toISOString(),
       notes: notes || null
     };
@@ -167,10 +197,17 @@ export async function updateSyncProgress(
         console.error(`Error updating sync progress: ${updateError.message}`);
       }
     } else {
-      // Create new record
+      // Create new record with required fields
+      const newProgressData = {
+        ...progressData,
+        connection_id: 'PLACEHOLDER', // This will be updated later with correct connection_id
+        current_page: 1,
+        started_at: new Date().toISOString()
+      };
+      
       const { error: insertError } = await supabase
         .from('sync_progress')
-        .insert(progressData);
+        .insert(newProgressData);
         
       if (insertError) {
         console.error(`Error inserting sync progress: ${insertError.message}`);
