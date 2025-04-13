@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActiveMagentoConnections } from '@/services/magentoService';
@@ -15,6 +14,7 @@ const IntegrationStatusSection = () => {
   const [activeOnly, setActiveOnly] = useState(true);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const [syncProgress, setSyncProgress] = useState<any>(null);
+  const [pollingActive, setPollingActive] = useState(false);
   
   const { data: connections, isLoading: isLoadingConnections, refetch: refetchConnections } = useQuery({
     queryKey: ['magento-connections', user?.id, activeOnly],
@@ -49,18 +49,29 @@ const IntegrationStatusSection = () => {
         try {
           const progress = await fetchSyncProgress(selectedStoreId);
           setSyncProgress(progress);
+          
+          if (progress && (progress.status === 'in_progress')) {
+            setPollingActive(true);
+          } else {
+            setPollingActive(false);
+          }
         } catch (error) {
           console.error('Error fetching sync progress:', error);
+          setPollingActive(false);
         }
       }
     };
     
     fetchProgress();
     
-    const intervalId = setInterval(fetchProgress, 5000);
+    const intervalId = setInterval(() => {
+      if (selectedStoreId) {
+        fetchProgress();
+      }
+    }, pollingActive ? 3000 : 10000);
     
     return () => clearInterval(intervalId);
-  }, [selectedStoreId]);
+  }, [selectedStoreId, pollingActive]);
   
   const handleSyncTrigger = async (storeId: string, changesOnly: boolean = true) => {
     if (!storeId) return;
@@ -72,19 +83,24 @@ const IntegrationStatusSection = () => {
         'Henter ændringer fra Magento...' : 
         'Fuld synkronisering startet...');
       
-      const progress = await fetchSyncProgress(storeId);
-      setSyncProgress(progress);
+      setPollingActive(true);
+      
+      try {
+        const progress = await fetchSyncProgress(storeId);
+        setSyncProgress(progress);
+      } catch (progressError) {
+        console.error('Error fetching initial progress:', progressError);
+      }
       
       setTimeout(() => refetchConnections(), 2000);
     } catch (error) {
       console.error('Error triggering sync:', error);
       
-      // Display a more user-friendly error message
       let errorMessage = 'Synkronisering fejlede';
       
       if (error instanceof Error) {
         if (error.message.includes('Edge Function returned a non-2xx status code')) {
-          errorMessage = 'Fejl i Magento-forbindelsen. Prøv igen senere eller kontakt support.';
+          errorMessage = 'Der opstod en fejl i Magento-synkroniseringen. Prøv igen eller tjek server-loggen for detaljer.';
         } else {
           errorMessage = `Synkronisering fejlede: ${error.message}`;
         }

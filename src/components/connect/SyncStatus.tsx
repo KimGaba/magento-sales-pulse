@@ -37,7 +37,7 @@ const SyncStatus = ({ storeId, onRefresh, onStartSync, onRestartSync }: SyncStat
       setAutoRefreshActive(true);
       interval = setInterval(() => {
         loadSyncStatus(storeId);
-      }, 5000); // Refresh every 5 seconds
+      }, 3000); // Refresh more frequently - every 3 seconds
     } else {
       setAutoRefreshActive(false);
     }
@@ -78,7 +78,7 @@ const SyncStatus = ({ storeId, onRefresh, onStartSync, onRestartSync }: SyncStat
       setTimeout(() => {
         loadSyncStatus(storeId);
         onRefresh();
-      }, 2000);
+      }, 1000); // Faster refresh
     }
   };
   
@@ -92,7 +92,7 @@ const SyncStatus = ({ storeId, onRefresh, onStartSync, onRestartSync }: SyncStat
       setTimeout(() => {
         loadSyncStatus(storeId);
         onRefresh();
-      }, 2000);
+      }, 1000); // Faster refresh
     }
   };
 
@@ -165,7 +165,7 @@ const SyncStatus = ({ storeId, onRefresh, onStartSync, onRestartSync }: SyncStat
                   Gennemført
                 </Badge>
               )}
-              {syncProgress.status === 'error' && (
+              {syncProgress.status === 'error' || syncProgress.status === 'failed' && (
                 <Badge variant="outline" className="ml-2 bg-red-50 text-red-600">
                   Fejl
                 </Badge>
@@ -176,6 +176,7 @@ const SyncStatus = ({ storeId, onRefresh, onStartSync, onRestartSync }: SyncStat
               size="icon"
               onClick={handleRefresh}
               title="Opdatér status"
+              className="animate-pulse"
             >
               <RefreshCcw className="h-4 w-4" />
             </Button>
@@ -196,6 +197,9 @@ const SyncStatus = ({ storeId, onRefresh, onStartSync, onRestartSync }: SyncStat
                 value={calculateProgressPercentage()} 
                 className="h-2"
               />
+              <p className="text-xs text-gray-500 mt-1 text-center">
+                {calculateProgressPercentage().toFixed(0)}% fuldført
+              </p>
             </div>
           )}
           
@@ -214,12 +218,21 @@ const SyncStatus = ({ storeId, onRefresh, onStartSync, onRestartSync }: SyncStat
           )}
           
           {/* Error message */}
-          {syncProgress.error_message && (
+          {(syncProgress.error_message || syncProgress.status === 'failed' || syncProgress.status === 'error') && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Fejl opstået</AlertTitle>
               <AlertDescription>
-                {syncProgress.error_message}
+                {syncProgress.error_message || 'Synkronisering fejlede af ukendt årsag'}
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {/* Notes field if available */}
+          {syncProgress.notes && (
+            <Alert className="mb-4">
+              <AlertDescription>
+                {syncProgress.notes}
               </AlertDescription>
             </Alert>
           )}
@@ -246,13 +259,13 @@ const SyncStatus = ({ storeId, onRefresh, onStartSync, onRestartSync }: SyncStat
           
           {/* Sync actions */}
           <div className="mt-6 flex justify-end space-x-2">
-            {syncProgress.status === 'completed' && onStartSync && (
+            {(syncProgress.status === 'completed' || syncProgress.status === 'failed' || syncProgress.status === 'error') && onStartSync && (
               <Button onClick={handleStartNewSync}>
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Start ny synkronisering
               </Button>
             )}
-            {syncProgress.status === 'error' && onRestartSync && (
+            {(syncProgress.status === 'error' || syncProgress.status === 'failed') && onRestartSync && (
               <Button onClick={handleRestartSync} variant="outline">
                 <Play className="h-4 w-4 mr-2" />
                 Genstart synkronisering

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 // Type definitions
@@ -18,12 +17,13 @@ export interface SyncProgress {
   total_pages: number | null;
   orders_processed: number;
   total_orders: number | null;
-  status: 'in_progress' | 'completed' | 'error';
+  status: 'in_progress' | 'completed' | 'error' | 'failed';
   started_at: string;
   updated_at: string;
   error_message?: string;
   skipped_orders?: number;
   warning_message?: string;
+  notes?: string;
 }
 
 /**
@@ -235,8 +235,8 @@ export const fetchSyncHistory = async (storeId: string, limit = 5): Promise<Sync
     // Ensure all items have the correct status type
     const history: SyncProgress[] = (data || []).map(item => ({
       ...item,
-      status: (item.status === 'in_progress' || item.status === 'completed' || item.status === 'error') 
-        ? item.status as 'in_progress' | 'completed' | 'error'
+      status: (item.status === 'in_progress' || item.status === 'completed' || item.status === 'error' || item.status === 'failed') 
+        ? item.status as 'in_progress' | 'completed' | 'error' | 'failed'
         : 'in_progress' // Default to in_progress if unknown status
     }));
     
