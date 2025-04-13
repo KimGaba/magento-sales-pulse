@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { en } from './locales/en';
 import { da } from './locales/da';
@@ -30,7 +29,7 @@ const daWithFallbacks = {
   repeatPurchase: { ...en.repeatPurchase, ...(da.repeatPurchase || {}) },
   basketOpeners: { ...en.basketOpeners, ...(da.basketOpeners || {}) },
   navigation: { ...en.navigation, ...(da.navigation || {}) },
-  dailySales: { ...en.dailySales, ...(da.dailySales || {}) }
+  dailySales: { ...en.dailySales, ...(da.dailySales || {}) } // Add this line
 } as Translations;
 
 const locales: Record<Locale, Translations> = {
