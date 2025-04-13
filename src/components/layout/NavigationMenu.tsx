@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { 
@@ -20,7 +19,6 @@ import { Button } from '../ui/button';
 import { fetchActiveMagentoConnections } from '@/services/magentoService';
 import { Skeleton } from '../ui/skeleton';
 
-// Menu item interface
 interface MenuItem {
   path: string;
   label: string;
@@ -58,7 +56,6 @@ const NavigationMenu = () => {
     checkIntegrations();
   }, [user]);
 
-  // Basic menu items (always visible)
   const basicMenuItems: MenuItem[] = [
     {
       path: '/dashboard',
@@ -86,7 +83,6 @@ const NavigationMenu = () => {
     }
   ];
 
-  // Data menu items (visible only when integrations exist)
   const dataMenuItems: MenuItem[] = [
     {
       path: '/daily-sales',
@@ -120,9 +116,7 @@ const NavigationMenu = () => {
     }
   ];
 
-  // Render a single menu item
   const renderMenuItem = (item: MenuItem) => {
-    // Skip items that require connections if we don't have any
     if (item.requiresConnection && !hasIntegrations) {
       return null;
     }
@@ -163,10 +157,8 @@ const NavigationMenu = () => {
   return (
     <nav className="space-y-1 flex flex-col h-full">
       <div className="flex-grow">
-        {/* Basic menu items */}
         {basicMenuItems.map(renderMenuItem)}
         
-        {/* Data menu items - only shown when integrations exist */}
         {hasIntegrations && (
           <>
             <hr className="border-t border-gray-200 my-2" />
@@ -175,7 +167,6 @@ const NavigationMenu = () => {
         )}
       </div>
       
-      {/* Log out button at the bottom */}
       <div className="mt-auto pt-4 border-t border-gray-200">
         <Button
           variant="ghost"
@@ -183,7 +174,7 @@ const NavigationMenu = () => {
           onClick={handleLogout}
         >
           <LogOut className="mr-3 h-5 w-5" />
-          {t.logout || 'Log ud'}
+          {t.logout}
         </Button>
       </div>
     </nav>

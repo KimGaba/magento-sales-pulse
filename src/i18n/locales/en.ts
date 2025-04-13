@@ -187,6 +187,7 @@ export const en = {
     connect: 'Connect',
     settings: 'Settings',
     integrationStatus: 'Integration Status',
+    logout: 'Log Out'
   }
 };
 
