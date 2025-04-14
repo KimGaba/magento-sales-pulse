@@ -234,3 +234,20 @@ async function storeProductsInDatabase(products: any[], storeId: string, supabas
     throw error;
   }
 }
+export async function fetchMagentoStoreViews(connection: MagentoConnection): Promise<any[]> {
+  const apiUrl = `${connection.store_url}/rest/V1/store/storeConfigs`;
+  const headers = {
+    'Authorization': `Bearer ${connection.access_token}`,
+    'Content-Type': 'application/json'
+  };
+
+  const response = await fetch(apiUrl, { method: 'GET', headers });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to fetch store views: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data;
+}
