@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { Database, Trash2 } from 'lucide-react';
-import { Button } from "@/components/ui/button";
+import { Database } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
+import DeleteConnectionButton from './DeleteConnectionButton';
 
 interface StoreConnection {
   id: string;
@@ -70,15 +70,10 @@ const ConnectionsList: React.FC<ConnectionsListProps> = ({
                 )}
               </div>
               <div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="border-red-500 text-red-500 hover:bg-red-50"
-                  onClick={() => onDisconnect(connection)}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Slet butik
-                </Button>
+                <DeleteConnectionButton 
+                  connection={connection} 
+                  onDeleted={() => onDisconnect(connection)} 
+                />
               </div>
             </div>
           </CardContent>

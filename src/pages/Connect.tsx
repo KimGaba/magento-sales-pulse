@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { addMagentoConnection, MagentoConnection, triggerMagentoSync } from '@/services/magentoService';
+import { addMagentoConnection, MagentoConnection, triggerMagentoSync, fetchMagentoConnections } from '@/services/magentoService';
 import { useSyncProcess } from '@/hooks/useSyncProcess';
 import { Profile } from '@/types/database';
 import { fetchUserProfile } from '@/services/profileService';
@@ -11,12 +11,15 @@ import Layout from '@/components/layout/Layout';
 import ConnectForm from '@/components/connect/ConnectForm';
 import SyncProgressCard from '@/components/connect/SyncProgressCard';
 import ConnectionCompleteCard from '@/components/connect/ConnectionCompleteCard';
+import ConnectionsList from '@/components/connect/ConnectionsList';
 
 const Connect = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [connectionData, setConnectionData] = useState<MagentoConnection | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [connections, setConnections] = useState<MagentoConnection[]>([]);
+  const [loadingConnections, setLoadingConnections] = useState(true);
   const { 
     step, 
     syncProgress, 
@@ -32,6 +35,7 @@ const Connect = () => {
   useEffect(() => {
     if (user) {
       fetchProfile();
+      loadConnections();
     }
   }, [user]);
 
@@ -41,6 +45,25 @@ const Connect = () => {
       setProfile(userProfile);
     } catch (error) {
       console.error("Error fetching profile:", error);
+    }
+  };
+
+  const loadConnections = async () => {
+    if (!user) return;
+    
+    setLoadingConnections(true);
+    try {
+      const userConnections = await fetchMagentoConnections(user.id);
+      setConnections(userConnections);
+    } catch (error) {
+      console.error("Error loading connections:", error);
+      toast({
+        variant: "destructive",
+        title: "Fejl ved indlæsning af forbindelser",
+        description: "Der opstod en fejl ved indlæsning af dine Magento-forbindelser."
+      });
+    } finally {
+      setLoadingConnections(false);
     }
   };
 
@@ -64,16 +87,24 @@ const Connect = () => {
       // Since we might not have a store_id yet, pass the connection ID
       // Edge function will take care of creating the store and updating the connection
       startSyncProcess(connectedStore.id, true);
+      
+      // Refresh connections list
+      await loadConnections();
     } catch (error) {
       console.error("Error connecting to Magento:", error);
       toast({
+        variant: "destructive",
         title: "Fejl ved oprettelse af forbindelse",
         description: "Der opstod en fejl ved oprettelse af forbindelse til Magento. Prøv igen senere.",
-        variant: "destructive"
       });
     } finally {
       setConnecting(false);
     }
+  };
+
+  const handleDisconnect = async (connection: MagentoConnection) => {
+    // This function just refreshes the connections list after deletion
+    await loadConnections();
   };
 
   const handleGoToDashboard = () => {
@@ -82,12 +113,26 @@ const Connect = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto mt-10">
+      <div className="container mx-auto mt-10 space-y-8">
         {step === 1 && (
-          <ConnectForm 
-            onConnect={handleConnect} 
-            connecting={connecting} 
-          />
+          <>
+            <ConnectForm 
+              onConnect={handleConnect} 
+              connecting={connecting} 
+            />
+            
+            {/* Show existing connections */}
+            {connections.length > 0 && (
+              <div className="mt-12">
+                <h2 className="text-xl font-bold mb-4">Dine forbundne butikker</h2>
+                <ConnectionsList
+                  connections={connections}
+                  loadingConnections={loadingConnections}
+                  onDisconnect={handleDisconnect}
+                />
+              </div>
+            )}
+          </>
         )}
 
         {step === 2 && (
