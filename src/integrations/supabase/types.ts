@@ -266,6 +266,7 @@ export type Database = {
           current_page: number
           error_message: string | null
           id: string
+          notes: string | null
           orders_processed: number
           started_at: string
           status: string
@@ -279,6 +280,7 @@ export type Database = {
           current_page?: number
           error_message?: string | null
           id?: string
+          notes?: string | null
           orders_processed?: number
           started_at?: string
           status: string
@@ -292,6 +294,7 @@ export type Database = {
           current_page?: number
           error_message?: string | null
           id?: string
+          notes?: string | null
           orders_processed?: number
           started_at?: string
           status?: string

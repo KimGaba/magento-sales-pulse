@@ -1,4 +1,3 @@
-
 import { MagentoConnection } from "../_shared/database_types.ts";
 import { supabase } from "../_shared/db_client.ts";
 
@@ -312,14 +311,12 @@ async function fetchMagentoOrdersPage(
 
     const data = await response.json() as MagentoOrdersResponse;
     const orders = data.items || [];
+    const totalCount = data.total_count ?? orders.length;
     
-    // Only return orders that are within the subscription window
-    // This step is redundant since we filter by date in the API call,
-    // but it's a safety check
     return {
       success: true,
       orders,
-      totalCount: data.total_count || orders.length
+      totalCount
     };
   } catch (error) {
     console.error(`❌ Error fetching Magento orders page ${page}: ${error.message}`);
