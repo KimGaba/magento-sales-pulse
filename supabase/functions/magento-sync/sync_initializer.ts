@@ -11,8 +11,8 @@ export async function initializeSync(
   try {
     console.log(`Initializing sync for store ${storeId} with connection ${connectionId}`);
     
-    // Reset sync progress - assume the table exists
-    await updateSyncProgress(storeId, 'in_progress', 0, 0, 'Initializing sync');
+    // Reset sync progress with the correct connection ID
+    await updateSyncProgress(storeId, 'in_progress', 0, 0, 'Initializing sync', connectionId);
     
     // Check for active connection
     const { data: connection, error: connectionError } = await supabase
@@ -30,7 +30,8 @@ export async function initializeSync(
         'failed', 
         0, 
         0, 
-        'No active connection found for this store'
+        'No active connection found for this store',
+        connectionId
       );
       
       return { 
@@ -48,7 +49,8 @@ export async function initializeSync(
         'failed', 
         0, 
         0, 
-        `Connection does not belong to this store`
+        `Connection does not belong to this store`,
+        connectionId
       );
       
       return { 
@@ -68,7 +70,8 @@ export async function initializeSync(
         'failed', 
         0, 
         0, 
-        `Error initializing sync: ${error.message}`
+        `Error initializing sync: ${error.message}`,
+        connectionId // Pass the connection ID even in error cases
       );
     } catch (progressError) {
       console.error(`Failed to update sync progress: ${progressError.message}`);

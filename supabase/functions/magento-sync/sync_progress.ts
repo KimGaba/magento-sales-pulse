@@ -111,9 +111,31 @@ export async function updateSyncProgress(
   status: string, 
   current: number, 
   total: number, 
-  notes?: string
+  notes?: string,
+  connectionId?: string
 ) {
   try {
+    // Validate connection ID - ensure we never use PLACEHOLDER
+    if (!connectionId || connectionId === "PLACEHOLDER") {
+      console.error("Invalid connection_id provided to updateSyncProgress. Attempting to find valid connection_id for this store.");
+      
+      // Try to find a valid connection ID for this store
+      const { data: validConnection, error: connectionError } = await supabase
+        .from('magento_connections')
+        .select('id')
+        .eq('store_id', storeId)
+        .maybeSingle();
+        
+      if (connectionError || !validConnection) {
+        console.error(`Cannot update sync progress: No valid connection found for store ${storeId}`);
+        // Just log the error, but don't fail completely
+        return;
+      }
+      
+      connectionId = validConnection.id;
+      console.log(`Found valid connection ID: ${connectionId}`);
+    }
+    
     // Check if we already have a progress record for this store
     const { data: existing, error: fetchError } = await supabase
       .from('sync_progress')
@@ -147,10 +169,10 @@ export async function updateSyncProgress(
         console.error(`Error updating sync progress: ${updateError.message}`);
       }
     } else {
-      // Create new record with required fields
+      // Create new record with required fields and valid connection_id
       const newProgressData = {
         ...progressData,
-        connection_id: 'PLACEHOLDER', // This will be updated later with correct connection_id
+        connection_id: connectionId, // Use the valid connection ID, never a placeholder
         current_page: 1,
         started_at: new Date().toISOString()
       };
