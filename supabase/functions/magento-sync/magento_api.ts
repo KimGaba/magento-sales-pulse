@@ -1,3 +1,4 @@
+
 import { MagentoConnection } from "../_shared/database_types.ts";
 import { supabase } from "../_shared/db_client.ts";
 
@@ -152,7 +153,7 @@ async function getStoreViewInfo(storeId: string, connectionId: string): Promise<
 // New function to fetch ALL Magento orders with pagination
 export async function fetchAllMagentoOrders(
   connection: MagentoConnection, 
-  maxPages = 10, 
+  maxPages = 1000, 
   pageSize = 100, 
   subscriptionLevel?: string
 ) {
