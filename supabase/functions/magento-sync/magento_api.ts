@@ -1,6 +1,23 @@
 import { supabase } from "../_shared/db_client.ts";
 import { MagentoConnection } from "../_shared/database_types.ts";
 
+export async function fetchMagentoStoreViews(connection: MagentoConnection): Promise<any[]> {
+  const apiUrl = `${connection.store_url}/rest/V1/store/storeConfigs`;
+  const headers = {
+    Authorization: `Bearer ${connection.access_token}`,
+    'Content-Type': 'application/json'
+  };
+
+  const response = await fetch(apiUrl, { method: 'GET', headers });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to fetch store views: ${response.status} - ${errorText}`);
+  }
+
+  return await response.json();
+}
+
 // Update the fetchAllMagentoProducts function to use per-store and per-type sync date
 export async function fetchAndStoreProductData(
   connection: MagentoConnection,
