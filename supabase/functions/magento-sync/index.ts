@@ -1,8 +1,23 @@
+
 // Follow Deno and Supabase Edge runtime conventions
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, createCorsResponse } from "../_shared/cors_utils.ts";
 import { synchronizeMagentoData, getSyncProgress } from "./sync_service.ts";
 import { supabase } from "../_shared/db_client.ts";
+
+// Configure CORS headers properly
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Create a response with CORS headers
+function createCorsResponse(body: any, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
 
 // Retry helper
 async function withRetry<T>(operation: () => Promise<T>, maxRetries = 3, delay = 1000): Promise<T> {
@@ -118,8 +133,12 @@ async function handleGetSyncProgress(storeId: string) {
 
 // Entry point
 serve(async (req) => {
+  // Handle CORS preflight requests properly
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders, status: 200 });
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    });
   }
 
   if (req.method !== "POST") {

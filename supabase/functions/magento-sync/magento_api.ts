@@ -1,3 +1,4 @@
+
 import { supabase } from "../_shared/db_client.ts";
 import { MagentoConnection } from "../_shared/database_types.ts";
 
@@ -15,10 +16,38 @@ export async function fetchMagentoStoreViews(connection: MagentoConnection): Pro
     throw new Error(`Failed to fetch store views: ${response.status} - ${errorText}`);
   }
 
-  return await response.json();
+  const data = await response.json();
+  
+  // Upsert store views data to Supabase
+  if (data && Array.isArray(data)) {
+    try {
+      for (const storeView of data) {
+        const { error } = await supabase.from('magento_store_views').upsert({
+          connection_id: connection.id,
+          website_id: storeView.website_id || '',
+          website_name: storeView.name || '',
+          store_id: storeView.id || '',
+          store_name: storeView.name || '',
+          store_view_code: storeView.code || '',
+          store_view_name: storeView.name || '',
+          is_active: true
+        }, {
+          onConflict: 'connection_id,store_id'
+        });
+        
+        if (error) {
+          console.error(`Error upserting store view: ${error.message}`);
+        }
+      }
+    } catch (error) {
+      console.error(`Error processing store views: ${error.message}`);
+    }
+  }
+  
+  return data;
 }
 
-// Update the fetchAllMagentoProducts function to use per-store and per-type sync date
+// Update the fetchAndStoreProductData function to use per-store and per-type sync date
 export async function fetchAndStoreProductData(
   connection: MagentoConnection,
   storeId: string,

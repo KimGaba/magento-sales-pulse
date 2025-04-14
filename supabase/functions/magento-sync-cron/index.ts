@@ -1,18 +1,7 @@
 
 // Follow Deno and Supabase Edge runtime conventions
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders } from "../_shared/cors_utils.ts";
-
-// Helper function to create responses with CORS headers
-function createCorsResponse(body: any, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      ...corsHeaders,
-      'Content-Type': 'application/json',
-    },
-  });
-}
+import { corsHeaders, createCorsResponse } from "../_shared/cors_utils.ts";
 
 // Handle HTTP requests
 serve(async (req) => {
