@@ -65,9 +65,15 @@ export const fetchActiveMagentoConnections = async (userId: string): Promise<Mag
  */
 export const addMagentoConnection = async (connection: Omit<MagentoConnection, 'id' | 'created_at' | 'updated_at'>): Promise<MagentoConnection> => {
   try {
+    // Ensure store_id is null if not provided
+    const connectionData = {
+      ...connection,
+      store_id: connection.store_id || null
+    };
+    
     const { data, error } = await supabase
       .from('magento_connections')
-      .insert(connection)
+      .insert(connectionData)
       .select()
       .single();
     

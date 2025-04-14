@@ -17,6 +17,8 @@ export const useSyncProcess = () => {
   const [syncProgress, setSyncProgress] = useState(0);
   const [connecting, setConnecting] = useState(false);
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [connectionId, setConnectionId] = useState<string | null>(null);
+  const [isInitialConnection, setIsInitialConnection] = useState(false);
   const [realSyncProgress, setRealSyncProgress] = useState<SyncProgress | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncState>({
     products: 'waiting',
@@ -25,12 +27,46 @@ export const useSyncProcess = () => {
     statistics: 'waiting'
   });
 
-  // Poll for real sync progress if we have a storeId
+  // Poll for real sync progress if we have a storeId or connectionId
   useEffect(() => {
-    if (storeId && step === 2) {
+    if ((storeId || connectionId) && step === 2) {
       const interval = setInterval(async () => {
         try {
-          const progress = await fetchSyncProgress(storeId);
+          let progress = null;
+          
+          // If we have a storeId, use it directly
+          if (storeId) {
+            progress = await fetchSyncProgress(storeId);
+          } 
+          // If this is an initial connection, we need to check if the store_id has been assigned
+          else if (connectionId && isInitialConnection) {
+            // First try to get the connection to see if it has a store_id now
+            const { data: connection } = await supabase
+              .from('magento_connections')
+              .select('store_id')
+              .eq('id', connectionId)
+              .maybeSingle();
+            
+            if (connection && connection.store_id) {
+              // Store ID has been assigned, save it and use it for future queries
+              setStoreId(connection.store_id);
+              progress = await fetchSyncProgress(connection.store_id);
+            } else {
+              // Try to get progress using connection_id directly
+              const { data } = await supabase
+                .from('sync_progress')
+                .select('*')
+                .eq('connection_id', connectionId)
+                .order('updated_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              
+              if (data) {
+                progress = data;
+              }
+            }
+          }
+          
           if (progress) {
             setRealSyncProgress(progress);
             
@@ -77,7 +113,7 @@ export const useSyncProcess = () => {
       
       return () => clearInterval(interval);
     }
-  }, [storeId, step]);
+  }, [storeId, connectionId, step, isInitialConnection]);
 
   const updateSyncStatus = (item: keyof SyncState, status: 'waiting' | 'syncing' | 'completed') => {
     setSyncStatus(prev => ({
@@ -86,10 +122,14 @@ export const useSyncProcess = () => {
     }));
   };
 
-  const triggerInitialSync = async () => {
+  const triggerInitialSync = async (id: string, isConnection = false) => {
     try {
+      const body = isConnection 
+        ? { trigger: 'initial_connection', connection_id: id }
+        : { trigger: 'initial_connection', store_id: id };
+        
       const { data, error } = await supabase.functions.invoke('magento-sync', {
-        body: { trigger: 'initial_connection' }
+        body
       });
       
       if (error) {
@@ -102,9 +142,15 @@ export const useSyncProcess = () => {
     }
   };
 
-  const startSyncProcess = (newStoreId: string) => {
+  const startSyncProcess = (id: string, isConnection = false) => {
     setStep(2);
-    setStoreId(newStoreId);
+    
+    if (isConnection) {
+      setConnectionId(id);
+      setIsInitialConnection(true);
+    } else {
+      setStoreId(id);
+    }
     
     toast({
       title: "Forbindelse oprettet!",
@@ -115,13 +161,15 @@ export const useSyncProcess = () => {
     updateSyncStatus('products', 'syncing');
     setSyncProgress(5);
     
-    triggerInitialSync();
+    triggerInitialSync(id, isConnection);
   };
 
   const resetSyncProcess = () => {
     setStep(1);
     setSyncProgress(0);
     setStoreId(null);
+    setConnectionId(null);
+    setIsInitialConnection(false);
     setRealSyncProgress(null);
     setSyncStatus({
       products: 'waiting',
@@ -138,8 +186,9 @@ export const useSyncProcess = () => {
     syncStatus,
     connecting,
     storeId,
+    connectionId,
     realSyncProgress,
-    setStep, // Export setStep function to be used by components
+    setStep,
     setConnecting,
     startSyncProcess,
     resetSyncProcess

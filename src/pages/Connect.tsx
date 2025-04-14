@@ -61,7 +61,9 @@ const Connect = () => {
         description: "Din Magento-butik er nu forbundet. Synkronisering starter...",
       });
       
-      startSyncProcess(connection.store_id);
+      // Since we might not have a store_id yet, pass the connection ID
+      // Edge function will take care of creating the store and updating the connection
+      startSyncProcess(connectedStore.id, true);
     } catch (error) {
       console.error("Error connecting to Magento:", error);
       toast({

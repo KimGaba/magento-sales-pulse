@@ -16,7 +16,6 @@ const ConnectForm: React.FC<ConnectFormProps> = ({ onConnect, connecting }) => {
   const [storeUrl, setStoreUrl] = useState('');
   const [storeName, setStoreName] = useState('');
   const [accessToken, setAccessToken] = useState('');
-  const [storeId, setStoreId] = useState('');
 
   const handleStoreUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setStoreUrl(e.target.value);
@@ -30,18 +29,14 @@ const ConnectForm: React.FC<ConnectFormProps> = ({ onConnect, connecting }) => {
     setAccessToken(e.target.value);
   };
 
-  const handleStoreIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStoreId(e.target.value);
-  };
-
   const handleSubmit = () => {
-    if (!storeUrl || !storeName || !accessToken || !storeId) {
+    if (!storeUrl || !storeName || !accessToken) {
       return;
     }
 
     const newConnection: Omit<MagentoConnection, 'id' | 'created_at' | 'updated_at'> = {
       user_id: '', // This will be set in the parent component
-      store_id: storeId,
+      store_id: null, // Set to null initially, will be populated during sync
       store_url: storeUrl,
       store_name: storeName,
       access_token: accessToken,
@@ -60,15 +55,6 @@ const ConnectForm: React.FC<ConnectFormProps> = ({ onConnect, connecting }) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <div className="grid gap-2">
-          <Label htmlFor="storeId">Store ID</Label>
-          <Input 
-            id="storeId" 
-            value={storeId} 
-            onChange={handleStoreIdChange} 
-            placeholder="Dit unikke butiks-id" 
-          />
-        </div>
         <div className="grid gap-2">
           <Label htmlFor="storeUrl">Butiks URL</Label>
           <Input
