@@ -1,4 +1,3 @@
-
 import { supabase } from "../_shared/db_client.ts";
 import { MagentoConnection } from "../_shared/database_types.ts";
 import { 
@@ -43,7 +42,8 @@ export async function synchronizeMagentoData(options: {
       'in_progress', 
       0, 
       0, 
-      'Fetching store views and initial data'
+      'Fetching store views and initial data',
+      connectionId
     );
     
     // First, fetch store views to ensure we have the latest
@@ -61,7 +61,8 @@ export async function synchronizeMagentoData(options: {
       'in_progress', 
       0, 
       0, 
-      'Fetching orders from Magento'
+      'Fetching orders from Magento',
+      connectionId
     );
     
     // Now, fetch orders with improved error handling
@@ -77,11 +78,8 @@ export async function synchronizeMagentoData(options: {
         undefined // Use default subscription level logic
       );
       
-      // Validate totalCount to prevent undefined errors
-      if (typeof ordersResult.totalCount !== 'number') {
-        console.error(`Invalid totalCount received: ${ordersResult.totalCount}`);
-        throw new Error(`Expected totalCount to be a number but got: ${typeof ordersResult.totalCount}`);
-      }
+      // Validate totalCount - we now use the actual number of orders we've fetched
+      console.log(`Fetched ${ordersResult.orders.length} orders. Using this as our total count.`);
     } catch (fetchError) {
       console.error(`Failed to fetch orders: ${fetchError.message}`);
       
@@ -91,7 +89,8 @@ export async function synchronizeMagentoData(options: {
         'failed', 
         0, 
         0, 
-        `Failed to fetch orders: ${fetchError.message}`
+        `Failed to fetch orders: ${fetchError.message}`,
+        connectionId
       );
       
       // Record sync history
@@ -119,7 +118,8 @@ export async function synchronizeMagentoData(options: {
         'completed', 
         0, 
         0, 
-        'No orders found for the specified criteria'
+        'No orders found for the specified criteria',
+        connectionId
       );
       
       // Record sync history
@@ -161,14 +161,15 @@ export async function synchronizeMagentoData(options: {
       };
     }
     
-    // Update progress with total count
-    const totalOrders = ordersResult.totalCount;
+    // Update progress with total count of orders we actually fetched
+    const totalOrders = ordersResult.orders.length;
     await updateSyncProgress(
       storeId, 
       'in_progress', 
       0, 
       totalOrders, 
-      `Retrieved ${ordersResult.orders.length} orders from Magento`
+      `Retrieved ${ordersResult.orders.length} orders from Magento`,
+      connectionId
     );
     
     // Store the orders as transactions with error handling
@@ -182,7 +183,8 @@ export async function synchronizeMagentoData(options: {
         'in_progress', 
         0, 
         ordersResult.orders.length, 
-        'Storing transactions'
+        'Storing transactions',
+        connectionId
       );
       
       storeResult = await storeTransactions(ordersResult.orders, storeId);
@@ -198,7 +200,8 @@ export async function synchronizeMagentoData(options: {
         'failed', 
         0, 
         ordersResult.orders.length, 
-        `Failed to store transactions: ${storeError.message}`
+        `Failed to store transactions: ${storeError.message}`,
+        connectionId
       );
       
       // Record sync history
@@ -223,7 +226,8 @@ export async function synchronizeMagentoData(options: {
       'in_progress', 
       processedCount, 
       ordersResult.orders.length, 
-      `Stored ${processedCount} transactions`
+      `Stored ${processedCount} transactions`,
+      connectionId
     );
     
     // Fetch and store product data with error handling

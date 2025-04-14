@@ -1,3 +1,4 @@
+
 import { MagentoConnection } from "../_shared/database_types.ts";
 import { supabase } from "../_shared/db_client.ts";
 
@@ -172,7 +173,6 @@ export async function fetchAllMagentoOrders(
     const allOrders: MagentoOrder[] = [];
     
     // Stats for tracking
-    let totalOrderCount = 0;
     let filteredOutCount = 0;
     let emptyPageCount = 0;
     let lastNonEmptyPage = 0;
@@ -194,8 +194,6 @@ export async function fetchAllMagentoOrders(
         break;
       }
       
-      totalOrderCount = result.totalCount;
-      
       // If we got orders, process them
       if (result.orders.length > 0) {
         allOrders.push(...result.orders);
@@ -212,9 +210,12 @@ export async function fetchAllMagentoOrders(
         }
       }
       
-      // If we've reached the reported total count, we can stop
-      if (allOrders.length >= totalOrderCount) {
-        console.log(`📊 Retrieved all ${totalOrderCount} orders, stopping pagination`);
+      // Calculate the actual total count based on orders we've fetched
+      const totalCount = allOrders.length;
+      
+      // If we've reached a reasonable number of pages, we can stop
+      if (page >= maxPages) {
+        console.log(`📊 Reached maximum page count (${maxPages}), stopping pagination`);
         break;
       }
       
@@ -224,7 +225,10 @@ export async function fetchAllMagentoOrders(
       }
     }
     
-    console.log(`📊 Completed fetching orders. Retrieved ${allOrders.length} total orders across ${lastNonEmptyPage} pages.`);
+    // Set the total count to the actual number of orders we've fetched
+    const totalCount = allOrders.length;
+    
+    console.log(`📊 Completed fetching orders. Retrieved ${totalCount} total orders across ${lastNonEmptyPage} pages.`);
     
     // Now we need to transform these orders for our system
     const transformedOrders = await Promise.all(
@@ -311,7 +315,9 @@ async function fetchMagentoOrdersPage(
 
     const data = await response.json() as MagentoOrdersResponse;
     const orders = data.items || [];
-    const totalCount = data.total_count ?? orders.length;
+    
+    // Don't rely on the API's total_count, just use the items length
+    const totalCount = orders.length;
     
     return {
       success: true,
