@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export type MagentoConnection = {
@@ -101,7 +100,8 @@ export const triggerMagentoSync = async (storeId: string, changesOnly = false): 
       body: { 
         store_id: storeId,
         trigger: 'manual_sync',
-        syncType: changesOnly ? 'changes_only' : 'full'
+        syncType: changesOnly ? 'changes_only' : 'full',
+        maxPages: 1000 // Set maximum pages to 1000 to support up to 100,000 orders
       }
     });
     

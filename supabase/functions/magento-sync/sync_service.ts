@@ -23,7 +23,7 @@ export async function synchronizeMagentoData(options: {
     console.log(`Starting Magento sync with options:`, options);
     const { storeId, connectionId, changesOnly = false, useMock = false } = options;
     const startPage = options.startPage || 1;
-    const maxPages = options.maxPages || 10;
+    const maxPages = options.maxPages || 1000; // Increased from 10 to 1000 to support up to 100,000 orders
     
     // Initialize the sync process
     const initResult = await initializeSync(storeId, connectionId);
@@ -230,10 +230,10 @@ export async function synchronizeMagentoData(options: {
       connectionId
     );
     
-    // Fetch and store product data with error handling
+    // Fetch and store product data with error handling and pagination
     let productsCount = 0;
     try {
-      console.log('Fetching products...');
+      console.log('Fetching products with pagination...');
       const products = await fetchAndStoreProductData(connection, storeId, supabase);
       productsCount = products.length;
       console.log(`Stored ${productsCount} products`);
@@ -287,7 +287,7 @@ export async function synchronizeMagentoData(options: {
         console.log('Successfully updated last_sync_date');
       }
     } catch (updateError) {
-      console.error(`Error updating store last_sync_date: ${updateError.message}`, updateError);
+      console.error(`Error updating store last_sync_date: ${updateError.message}`);
     }
     
     console.log('Magento sync completed successfully');

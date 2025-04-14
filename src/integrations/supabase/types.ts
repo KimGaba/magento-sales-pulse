@@ -240,6 +240,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          last_sync_date: string | null
           name: string
           updated_at: string
           url: string | null
@@ -247,6 +248,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          last_sync_date?: string | null
           name: string
           updated_at?: string
           url?: string | null
@@ -254,6 +256,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          last_sync_date?: string | null
           name?: string
           updated_at?: string
           url?: string | null
@@ -325,8 +328,10 @@ export type Database = {
           amount: number
           created_at: string
           customer_id: string | null
+          customer_name: string | null
           external_id: string | null
           id: string
+          items: Json | null
           metadata: Json | null
           product_id: string | null
           store_id: string
@@ -336,8 +341,10 @@ export type Database = {
           amount: number
           created_at?: string
           customer_id?: string | null
+          customer_name?: string | null
           external_id?: string | null
           id?: string
+          items?: Json | null
           metadata?: Json | null
           product_id?: string | null
           store_id: string
@@ -347,8 +354,10 @@ export type Database = {
           amount?: number
           created_at?: string
           customer_id?: string | null
+          customer_name?: string | null
           external_id?: string | null
           id?: string
+          items?: Json | null
           metadata?: Json | null
           product_id?: string | null
           store_id?: string

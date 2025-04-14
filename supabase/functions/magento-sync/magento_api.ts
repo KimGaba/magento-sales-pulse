@@ -1,4 +1,3 @@
-
 import { MagentoConnection } from "../_shared/database_types.ts";
 import { supabase } from "../_shared/db_client.ts";
 
@@ -456,74 +455,123 @@ export async function fetchMagentoStoreViews(connection: MagentoConnection) {
   }
 }
 
-// Function to fetch and store product data
+// Function to fetch and store product data with pagination support
 export async function fetchAndStoreProductData(connection: MagentoConnection, storeId: string, supabase: any) {
   try {
     console.log(`📦 Fetching Magento products from ${connection.store_url}`);
-    const url = `${connection.store_url}/rest/V1/products?searchCriteria[pageSize]=100`;
-
-    const headers = {
-      'Authorization': `Bearer ${connection.access_token}`,
-      'Content-Type': 'application/json'
-    };
-
-    const response = await fetch(url, { method: 'GET', headers });
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Magento API error (${response.status}): ${errorText}`);
-      throw new Error(`Failed to fetch products: ${response.statusText}`);
+    
+    const allProducts = [];
+    let currentPage = 1;
+    let hasMoreProducts = true;
+    const pageSize = 100;
+    
+    // Get the last sync date from the store
+    const { data: store, error: storeError } = await supabase
+      .from('stores')
+      .select('last_sync_date')
+      .eq('id', storeId)
+      .single();
+      
+    if (storeError) {
+      console.warn(`Warning fetching store last_sync_date: ${storeError.message}`);
     }
+    
+    const lastSyncDate = store?.last_sync_date ? new Date(store.last_sync_date) : null;
+    console.log(`Last sync date: ${lastSyncDate ? lastSyncDate.toISOString() : 'None'}`);
+    
+    // Continue fetching pages until we get fewer products than requested
+    while (hasMoreProducts) {
+      console.log(`Fetching products page ${currentPage} with pageSize ${pageSize}`);
+      
+      // Base URL with pagination
+      let url = `${connection.store_url}/rest/V1/products?searchCriteria[pageSize]=${pageSize}&searchCriteria[currentPage]=${currentPage}`;
+      
+      // Add updated_at filter if we have a last sync date
+      if (lastSyncDate) {
+        const formattedDate = lastSyncDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        url += `&searchCriteria[filter_groups][0][filters][0][field]=updated_at`;
+        url += `&searchCriteria[filter_groups][0][filters][0][condition_type]=gt`;
+        url += `&searchCriteria[filter_groups][0][filters][0][value]=${formattedDate}`;
+      }
 
-    const data = await response.json();
-    const products = data.items || [];
+      const headers = {
+        'Authorization': `Bearer ${connection.access_token}`,
+        'Content-Type': 'application/json'
+      };
 
-    for (const product of products) {
-      try {
-        const productData = {
-          external_id: product.id,
-          sku: product.sku,
-          name: product.name,
-          price: product.price || null,
-          special_price: product.special_price || null,
-          description: product.description || null,
-          image_url: product.media_gallery_entries && product.media_gallery_entries.length > 0 
-            ? `${connection.store_url}/media/catalog/product${product.media_gallery_entries[0].file}` 
-            : null,
-          in_stock: product.extension_attributes?.stock_item?.is_in_stock || false,
-          status: product.status === 1 ? 'enabled' : 'disabled',
-          type: product.type_id || 'simple',
-          store_view: 'default'
-        };
+      console.log(`Making request to: ${url}`);
+      const response = await fetch(url, { method: 'GET', headers });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Magento API error (${response.status}): ${errorText}`);
+        throw new Error(`Failed to fetch products: ${response.statusText}`);
+      }
 
-        const { data: existing, error: fetchErr } = await supabase
-          .from('products')
-          .select('*')
-          .eq('store_id', storeId)
-          .eq('external_id', product.id.toString())
-          .maybeSingle();
+      const data = await response.json();
+      const products = data.items || [];
+      console.log(`Retrieved ${products.length} products from page ${currentPage}`);
+      
+      // Process the products
+      for (const product of products) {
+        try {
+          allProducts.push(product);
+          const productData = {
+            external_id: product.id,
+            sku: product.sku,
+            name: product.name,
+            price: product.price || null,
+            special_price: product.special_price || null,
+            description: product.description || null,
+            image_url: product.media_gallery_entries && product.media_gallery_entries.length > 0 
+              ? `${connection.store_url}/media/catalog/product${product.media_gallery_entries[0].file}` 
+              : null,
+            in_stock: product.extension_attributes?.stock_item?.is_in_stock || false,
+            status: product.status === 1 ? 'enabled' : 'disabled',
+            type: product.type_id || 'simple',
+            store_view: 'default'
+          };
 
-        if (fetchErr) {
-          console.error(`Error fetching product: ${fetchErr.message}`);
-          continue;
+          const { data: existing, error: fetchErr } = await supabase
+            .from('products')
+            .select('*')
+            .eq('store_id', storeId)
+            .eq('external_id', product.id.toString())
+            .maybeSingle();
+
+          if (fetchErr) {
+            console.error(`Error fetching product: ${fetchErr.message}`);
+            continue;
+          }
+
+          if (existing) {
+            await supabase.from('products').update({
+              ...productData,
+              updated_at: new Date().toISOString()
+            }).eq('id', existing.id);
+          } else {
+            await supabase.from('products').insert({
+              ...productData,
+              store_id: storeId
+            });
+          }
+        } catch (productError) {
+          console.error(`Error processing product ${product.sku}: ${productError.message}`);
         }
-
-        if (existing) {
-          await supabase.from('products').update({
-            ...productData,
-            updated_at: new Date().toISOString()
-          }).eq('id', existing.id);
-        } else {
-          await supabase.from('products').insert({
-            ...productData,
-            store_id: storeId
-          });
-        }
-      } catch (productError) {
-        console.error(`Error processing product ${product.sku}: ${productError.message}`);
+      }
+      
+      // Check if we have fewer products than the page size or no products
+      if (products.length < pageSize) {
+        hasMoreProducts = false;
+        console.log(`No more products to fetch, retrieved a total of ${allProducts.length} products`);
+      } else {
+        currentPage++;
+        // Add a small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 
-    return products;
+    return allProducts;
   } catch (error) {
     console.error(`❌ Error fetching or storing Magento products: ${error.message}`);
     throw error;
