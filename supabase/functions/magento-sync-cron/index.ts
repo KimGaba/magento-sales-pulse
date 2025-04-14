@@ -7,7 +7,10 @@ import { corsHeaders, createCorsResponse } from "../_shared/cors_utils.ts";
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      status: 204,
+      headers: corsHeaders 
+    });
   }
   
   // This is an internal function that will be called by the Supabase scheduled job
