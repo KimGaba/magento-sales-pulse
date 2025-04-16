@@ -46,7 +46,6 @@ export async function fetchMagentoStoreViews(connection: MagentoConnection): Pro
   return data;
 }
 
-// Update the fetchAndStoreProductData function to use per-store and per-type sync date
 export async function fetchAndStoreProductData(
   connection: MagentoConnection,
   storeId: string,
@@ -136,7 +135,6 @@ export async function fetchAndStoreProductData(
   }
 }
 
-// Update the fetchAllMagentoOrders function to use per-store and per-type sync date
 export async function fetchAllMagentoOrders(
   connection: MagentoConnection,
   maxPages: number = 1000,
@@ -228,7 +226,6 @@ export async function fetchAllMagentoOrders(
   }
 }
 
-// Helper function to store products in database
 async function storeProductsInDatabase(products: any[], storeId: string, supabaseClient: any): Promise<any[]> {
   try {
     const productsToUpsert = products.map(product => ({
