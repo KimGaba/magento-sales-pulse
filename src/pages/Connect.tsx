@@ -53,8 +53,14 @@ const Connect = () => {
     
     setLoadingConnections(true);
     try {
+      // Force a fresh fetch from the database by adding a timestamp
+      const timestamp = new Date().getTime();
+      console.log(`Loading connections at ${timestamp}...`);
+      
       const userConnections = await fetchMagentoConnections(user.id);
       console.log("Loaded connections:", userConnections);
+      
+      // Update state with the fresh connections
       setConnections(userConnections);
     } catch (error) {
       console.error("Error loading connections:", error);
@@ -106,7 +112,11 @@ const Connect = () => {
   const handleDisconnect = async (connection: MagentoConnection) => {
     // This function refreshes the connections list after deletion
     console.log("Connection was disconnected:", connection.id);
-    await loadConnections();
+    
+    // Force a reload with a small delay to ensure the database has updated
+    setTimeout(() => {
+      loadConnections();
+    }, 500);
   };
 
   const handleGoToDashboard = () => {

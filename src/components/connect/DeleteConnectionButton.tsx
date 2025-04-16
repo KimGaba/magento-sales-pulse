@@ -50,6 +50,8 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
       } else {
         // If no store_id, just delete the connection directly
         console.log(`Deleting connection ${connection.id} without a store_id`);
+        
+        // Make sure to delete the connection first - this is important!
         const { error: connectionError } = await supabase
           .from('magento_connections')
           .delete()
@@ -60,6 +62,8 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
           throw new Error(`Kunne ikke slette forbindelsen: ${connectionError.message}`);
         }
         
+        console.log(`Successfully deleted connection ${connection.id}`);
+        
         // Also check for any sync_progress entries with this connection_id
         const { error: syncError } = await supabase
           .from('sync_progress')
@@ -69,6 +73,8 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
         if (syncError) {
           console.error('Error deleting sync progress data:', syncError);
           // Non-blocking error, just log it
+        } else {
+          console.log(`Successfully deleted sync progress data for connection ${connection.id}`);
         }
         
         // Also check for any magento_store_views with this connection_id
@@ -80,6 +86,8 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
         if (storeViewsError) {
           console.error('Error deleting store views data:', storeViewsError);
           // Non-blocking error, just log it
+        } else {
+          console.log(`Successfully deleted store views data for connection ${connection.id}`);
         }
       }
       
