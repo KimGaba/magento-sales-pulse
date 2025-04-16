@@ -110,8 +110,8 @@ const Connect = () => {
     }
   };
 
-  const handleDisconnect = async (connection: MagentoConnection) => {
-    console.log("Connection was disconnected:", connection.id);
+  const handleDisconnect = async () => {
+    console.log("Connection was disconnected");
     
     // Force a refresh of the connections after a small delay to ensure the database has been updated
     setTimeout(() => {
