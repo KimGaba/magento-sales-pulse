@@ -46,7 +46,7 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
           throw new Error(`Kunne ikke slette butiksdata: ${deleteError.message}`);
         }
       } else {
-        // If no store_id, just delete the connection
+        // If no store_id, just delete the connection directly
         console.log(`Deleting connection ${connection.id} without a store_id`);
         const { error: connectionError } = await supabase
           .from('magento_connections')

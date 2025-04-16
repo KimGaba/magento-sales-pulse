@@ -12,6 +12,7 @@ BEGIN
   DELETE FROM public.daily_sales WHERE store_id = target_store_id;
   DELETE FROM public.products WHERE store_id = target_store_id;
   DELETE FROM public.sync_progress WHERE store_id = target_store_id;
+  DELETE FROM public.magento_store_views WHERE store_id = target_store_id::text;
 
   -- Delete the connection itself
   DELETE FROM public.magento_connections WHERE store_id = target_store_id;
