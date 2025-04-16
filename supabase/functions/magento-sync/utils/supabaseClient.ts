@@ -158,3 +158,33 @@ export async function recordSyncHistory(
     console.error(`Error in recordSyncHistory: ${error.message}`);
   }
 }
+
+// Helper to get sync progress for a store
+export async function getSyncProgress(storeId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('sync_progress')
+      .select('*')
+      .eq('store_id', storeId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+      
+    if (error) {
+      return { 
+        success: false,
+        error: `Error fetching sync progress: ${error.message}`
+      };
+    }
+    
+    return {
+      success: true,
+      progress: data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: `Unexpected error in getSyncProgress: ${error.message}`
+    };
+  }
+}
