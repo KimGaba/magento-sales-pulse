@@ -1,10 +1,9 @@
-
-import { MagentoConnection } from "../types";
-import { supabase, updateSyncProgress } from "../utils/supabaseClient";
-import { syncProducts } from "../modules/products";
-import { syncOrders } from "../modules/orders";
-import { syncCustomers } from "../modules/customers";
-import logger from "../utils/logger";
+import { MagentoConnection } from "../types.ts";
+import { supabase, updateSyncProgress } from "../utils/supabaseClient.ts";
+import { syncProducts } from "../modules/products.ts";
+import { syncOrders } from "../modules/orders.ts";
+import { syncCustomers } from "../modules/customers.ts";
+import logger from "../utils/logger.ts";
 
 const log = logger.createLogger("router");
 

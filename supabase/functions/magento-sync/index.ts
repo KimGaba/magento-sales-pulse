@@ -1,10 +1,9 @@
-
 // Follow Deno and Supabase Edge runtime conventions
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { synchronizeMagentoData, deleteConnection } from "./sync/index.ts";
-import { getSyncProgress } from "./utils/supabaseClient";
-import { testConnection } from "./utils/magentoClient";
-import logger from "./utils/logger";
+import { getSyncProgress } from "./utils/supabaseClient.ts";
+import { testConnection } from "./utils/magentoClient.ts";
+import logger from "./utils/logger.ts";
 
 // CORS headers for cross-origin requests
 const corsHeaders = {

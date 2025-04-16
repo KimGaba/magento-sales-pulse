@@ -1,6 +1,6 @@
 
 import { supabase, getMagentoConnection, updateSyncProgress, recordSyncHistory } from "../utils/supabaseClient";
-import { routeSync, SyncOptions } from "./router";
+import { routeSync, SyncOptions } from "./router.ts"; // Add .ts extension to fix the import
 import { fetchStoreViews, storeStoreViews } from "../utils/magentoClient";
 import logger from "../utils/logger";
 
