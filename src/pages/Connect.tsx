@@ -20,7 +20,7 @@ const Connect = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [connections, setConnections] = useState<MagentoConnection[]>([]);
   const [loadingConnections, setLoadingConnections] = useState(true);
-  const [refreshTrigger, setRefreshTrigger] = useState(0); // New state to force refresh
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // State to force refresh
   const { 
     step, 
     syncProgress, 
@@ -111,11 +111,13 @@ const Connect = () => {
   };
 
   const handleDisconnect = async (connection: MagentoConnection) => {
-    // This function now forces a refresh after deletion
     console.log("Connection was disconnected:", connection.id);
     
-    // Force a refresh of the connections by incrementing the trigger
-    setRefreshTrigger(prev => prev + 1);
+    // Force a refresh of the connections after a small delay to ensure the database has been updated
+    setTimeout(() => {
+      console.log("Refreshing connections list after deletion");
+      setRefreshTrigger(prev => prev + 1);
+    }, 500);
   };
 
   const handleGoToDashboard = () => {

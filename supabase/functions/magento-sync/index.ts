@@ -84,6 +84,95 @@ async function testMagentoConnection(storeUrl: string, accessToken: string, conn
   }
 }
 
+// Handle store/connection deletion
+async function deleteConnection(connectionId: string) {
+  try {
+    console.log(`Starting deletion process for connection: ${connectionId}`);
+    
+    // First check if the connection exists
+    const { data: connection, error: connectionError } = await supabase
+      .from('magento_connections')
+      .select('id, store_id, store_name')
+      .eq('id', connectionId)
+      .maybeSingle();
+      
+    if (connectionError || !connection) {
+      console.log(`Connection not found or error: ${connectionError?.message || 'Not found'}`);
+      return { 
+        success: false, 
+        error: `Forbindelse ikke fundet: ${connectionError?.message || 'Ikke fundet'}` 
+      };
+    }
+    
+    console.log(`Found connection: ${connection.id}, store_id: ${connection.store_id || 'None'}`);
+    
+    // If we have a store_id, delete all related data using the delete_store_data function
+    if (connection.store_id) {
+      console.log(`Using delete_store_data function for store_id: ${connection.store_id}`);
+      const { error } = await supabase.rpc('delete_store_data', {
+        target_store_id: connection.store_id
+      });
+      
+      if (error) {
+        console.error(`Error deleting store data: ${error.message}`);
+        throw error;
+      }
+      
+      console.log(`Successfully deleted store data for store_id: ${connection.store_id}`);
+      return { success: true, message: `Butik "${connection.store_name}" blev slettet` };
+    } 
+    else {
+      // If no store_id, just delete the connection directly
+      console.log(`No store_id found, deleting connection directly: ${connection.id}`);
+      
+      // First delete any related data - sync_progress
+      const { error: syncError } = await supabase
+        .from('sync_progress')
+        .delete()
+        .eq('connection_id', connection.id);
+        
+      if (syncError) {
+        console.error(`Error deleting sync progress: ${syncError.message}`);
+        // Continue anyway, non-critical
+      }
+      
+      // Delete any store views
+      const { error: viewsError } = await supabase
+        .from('magento_store_views')
+        .delete()
+        .eq('connection_id', connection.id);
+        
+      if (viewsError) {
+        console.error(`Error deleting store views: ${viewsError.message}`);
+        // Continue anyway, non-critical
+      }
+      
+      // Finally delete the connection
+      const { error: deleteError } = await supabase
+        .from('magento_connections')
+        .delete()
+        .eq('id', connection.id);
+        
+      if (deleteError) {
+        console.error(`Error deleting connection: ${deleteError.message}`);
+        throw deleteError;
+      }
+      
+      console.log(`Successfully deleted connection: ${connection.id}`);
+      return { 
+        success: true, 
+        message: `Forbindelsen "${connection.store_name}" blev slettet`
+      };
+    }
+  } catch (error) {
+    console.error(`Error in deleteConnection: ${error.message}`);
+    return { 
+      success: false, 
+      error: `Kunne ikke slette forbindelsen: ${error.message}` 
+    };
+  }
+}
+
 // Chunked sync
 async function processSyncWithContinuation(options: any) {
   try {
@@ -133,6 +222,17 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
+
+    // Delete connection
+    if (body.action === "delete_connection") {
+      const { connectionId } = body;
+      if (!connectionId) {
+        return createCorsResponse({ success: false, error: "Missing connectionId" }, 400);
+      }
+      
+      const result = await deleteConnection(connectionId);
+      return createCorsResponse(result, result.success ? 200 : 400);
+    }
 
     // Test connection
     if (body.action === "test_connection") {
