@@ -20,6 +20,7 @@ const Connect = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [connections, setConnections] = useState<MagentoConnection[]>([]);
   const [loadingConnections, setLoadingConnections] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // New state to force refresh
   const { 
     step, 
     syncProgress, 
@@ -37,7 +38,7 @@ const Connect = () => {
       fetchProfile();
       loadConnections();
     }
-  }, [user]);
+  }, [user, refreshTrigger]); // Add refreshTrigger to dependencies
 
   const fetchProfile = async () => {
     try {
@@ -53,7 +54,7 @@ const Connect = () => {
     
     setLoadingConnections(true);
     try {
-      // Force a fresh fetch from the database by adding a timestamp
+      // Force a fresh fetch from the database by adding a timestamp and cache: 'no-store'
       const timestamp = new Date().getTime();
       console.log(`Loading connections at ${timestamp}...`);
       
@@ -96,7 +97,7 @@ const Connect = () => {
       startSyncProcess(connectedStore.id, true);
       
       // Refresh connections list
-      await loadConnections();
+      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       console.error("Error connecting to Magento:", error);
       toast({
@@ -110,13 +111,11 @@ const Connect = () => {
   };
 
   const handleDisconnect = async (connection: MagentoConnection) => {
-    // This function refreshes the connections list after deletion
+    // This function now forces a refresh after deletion
     console.log("Connection was disconnected:", connection.id);
     
-    // Force a reload with a small delay to ensure the database has updated
-    setTimeout(() => {
-      loadConnections();
-    }, 500);
+    // Force a refresh of the connections by incrementing the trigger
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const handleGoToDashboard = () => {

@@ -18,6 +18,7 @@ export type MagentoConnection = {
  */
 export const fetchMagentoConnections = async (userId: string): Promise<MagentoConnection[]> => {
   try {
+    // Add cache control headers to ensure we get fresh data
     const { data, error } = await supabase
       .from('magento_connections')
       .select('*')

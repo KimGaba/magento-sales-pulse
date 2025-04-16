@@ -34,24 +34,51 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
     try {
       console.log(`Starting deletion process for connection: ${connection.id}, store: ${connection.store_id || 'None'}`);
       
-      // If we have a store_id, use it to delete all associated data
-      if (connection.store_id) {
-        console.log(`Deleting all data for store ${connection.store_id}`);
+      // Important: First check if this connection even exists
+      const { data: connectionCheck, error: checkError } = await supabase
+        .from('magento_connections')
+        .select('id')
+        .eq('id', connection.id)
+        .single();
         
-        // Call the delete_store_data function to delete everything related to this store
-        const { error: deleteError } = await supabase.rpc('delete_store_data', {
-          target_store_id: connection.store_id
-        });
-        
-        if (deleteError) {
-          console.error('Error deleting store data:', deleteError);
-          throw new Error(`Kunne ikke slette butiksdata: ${deleteError.message}`);
-        }
-      } else {
-        // If no store_id, just delete the connection directly
+      if (checkError) {
+        console.log(`Connection ${connection.id} already deleted or does not exist`);
+        setDialogOpen(false);
+        onDeleted();
+        return;
+      }
+      
+      // For connections without a store_id, delete directly from magento_connections
+      if (!connection.store_id) {
         console.log(`Deleting connection ${connection.id} without a store_id`);
         
-        // Make sure to delete the connection first - this is important!
+        // First delete any related data - sync_progress
+        const { error: syncError } = await supabase
+          .from('sync_progress')
+          .delete()
+          .eq('connection_id', connection.id);
+          
+        if (syncError) {
+          console.error('Error deleting sync progress data:', syncError);
+          // Non-blocking error, continue anyway
+        } else {
+          console.log(`Successfully deleted sync progress data for connection ${connection.id}`);
+        }
+        
+        // Next delete any related store views
+        const { error: storeViewsError } = await supabase
+          .from('magento_store_views')
+          .delete()
+          .eq('connection_id', connection.id);
+          
+        if (storeViewsError) {
+          console.error('Error deleting store views data:', storeViewsError);
+          // Non-blocking error, continue anyway
+        } else {
+          console.log(`Successfully deleted store views data for connection ${connection.id}`);
+        }
+        
+        // Finally delete the connection itself
         const { error: connectionError } = await supabase
           .from('magento_connections')
           .delete()
@@ -63,31 +90,19 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
         }
         
         console.log(`Successfully deleted connection ${connection.id}`);
+      } 
+      // For connections with a store_id, use the delete_store_data function
+      else {
+        console.log(`Deleting all data for store ${connection.store_id}`);
         
-        // Also check for any sync_progress entries with this connection_id
-        const { error: syncError } = await supabase
-          .from('sync_progress')
-          .delete()
-          .eq('connection_id', connection.id);
-          
-        if (syncError) {
-          console.error('Error deleting sync progress data:', syncError);
-          // Non-blocking error, just log it
-        } else {
-          console.log(`Successfully deleted sync progress data for connection ${connection.id}`);
-        }
+        // Call the delete_store_data function to delete everything related to this store
+        const { error: deleteError } = await supabase.rpc('delete_store_data', {
+          target_store_id: connection.store_id
+        });
         
-        // Also check for any magento_store_views with this connection_id
-        const { error: storeViewsError } = await supabase
-          .from('magento_store_views')
-          .delete()
-          .eq('connection_id', connection.id);
-          
-        if (storeViewsError) {
-          console.error('Error deleting store views data:', storeViewsError);
-          // Non-blocking error, just log it
-        } else {
-          console.log(`Successfully deleted store views data for connection ${connection.id}`);
+        if (deleteError) {
+          console.error('Error deleting store data:', deleteError);
+          throw new Error(`Kunne ikke slette butiksdata: ${deleteError.message}`);
         }
       }
       

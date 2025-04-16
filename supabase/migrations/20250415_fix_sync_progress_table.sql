@@ -1,37 +1,30 @@
-
--- This migration ensures the sync_progress table exists and has the required columns
--- We've removed the function approach in favor of direct table creation
-
--- Create the sync_progress table if it doesn't exist
-CREATE TABLE IF NOT EXISTS public.sync_progress (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  store_id UUID NOT NULL,
-  connection_id UUID NOT NULL,
-  current_page INTEGER NOT NULL DEFAULT 1,
-  total_pages INTEGER,
-  orders_processed INTEGER NOT NULL DEFAULT 0,
-  total_orders INTEGER,
-  skipped_orders INTEGER DEFAULT 0,
-  warning_message TEXT,
-  started_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  status TEXT NOT NULL,
-  error_message TEXT,
-  notes TEXT
-);
-
--- Add new columns if they don't exist (for backwards compatibility)
+-- This migration ensures the sync_progress table has the correct columns
+-- Add connection_id column if it doesn't exist
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 
-    FROM information_schema.columns 
-    WHERE table_schema = 'public' 
-    AND table_name = 'sync_progress' 
-    AND column_name = 'skipped_orders'
-  ) THEN
-    ALTER TABLE public.sync_progress 
-    ADD COLUMN skipped_orders INTEGER DEFAULT 0,
-    ADD COLUMN warning_message TEXT;
-  END IF;
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'sync_progress' 
+        AND column_name = 'connection_id'
+    ) THEN
+        ALTER TABLE public.sync_progress ADD COLUMN connection_id UUID REFERENCES magento_connections(id) ON DELETE CASCADE;
+    END IF;
 END $$;
+
+-- Add store_id column if it doesn't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name = 'sync_progress' 
+        AND column_name = 'store_id'
+    ) THEN
+        ALTER TABLE public.sync_progress ADD COLUMN store_id UUID REFERENCES stores(id) ON DELETE CASCADE;
+    END IF;
+END $$;
+
+-- Add indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_sync_progress_connection_id ON public.sync_progress(connection_id);
+CREATE INDEX IF NOT EXISTS idx_sync_progress_store_id ON public.sync_progress(store_id);
