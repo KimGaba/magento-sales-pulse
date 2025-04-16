@@ -1,8 +1,8 @@
 
-import { supabase, getMagentoConnection, updateSyncProgress, recordSyncHistory } from "../utils/supabaseClient";
-import { routeSync, SyncOptions } from "./router.ts"; // Add .ts extension to fix the import
-import { fetchStoreViews, storeStoreViews } from "../utils/magentoClient";
-import logger from "../utils/logger";
+import { supabase, getMagentoConnection, updateSyncProgress, recordSyncHistory } from "../utils/supabaseClient.ts";
+import { routeSync, SyncOptions } from "./router.ts";
+import { fetchStoreViews, storeStoreViews } from "../utils/magentoClient.ts";
+import logger from "../utils/logger.ts";
 
 const log = logger.createLogger("sync");
 

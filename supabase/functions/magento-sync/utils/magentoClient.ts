@@ -1,131 +1,122 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.21.0";
+import { MagentoConnection } from "../types.ts";
+import logger from "./logger.ts";
 
-import { MagentoConnection } from "../types";
+const log = logger.createLogger("magentoClient");
 
 /**
- * Generic function to fetch data from the Magento API
+ * Generic function to fetch data from Magento API
  */
-export async function fetchFromMagento<T>(
-  connection: MagentoConnection,
-  endpoint: string, 
-  method: string = 'GET', 
-  body: any = null
-): Promise<T> {
+export async function fetchFromMagento(connection: MagentoConnection, endpoint: string, params?: Record<string, string>) {
   try {
-    // Construct the full URL
-    const url = `${connection.store_url}${endpoint}`;
+    const url = new URL(endpoint, connection.store_url);
     
-    // Set up the request options
-    const options: RequestInit = {
-      method,
-      headers: {
-        'Authorization': `Bearer ${connection.access_token}`,
-        'Content-Type': 'application/json'
-      }
-    };
-    
-    // Add body if provided
-    if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-      options.body = JSON.stringify(body);
+    // Add query parameters if provided
+    if (params) {
+      Object.keys(params).forEach(key => {
+        url.searchParams.append(key, params[key]);
+      });
     }
     
-    // Make the request
-    const response = await fetch(url, options);
+    log.info(`Fetching from Magento: ${url.toString()}`);
     
-    // Check if the request was successful
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${connection.access_token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+    
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Magento API error (${response.status}): ${errorText}`);
+      log.error(`Magento API error: ${response.status} ${response.statusText}`, { error: errorText });
       throw new Error(`Magento API error: ${response.status} ${response.statusText}`);
     }
     
-    // Parse and return the response
-    const data = await response.json();
-    return data as T;
+    return await response.json();
   } catch (error) {
-    console.error(`Error in fetchFromMagento: ${error.message}`);
+    log.error(`Error fetching from Magento: ${error.message}`, error as Error);
     throw error;
   }
 }
 
 /**
- * Fetches store views from Magento
+ * Fetch store views from Magento
  */
 export async function fetchStoreViews(connection: MagentoConnection): Promise<any[]> {
   try {
-    return await fetchFromMagento<any[]>(
-      connection,
-      '/rest/V1/store/storeConfigs'
-    );
+    const endpoint = '/rest/all/V1/store/storeViews';
+    const data = await fetchFromMagento(connection, endpoint);
+    return data;
   } catch (error) {
-    console.error(`Error fetching store views: ${error.message}`);
+    log.error(`Error fetching store views: ${error.message}`, error as Error);
     throw error;
   }
 }
 
 /**
- * Tests a Magento connection
+ * Store store views in Supabase
  */
-export async function testConnection(
-  storeUrl: string, 
-  accessToken: string
-): Promise<{ success: boolean; message?: string; error?: string; storeInfo?: any }> {
+export async function storeStoreViews(connection: MagentoConnection, storeViews: any[], supabase: any): Promise<void> {
   try {
-    const apiUrl = `${storeUrl}/rest/V1/store/storeConfigs`;
-    const headers = {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    };
-
-    const response = await fetch(apiUrl, { method: "GET", headers });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      if (response.status === 401) return { success: false, error: "Ugyldig API-nøgle." };
-      if (response.status === 404) return { success: false, error: "Magento API endpoint ikke fundet." };
-      if (response.status === 429) return { success: false, error: "For mange forespørgsler." };
-      return { success: false, error: errorText };
+    // Map the store views to the correct format
+    const mappedStoreViews = storeViews.map(storeView => ({
+      connection_id: connection.id,
+      website_id: storeView.website_id,
+      website_name: storeView.website_name,
+      store_id: storeView.store_id,
+      store_name: storeView.store_name,
+      store_view_code: storeView.code,
+      store_view_name: storeView.name,
+      is_active: storeView.is_active
+    }));
+    
+    // Insert the store views into the database
+    const { error } = await supabase
+      .from('magento_store_views')
+      .upsert(mappedStoreViews, { onConflict: 'connection_id, store_view_code' });
+      
+    if (error) {
+      log.error(`Error storing store views: ${error.message}`, error as Error);
+      throw error;
     }
-
-    const data = await response.json();
-    return { success: true, message: "Forbindelse verificeret", storeInfo: data };
+    
+    log.info(`Successfully stored ${storeViews.length} store views`);
   } catch (error) {
-    return { success: false, error: `Magento-forbindelse fejlede: ${error.message}` };
+    log.error(`Error in storeStoreViews: ${error.message}`, error as Error);
+    throw error;
   }
 }
 
 /**
- * Store Magento store views in the database
+ * Test Magento connection
  */
-export async function storeStoreViews(
-  connection: MagentoConnection, 
-  storeViews: any[],
-  supabase: any
-): Promise<void> {
-  if (!storeViews || !Array.isArray(storeViews)) {
-    console.warn("No store views to store or invalid format");
-    return;
-  }
-  
+export async function testConnection(storeUrl: string, accessToken: string): Promise<{ success: boolean; message?: string }> {
   try {
-    for (const storeView of storeViews) {
-      const { error } = await supabase.from('magento_store_views').upsert({
-        connection_id: connection.id,
-        website_id: storeView.website_id || '',
-        website_name: storeView.name || '',
-        store_id: storeView.id || '',
-        store_name: storeView.name || '',
-        store_view_code: storeView.code || '',
-        store_view_name: storeView.name || '',
-        is_active: true
-      }, {
-        onConflict: 'connection_id,store_id'
-      });
-      
-      if (error) {
-        console.error(`Error upserting store view: ${error.message}`);
+    const url = new URL('/rest/all/V1/store/storeViews', storeUrl);
+    
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      log.error(`Connection test failed: ${response.status} ${response.statusText}`, { error: errorText });
+      return { success: false, message: `Connection test failed: ${response.status} ${response.statusText}` };
     }
+    
+    const data = await response.json();
+    log.info(`Connection test successful, store views:`, data);
+    return { success: true, message: 'Connection test successful' };
   } catch (error) {
-    console.error(`Error storing store views: ${error.message}`);
+    log.error(`Error testing connection: ${error.message}`, error as Error);
+    return { success: false, message: `Error testing connection: ${error.message}` };
   }
 }

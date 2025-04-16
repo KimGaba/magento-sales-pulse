@@ -1,6 +1,9 @@
+import { MagentoConnection } from "../types.ts";
+import { supabase, getLastSyncDate, updateLastSyncDate } from "../utils/supabaseClient.ts";
+import { fetchFromMagento } from "../utils/magentoClient.ts";
+import logger from "../utils/logger.ts";
 
-import { supabase } from "../utils/supabaseClient";
-import { MagentoConnection } from "../types";
+const log = logger.createLogger("products");
 
 /**
  * Fetches product data from Magento API with pagination
@@ -118,16 +121,7 @@ export async function syncProducts(
 ): Promise<{ count: number; success: boolean }> {
   try {
     // Get last sync date for products
-    const lastSyncDate = await supabase.rpc(
-      'get_last_sync_date',
-      { 
-        store_id_param: storeId,
-        data_type_param: 'products'
-      }
-    ).then(({ data, error }) => {
-      if (error) throw error;
-      return data;
-    });
+    const lastSyncDate = await getLastSyncDate(storeId, 'products');
     
     // Fetch products from Magento
     const products = await fetchProducts(connection, storeId, lastSyncDate);
@@ -138,11 +132,7 @@ export async function syncProducts(
     }
     
     // Update last sync date
-    await supabase.rpc('update_last_sync_date', {
-      store_id_param: storeId,
-      data_type_param: 'products',
-      sync_date: new Date().toISOString()
-    });
+    await updateLastSyncDate(storeId, 'products', new Date().toISOString());
     
     console.log(`Successfully synced ${products.length} products`);
     return { count: products.length, success: true };

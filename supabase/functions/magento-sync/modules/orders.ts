@@ -1,6 +1,9 @@
+import { MagentoConnection } from "../types.ts";
+import { supabase, getLastSyncDate, updateLastSyncDate } from "../utils/supabaseClient.ts";
+import { fetchFromMagento } from "../utils/magentoClient.ts";
+import logger from "../utils/logger.ts";
 
-import { supabase } from "../utils/supabaseClient";
-import { MagentoConnection } from "../types";
+const log = logger.createLogger("orders");
 
 /**
  * Fetches all orders from Magento API with pagination
@@ -263,10 +266,10 @@ export async function storeOrders(orders: any[], storeId: string): Promise<{
  * Orchestrates the fetch and storage of order data
  */
 export async function syncOrders(
-  connection: MagentoConnection,
+  connection: MagentoConnection, 
   storeId: string,
-  maxPages: number = 1000,
-  pageSize: number = 100
+  maxPages?: number,
+  pageSize?: number
 ): Promise<{ 
   success: boolean;
   stats: {
@@ -278,16 +281,7 @@ export async function syncOrders(
 }> {
   try {
     // Get last sync date for orders
-    const lastSyncDate = await supabase.rpc(
-      'get_last_sync_date',
-      { 
-        store_id_param: storeId,
-        data_type_param: 'orders'
-      }
-    ).then(({ data, error }) => {
-      if (error) throw error;
-      return data;
-    });
+    const lastSyncDate = await getLastSyncDate(storeId, 'orders');
     
     // Fetch orders from Magento
     const { orders, totalCount } = await fetchOrders(connection, maxPages, pageSize, lastSyncDate);
@@ -296,11 +290,7 @@ export async function syncOrders(
       console.log('No orders found for the specified criteria');
       
       // Update last sync date even if no orders were found
-      await supabase.rpc('update_last_sync_date', {
-        store_id_param: storeId,
-        data_type_param: 'orders',
-        sync_date: new Date().toISOString()
-      });
+      await updateLastSyncDate(storeId, 'orders', new Date().toISOString());
       
       return {
         success: true,
@@ -317,11 +307,7 @@ export async function syncOrders(
     const storeResult = await storeOrders(orders, storeId);
     
     // Update last sync date
-    await supabase.rpc('update_last_sync_date', {
-      store_id_param: storeId,
-      data_type_param: 'orders',
-      sync_date: new Date().toISOString()
-    });
+    await updateLastSyncDate(storeId, 'orders', new Date().toISOString());
     
     const processedCount = storeResult.stats.new + storeResult.stats.updated;
     
