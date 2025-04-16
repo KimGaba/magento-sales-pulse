@@ -54,6 +54,7 @@ const Connect = () => {
     setLoadingConnections(true);
     try {
       const userConnections = await fetchMagentoConnections(user.id);
+      console.log("Loaded connections:", userConnections);
       setConnections(userConnections);
     } catch (error) {
       console.error("Error loading connections:", error);
@@ -103,7 +104,8 @@ const Connect = () => {
   };
 
   const handleDisconnect = async (connection: MagentoConnection) => {
-    // This function just refreshes the connections list after deletion
+    // This function refreshes the connections list after deletion
+    console.log("Connection was disconnected:", connection.id);
     await loadConnections();
   };
 
