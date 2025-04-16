@@ -1,11 +1,12 @@
+import { supabase } from "../utils/supabaseClient.ts";
+import logger from "../utils/logger.ts";
 import { MagentoConnection } from "../types.ts";
-import { supabase, updateSyncProgress } from "../utils/supabaseClient.ts";
+import { updateSyncProgress } from "../utils/supabaseClient.ts";
 import { syncProducts } from "../modules/products.ts";
 import { syncOrders } from "../modules/orders.ts";
 import { syncCustomers } from "../modules/customers.ts";
-import logger from "../utils/logger.ts";
 
-const log = logger.createLogger("router");
+const log = logger.createLogger("sync-router");
 
 export type SyncOptions = {
   dataType: string;
@@ -103,5 +104,88 @@ export async function routeSync(
     );
     
     throw error;
+  }
+}
+
+/**
+ * Delete a Magento connection and all associated data
+ */
+export async function deleteConnection(connectionId: string) {
+  try {
+    log.info(`Starting deletion process for connection: ${connectionId}`);
+    
+    // First, fetch the connection to check if it has a store_id
+    const { data: connection, error: fetchError } = await supabase
+      .from("magento_connections")
+      .select("store_id")
+      .eq("id", connectionId)
+      .maybeSingle();
+      
+    if (fetchError) {
+      log.error(`Error fetching connection: ${fetchError.message}`);
+      return { 
+        success: false, 
+        error: `Error fetching connection: ${fetchError.message}` 
+      };
+    }
+    
+    if (!connection) {
+      log.error(`Connection ${connectionId} not found`);
+      return { 
+        success: false, 
+        error: "Connection not found" 
+      };
+    }
+    
+    // If connection has a store_id, delete all store-related data first
+    if (connection.store_id) {
+      log.info(`Deleting data for store_id: ${connection.store_id}`);
+      try {
+        // Use the database function to delete all store-related data
+        const { error: rpcError } = await supabase.rpc(
+          'delete_store_data', 
+          { target_store_id: connection.store_id }
+        );
+        
+        if (rpcError) {
+          log.error(`Error deleting store data: ${rpcError.message}`);
+          // Continue with connection deletion even if this fails
+          log.info("Continuing with connection deletion despite store data deletion error");
+        }
+      } catch (storeError) {
+        log.error(`Exception deleting store data: ${storeError.message}`, storeError as Error);
+        // Continue with connection deletion even if this fails
+        log.info("Continuing with connection deletion despite store data deletion error");
+      }
+    } else {
+      // For connections without a store_id, log and delete just the connection
+      log.info(`Deleting connection ${connectionId} without a store_id`);
+    }
+    
+    // Delete the connection itself
+    const { error: deleteError } = await supabase
+      .from("magento_connections")
+      .delete()
+      .eq("id", connectionId);
+    
+    if (deleteError) {
+      log.error(`Error deleting connection: ${deleteError.message}`);
+      return { 
+        success: false, 
+        error: `Error deleting connection: ${deleteError.message}` 
+      };
+    }
+    
+    log.info(`Connection ${connectionId} deleted successfully`);
+    return { 
+      success: true, 
+      message: "Forbindelsen blev slettet" 
+    };
+  } catch (error) {
+    log.error(`Unexpected error in deleteConnection: ${error.message}`, error as Error);
+    return { 
+      success: false, 
+      error: `Unexpected error: ${error.message}` 
+    };
   }
 }
