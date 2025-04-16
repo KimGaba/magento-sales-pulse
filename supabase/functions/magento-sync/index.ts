@@ -1,3 +1,4 @@
+
 // Follow Deno and Supabase Edge runtime conventions
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { synchronizeMagentoData, getSyncProgress } from "./sync_service.ts";
