@@ -1,3 +1,4 @@
+// Forbedret version af magentoClient.ts med URL-normalisering
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.21.0";
 import { MagentoConnection } from "../types.ts";
 import logger from "./logger.ts";
@@ -5,11 +6,36 @@ import logger from "./logger.ts";
 const log = logger.createLogger("magentoClient");
 
 /**
+ * Normaliserer en URL ved at sikre, at den har protokol og afsluttende skråstreg
+ */
+export function normalizeUrl(url: string): string {
+  let normalizedUrl = url.trim();
+  
+  // Tilføj protokol hvis det mangler
+  if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+    normalizedUrl = 'https://' + normalizedUrl;
+  }
+  
+  // Tilføj afsluttende skråstreg hvis det mangler
+  if (!normalizedUrl.endsWith('/')) {
+    normalizedUrl = normalizedUrl + '/';
+  }
+  
+  return normalizedUrl;
+}
+
+/**
  * Generic function to fetch data from Magento API
  */
 export async function fetchFromMagento(connection: MagentoConnection, endpoint: string, params?: Record<string, string>) {
   try {
-    const url = new URL(endpoint, connection.store_url);
+    // Normaliser store_url for at sikre korrekt URL-konstruktion
+    const normalizedStoreUrl = normalizeUrl(connection.store_url);
+    
+    // Fjern indledende skråstreg fra endpoint hvis den findes
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+    
+    const url = new URL(cleanEndpoint, normalizedStoreUrl);
     
     // Add query parameters if provided
     if (params) {
@@ -32,7 +58,7 @@ export async function fetchFromMagento(connection: MagentoConnection, endpoint: 
     if (!response.ok) {
       const errorText = await response.text();
       log.error(`Magento API error: ${response.status} ${response.statusText}`, { error: errorText });
-      throw new Error(`Magento API error: ${response.status} ${response.statusText}`);
+      throw new Error(`Magento API error (${response.status}): ${errorText || response.statusText}`);
     }
     
     return await response.json();
@@ -47,7 +73,7 @@ export async function fetchFromMagento(connection: MagentoConnection, endpoint: 
  */
 export async function fetchStoreViews(connection: MagentoConnection): Promise<any[]> {
   try {
-    const endpoint = '/rest/all/V1/store/storeViews';
+    const endpoint = 'rest/all/V1/store/storeViews';
     const data = await fetchFromMagento(connection, endpoint);
     return data;
   } catch (error) {
@@ -93,9 +119,14 @@ export async function storeStoreViews(connection: MagentoConnection, storeViews:
 /**
  * Test Magento connection
  */
-export async function testConnection(storeUrl: string, accessToken: string): Promise<{ success: boolean; message?: string }> {
+export async function testConnection(storeUrl: string, accessToken: string): Promise<{ success: boolean; message?: string; details?: any }> {
   try {
-    const url = new URL('/rest/all/V1/store/storeViews', storeUrl);
+    // Normaliser URL'en for at sikre korrekt format
+    const normalizedUrl = normalizeUrl(storeUrl);
+    
+    log.info(`Testing connection to Magento store: ${normalizedUrl}`);
+    
+    const url = new URL('rest/all/V1/store/storeViews', normalizedUrl);
     
     const response = await fetch(url.toString(), {
       method: 'GET',
@@ -109,14 +140,26 @@ export async function testConnection(storeUrl: string, accessToken: string): Pro
     if (!response.ok) {
       const errorText = await response.text();
       log.error(`Connection test failed: ${response.status} ${response.statusText}`, { error: errorText });
-      return { success: false, message: `Connection test failed: ${response.status} ${response.statusText}` };
+      return { 
+        success: false, 
+        message: `Forbindelsesfejl: ${response.status} ${response.statusText}`, 
+        details: { status: response.status, error: errorText } 
+      };
     }
     
     const data = await response.json();
     log.info(`Connection test successful, store views:`, data);
-    return { success: true, message: 'Connection test successful' };
+    return { 
+      success: true, 
+      message: 'Forbindelse testet med succes', 
+      details: { storeViews: data.length } 
+    };
   } catch (error) {
     log.error(`Error testing connection: ${error.message}`, error as Error);
-    return { success: false, message: `Error testing connection: ${error.message}` };
+    return { 
+      success: false, 
+      message: `Fejl ved test af forbindelse: ${error.message}`,
+      details: { error: error.message }
+    };
   }
 }
