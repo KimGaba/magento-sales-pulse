@@ -1,0 +1,7 @@
+/* A _redirects file for Netlify that ensures all routes in a single-page application (SPA)
+ * are directed to index.html, allowing client-side routing to handle the navigation.
+ * This fixes 404 errors when accessing routes directly via URL.
+ */
+
+# Redirect all routes to index.html with a 200 status code
+/*    /index.html   200
