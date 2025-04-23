@@ -6,9 +6,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTranslation } from '@/i18n/LanguageContext';
 import DeleteConnectionDialog from './DeleteConnectionDialog';
 
+interface StoreConnection {
+  id: string;
+  store_id?: string;
+  store_name: string;
+  store_url: string;
+  status: string;
+  order_statuses?: string[];
+}
+
 interface DeleteConnectionButtonProps {
-  connectionId: string;
-  storeName: string;
+  connection: StoreConnection;
   onDeleted: () => void;
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
   size?: 'default' | 'sm' | 'lg' | 'icon';
@@ -16,18 +24,30 @@ interface DeleteConnectionButtonProps {
 }
 
 const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
-  connectionId,
-  storeName,
+  connection,
   onDeleted,
   variant = 'destructive',
   size = 'default',
   disabled = false
 }) => {
   // Safety check to avoid issues with undefined props
-  if (!connectionId) {
-    console.warn("DeleteConnectionButton rendered without connectionId");
-    return null; // Render nothing if connectionId is missing
+  if (!connection || !connection.id) {
+    console.warn("DeleteConnectionButton rendered without valid connection");
+    // Return empty button instead of null to maintain UI layout
+    return (
+      <Button
+        variant={variant}
+        size={size}
+        disabled={true}
+      >
+        <Trash2 className="h-4 w-4 mr-2" />
+        Slet
+      </Button>
+    );
   }
+
+  const connectionId = connection.id;
+  const storeName = connection.store_name;
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
