@@ -23,37 +23,32 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
   size = 'default',
   disabled = false
 }) => {
+  // Safety check to avoid issues with undefined props
+  if (!connectionId) {
+    console.warn("DeleteConnectionButton rendered without connectionId");
+    return null; // Render nothing if connectionId is missing
+  }
+
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { toast } = useToast();
   const { t } = useTranslation();
 
   const handleDelete = async () => {
+    if (isDeleting) return; // Prevent double clicks
+    
     setIsDeleting(true);
+    console.log("Starting deletion process for connection:", connectionId);
     
     try {
-      console.log("Deleting connection with ID:", connectionId); // Debug log
-      
-      if (!connectionId) {
-        console.error("No connection ID provided for deletion");
-        toast({
-          title: t('error'),
-          description: t('errorDeletingConnection'),
-          variant: 'destructive'
-        });
-        return;
-      }
-      
-      // Call the Supabase Edge Function to delete the connection
-      const { data, error } = await supabase.functions.invoke('magento-sync', {
-        body: { 
-          action: 'delete_connection',
-          connectionId
-        }
-      });
-      
+      // Direct database deletion approach instead of using Edge Function
+      const { error } = await supabase
+        .from("magento_connections")
+        .delete()
+        .eq("id", connectionId);
+        
       if (error) {
-        console.error('Error deleting connection:', error);
+        console.error('Error deleting connection from database:', error);
         toast({
           title: t('error'),
           description: t('errorDeletingConnection'),
@@ -62,23 +57,16 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
         return;
       }
       
-      if (!data?.success) {
-        console.error('Error from edge function:', data?.error);
-        toast({
-          title: t('error'),
-          description: data?.error || t('errorDeletingConnection'),
-          variant: 'destructive'
-        });
-        return;
-      }
-      
+      console.log("Connection deleted successfully:", connectionId);
       toast({
         title: t('success'),
         description: t('connectionDeleted')
       });
       
       // Notify parent component that deletion was successful
-      onDeleted();
+      if (typeof onDeleted === 'function') {
+        onDeleted();
+      }
     } catch (error) {
       console.error('Exception deleting connection:', error);
       toast({
@@ -104,13 +92,15 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
         {t('deleteConnection')}
       </Button>
       
-      <DeleteConnectionDialog
-        open={showConfirmDialog}
-        onOpenChange={setShowConfirmDialog}
-        storeName={storeName}
-        onConfirm={handleDelete}
-        isDeleting={isDeleting}
-      />
+      {showConfirmDialog && (
+        <DeleteConnectionDialog
+          open={showConfirmDialog}
+          onOpenChange={setShowConfirmDialog}
+          storeName={storeName}
+          onConfirm={handleDelete}
+          isDeleting={isDeleting}
+        />
+      )}
     </>
   );
 };
