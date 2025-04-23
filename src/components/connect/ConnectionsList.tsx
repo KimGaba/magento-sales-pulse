@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Database } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,12 +16,14 @@ interface ConnectionsListProps {
   connections: StoreConnection[];
   loadingConnections: boolean;
   onDisconnect: (connection: StoreConnection) => void;
+  isDeleting?: boolean;
 }
 
 const ConnectionsList: React.FC<ConnectionsListProps> = ({ 
   connections, 
   loadingConnections, 
-  onDisconnect 
+  onDisconnect,
+  isDeleting = false
 }) => {
   if (loadingConnections) {
     return (
@@ -73,6 +74,7 @@ const ConnectionsList: React.FC<ConnectionsListProps> = ({
                 <DeleteConnectionButton 
                   connection={connection} 
                   onDeleted={() => onDisconnect(connection)} 
+                  disabled={isDeleting}
                 />
               </div>
             </div>

@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -20,7 +19,7 @@ const Connect = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [connections, setConnections] = useState<MagentoConnection[]>([]);
   const [loadingConnections, setLoadingConnections] = useState(true);
-  const [refreshTrigger, setRefreshTrigger] = useState(0); // State to force refresh
+  const [isDeleting, setIsDeleting] = useState(false); // Track deletion state
   const { 
     step, 
     syncProgress, 
@@ -33,30 +32,13 @@ const Connect = () => {
     resetSyncProcess 
   } = useSyncProcess();
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-      loadConnections();
-    }
-  }, [user, refreshTrigger]); // Add refreshTrigger to dependencies
-
-  const fetchProfile = async () => {
-    try {
-      const userProfile = await fetchUserProfile(user.id);
-      setProfile(userProfile);
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-    }
-  };
-
-  const loadConnections = async () => {
+  // Memoize the loadConnections function to prevent unnecessary re-renders
+  const loadConnections = useCallback(async () => {
     if (!user) return;
     
     setLoadingConnections(true);
     try {
-      // Force a fresh fetch from the database by adding a timestamp and cache: 'no-store'
-      const timestamp = new Date().getTime();
-      console.log(`Loading connections at ${timestamp}...`);
+      console.log("Loading connections...");
       
       const userConnections = await fetchMagentoConnections(user.id);
       console.log("Loaded connections:", userConnections);
@@ -72,6 +54,23 @@ const Connect = () => {
       });
     } finally {
       setLoadingConnections(false);
+    }
+  }, [user]);
+
+  // Fetch profile and connections on mount and when user changes
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+      loadConnections();
+    }
+  }, [user, loadConnections]);
+
+  const fetchProfile = async () => {
+    try {
+      const userProfile = await fetchUserProfile(user.id);
+      setProfile(userProfile);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
     }
   };
 
@@ -97,7 +96,7 @@ const Connect = () => {
       startSyncProcess(connectedStore.id, true);
       
       // Refresh connections list
-      setRefreshTrigger(prev => prev + 1);
+      loadConnections();
     } catch (error) {
       console.error("Error connecting to Magento:", error);
       toast({
@@ -110,14 +109,20 @@ const Connect = () => {
     }
   };
 
-  const handleDisconnect = async () => {
-    console.log("Connection was disconnected");
+  // Optimistic UI update for deletion
+  const handleDisconnect = async (deletedConnection: MagentoConnection) => {
+    if (isDeleting) return; // Prevent multiple simultaneous deletions
     
-    // Force a refresh of the connections after a small delay to ensure the database has been updated
-    setTimeout(() => {
-      console.log("Refreshing connections list after deletion");
-      setRefreshTrigger(prev => prev + 1);
-    }, 500);
+    setIsDeleting(true);
+    console.log("Disconnecting store:", deletedConnection.id);
+    
+    // Optimistically remove the connection from the UI
+    setConnections(prevConnections => 
+      prevConnections.filter(conn => conn.id !== deletedConnection.id)
+    );
+    
+    // No need for setTimeout or refreshTrigger - we've already updated the UI
+    setIsDeleting(false);
   };
 
   const handleGoToDashboard = () => {
@@ -135,16 +140,15 @@ const Connect = () => {
             />
             
             {/* Show existing connections */}
-            {connections.length > 0 && (
-              <div className="mt-12">
-                <h2 className="text-xl font-bold mb-4">Dine forbundne butikker</h2>
-                <ConnectionsList
-                  connections={connections}
-                  loadingConnections={loadingConnections}
-                  onDisconnect={handleDisconnect}
-                />
-              </div>
-            )}
+            <div className="mt-12">
+              <h2 className="text-xl font-bold mb-4">Dine forbundne butikker</h2>
+              <ConnectionsList
+                connections={connections}
+                loadingConnections={loadingConnections}
+                onDisconnect={handleDisconnect}
+                isDeleting={isDeleting}
+              />
+            </div>
           </>
         )}
 
