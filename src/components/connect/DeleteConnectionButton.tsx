@@ -46,9 +46,6 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
     );
   }
 
-  const connectionId = connection.id;
-  const storeName = connection.store_name;
-
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { toast } = useToast();
@@ -58,14 +55,14 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
     if (isDeleting) return; // Prevent double clicks
     
     setIsDeleting(true);
-    console.log("Starting deletion process for connection:", connectionId);
+    console.log("Starting deletion process for connection:", connection.id);
     
     try {
       // Direct database deletion approach instead of using Edge Function
       const { error } = await supabase
         .from("magento_connections")
         .delete()
-        .eq("id", connectionId);
+        .eq("id", connection.id);
         
       if (error) {
         console.error('Error deleting connection from database:', error);
@@ -77,7 +74,7 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
         return;
       }
       
-      console.log("Connection deleted successfully:", connectionId);
+      console.log("Connection deleted successfully:", connection.id);
       toast({
         title: t('success'),
         description: t('connectionDeleted')
@@ -116,8 +113,8 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
         <DeleteConnectionDialog
           open={showConfirmDialog}
           onOpenChange={setShowConfirmDialog}
-          storeName={storeName}
-          onConfirm={handleDelete}
+          storeToDelete={connection}
+          onConfirmDelete={handleDelete}
           isDeleting={isDeleting}
         />
       )}
