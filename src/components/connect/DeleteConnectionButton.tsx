@@ -1,109 +1,117 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Database } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { toast as sonnerToast } from 'sonner';
+import { useTranslation } from '@/i18n/LanguageContext';
+import DeleteConnectionDialog from './DeleteConnectionDialog';
 
 interface DeleteConnectionButtonProps {
   connectionId: string;
+  storeName: string;
   onDeleted: () => void;
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
+  disabled?: boolean;
 }
 
-const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({ 
-  connectionId, 
-  onDeleted 
+const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
+  connectionId,
+  storeName,
+  onDeleted,
+  variant = 'destructive',
+  size = 'default',
+  disabled = false
 }) => {
-  const [deleting, setDeleting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const handleDelete = async () => {
-    if (!connectionId) {
-      console.error('No connection ID provided for deletion');
-      toast({
-        variant: 'destructive',
-        title: 'Fejl',
-        description: 'Ingen forbindelse ID angivet til sletning'
-      });
-      return;
-    }
-
-    if (!window.confirm('Er du sikker på, at du vil slette denne forbindelse? Dette kan ikke fortrydes.')) {
-      return;
-    }
-
-    setDeleting(true);
+    setIsDeleting(true);
     
     try {
-      console.log(`Deleting connection ID: ${connectionId}`);
+      console.log("Deleting connection with ID:", connectionId); // Debug log
       
-      // Call the Edge Function to handle deletion
+      if (!connectionId) {
+        console.error("No connection ID provided for deletion");
+        toast({
+          title: t('error'),
+          description: t('errorDeletingConnection'),
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // Call the Supabase Edge Function to delete the connection
       const { data, error } = await supabase.functions.invoke('magento-sync', {
         body: { 
           action: 'delete_connection',
-          connectionId 
+          connectionId
         }
       });
       
       if (error) {
-        console.error('Error calling delete_connection function:', error);
+        console.error('Error deleting connection:', error);
         toast({
-          variant: 'destructive',
-          title: 'Fejl ved sletning',
-          description: `Der opstod en fejl: ${error.message}`
+          title: t('error'),
+          description: t('errorDeletingConnection'),
+          variant: 'destructive'
         });
         return;
       }
       
-      if (!data.success) {
-        console.error('Delete connection returned error:', data.error);
+      if (!data?.success) {
+        console.error('Error from edge function:', data?.error);
         toast({
-          variant: 'destructive',
-          title: 'Fejl ved sletning',
-          description: data.error || 'Der opstod en ukendt fejl ved sletning af forbindelsen'
+          title: t('error'),
+          description: data?.error || t('errorDeletingConnection'),
+          variant: 'destructive'
         });
         return;
       }
-
-      // Success
-      sonnerToast.success('Forbindelsen blev slettet');
       
-      // Notify parent component to refresh the connections list
-      onDeleted();
-      
-    } catch (error) {
-      console.error('Exception in handleDelete:', error);
       toast({
-        variant: 'destructive',
-        title: 'Fejl ved sletning',
-        description: error instanceof Error ? error.message : 'Der opstod en ukendt fejl'
+        title: t('success'),
+        description: t('connectionDeleted')
+      });
+      
+      // Notify parent component that deletion was successful
+      onDeleted();
+    } catch (error) {
+      console.error('Exception deleting connection:', error);
+      toast({
+        title: t('error'),
+        description: t('errorDeletingConnection'),
+        variant: 'destructive'
       });
     } finally {
-      setDeleting(false);
+      setIsDeleting(false);
+      setShowConfirmDialog(false);
     }
   };
 
   return (
-    <Button 
-      variant="outline" 
-      size="sm"
-      className="border-red-500 text-red-500 hover:bg-red-50"
-      onClick={handleDelete}
-      disabled={deleting}
-    >
-      {deleting ? (
-        <div className="flex items-center">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500 mr-2"></div>
-          Sletter...
-        </div>
-      ) : (
-        <>
-          <Database className="h-4 w-4 mr-2" />
-          Slet butik
-        </>
-      )}
-    </Button>
+    <>
+      <Button
+        variant={variant}
+        size={size}
+        onClick={() => setShowConfirmDialog(true)}
+        disabled={disabled || isDeleting}
+      >
+        <Trash2 className="h-4 w-4 mr-2" />
+        {t('deleteConnection')}
+      </Button>
+      
+      <DeleteConnectionDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        storeName={storeName}
+        onConfirm={handleDelete}
+        isDeleting={isDeleting}
+      />
+    </>
   );
 };
 
