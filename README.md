@@ -62,15 +62,15 @@ This project is built with:
 
 ## Configuration
 
-Create a `.env` file in the project root based on `.env.example` and set your Supabase
+Create a `.env` file in the project root based on `.env.example` and set your Railway
 credentials:
 
 ```sh
 cp .env.example .env
 ```
 
-The variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` must be provided for the
-application to connect to Supabase.
+The `DATABASE_URL` variable must be provided for the
+application to connect to Railway.
 
 ### Docker
 
@@ -116,10 +116,10 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-trick
 
 ## Running with Docker
 
-The project includes a `docker-compose.yml` file that starts the React dev server alongside a self-hosted Supabase stack.
+The project includes a `docker-compose.yml` file that starts the React dev server alongside a self-hosted Railway stack.
 
 ```bash
 docker compose up
 ```
 
-The application will be available at `http://localhost:5173`. Supabase services listen on ports `54322`, `3600`, `4500`, and `5500`, and database files are stored in Docker volumes for persistence.
+The application will be available at `http://localhost:5173` and the PostgreSQL database listens on port `5432`.

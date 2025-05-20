@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/railway/client";
 
 // Fetch trends data from Supabase
 export const fetchTrendsData = async ({

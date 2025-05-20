@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/railway/client';
 import { fetchSyncProgress, SyncProgress } from '@/services/transactionService';
 
 interface SyncState {
