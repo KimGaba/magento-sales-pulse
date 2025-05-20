@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { TestResult } from '@/types/database';
 import { testDatabaseConnection, getTransactionCount, fetchTransactionData } from '@/services/transactionService';
@@ -9,12 +9,11 @@ export const useDatabaseTests = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [supabaseInfo, setSupabaseInfo] = useState<string>('');
 
-  // Initialize Supabase info
-  useState(() => {
-    // Use the URL string directly instead of the protected property
+  // Initialize Supabase info when the hook mounts
+  useEffect(() => {
     const url = "https://vlkcnndgtarduplyedyp.supabase.co";
     setSupabaseInfo(`Connected to: ${url}`);
-  });
+  }, []);
 
   const runAllTests = async () => {
     setIsRunning(true);
