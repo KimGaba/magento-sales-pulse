@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { User } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/railway/client';
 import { fetchUserProfile, updateUserProfile } from '@/services/profileService';
 import ProfileInfoCard from '@/components/settings/ProfileInfoCard';
 import InvoiceInfoCard from '@/components/settings/InvoiceInfoCard';

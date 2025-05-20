@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { TestResult } from '@/types/database';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/railway/client';
 import { testDatabaseConnection } from '@/services/transactionService';
 
 export const useConnectionTest = () => {

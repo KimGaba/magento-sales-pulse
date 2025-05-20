@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/railway/client';
 import {
   Dialog,
   DialogContent,
@@ -293,7 +293,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           </DialogHeader>
           <div className="space-y-4 py-4">
             <p>
-              For at løse dette problem skal VITE_SUPABASE_URL og VITE_SUPABASE_ANON_KEY miljøvariable være korrekt konfigureret.
+              For at løse dette problem skal DATABASE_URL miljøvariable være korrekt konfigureret.
             </p>
             <p>
               Kontakt venligst systemadministratoren for at få dette løst.
