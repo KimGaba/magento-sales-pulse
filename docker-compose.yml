@@ -70,3 +70,13 @@ services:
 volumes:
   supabase-db:
   supabase-storage:
+
+version: "3"
+services:
+  app:
+    build: .
+    ports:
+      - "8580:8580"
+    environment:
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
