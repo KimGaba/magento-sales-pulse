@@ -71,3 +71,13 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+## Running with Docker
+
+The project includes a `docker-compose.yml` file that starts the React dev server alongside a self-hosted Supabase stack.
+
+```bash
+docker compose up
+```
+
+The application will be available at `http://localhost:5173`. Supabase services expose PostgREST on port `3600`, the realtime server on `4500`, storage on `5500`, and the PostgreSQL database on `54322`. Database and storage data are persisted in Docker volumes.
