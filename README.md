@@ -87,7 +87,7 @@ You can generate a production build and serve it locally with:
 
 ```bash
 npm run build
-npx serve -s dist -l 8080
+npx serve -s dist -l tcp://0.0.0.0:8080
 ```
 
 The `Dockerfile` instead starts the development server with:
@@ -98,8 +98,8 @@ npm run dev -- --host 0.0.0.0
 
 ### Deploying to Railway
 
-When deploying to Railway, set the build command to `npm run build` and the
-start command to `npx serve -s dist -l 8080`.
+When deploying to Railway, set the build command to `npm run build` and either
+leave the start command empty or set it to `npx serve -s dist -l tcp://0.0.0.0:$PORT`.
 
 ## How can I deploy this project?
 
