@@ -76,7 +76,7 @@ def test_table_structure():
     try:
         # Information schema query to see column definitions
         # Note: This requires higher privileges and might not work with anon key
-        response = supabase.from('information_schema.columns').select('*').eq('table_name', 'transactions').execute()
+        response = supabase.table('information_schema.columns').select('*').eq('table_name', 'transactions').execute()
         
         # Check response
         data = response.data
