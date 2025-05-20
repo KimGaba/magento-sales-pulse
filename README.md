@@ -81,6 +81,26 @@ are set in your shell or in a `.env` file before running:
 docker-compose up
 ```
 
+### Build and Serve
+
+You can generate a production build and serve it locally with:
+
+```bash
+npm run build
+npx serve -s dist -l 8080
+```
+
+The `Dockerfile` instead starts the development server with:
+
+```bash
+npm run dev -- --host 0.0.0.0
+```
+
+### Deploying to Railway
+
+When deploying to Railway, set the build command to `npm run build` and the
+start command to `npx serve -s dist -l 8080`.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/2a884200-905e-4ae0-b256-eb9aae846465) and click on Share -> Publish.
