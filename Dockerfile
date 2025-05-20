@@ -8,5 +8,5 @@ RUN npm run build
 
 ENV PORT 8080
 EXPOSE $PORT
-CMD ["sh", "-c", "npx serve -s dist -l $PORT"]
+CMD ["sh", "-c", "npx serve -s dist -l tcp://0.0.0.0:${PORT:-8080}"]
 
