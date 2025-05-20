@@ -60,6 +60,27 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Configuration
+
+Create a `.env` file in the project root based on `.env.example` and set your Supabase
+credentials:
+
+```sh
+cp .env.example .env
+```
+
+The variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` must be provided for the
+application to connect to Supabase.
+
+### Docker
+
+The provided `docker-compose.yml` uses these environment variables. Ensure they
+are set in your shell or in a `.env` file before running:
+
+```sh
+docker-compose up
+```
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/2a884200-905e-4ae0-b256-eb9aae846465) and click on Share -> Publish.
