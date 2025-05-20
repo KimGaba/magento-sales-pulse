@@ -1,9 +1,17 @@
 
+import os
+import pytest
 from supabase import create_client
 
-# Supabase project details
-SUPABASE_URL = "https://vlkcnndgtarduplyedyp.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZsa2NubmRndGFyZHVwbHllZHlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYyNDY0ODYsImV4cCI6MjA1MTgyMjQ4Nn0.jr1HnmnBjlyabBUafz6gFpjpjGrYMq4E3XckB0XCovE"
+# Supabase project details loaded from environment variables
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    pytest.skip(
+        "SUPABASE_URL and SUPABASE_KEY must be set to run these tests",
+        allow_module_level=True,
+    )
 
 # Initialize the Supabase client
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
