@@ -99,7 +99,8 @@ npm run dev -- --host 0.0.0.0
 ### Deploying to Railway
 
 When deploying to Railway, set the build command to `npm run build` and either
-leave the start command empty or set it to `npx serve -s dist -l tcp://0.0.0.0:$PORT`.
+use the new `npm start` script or set the start command to
+`npx serve -s dist -l tcp://0.0.0.0:$PORT`.
 
 ## How can I deploy this project?
 
