@@ -149,8 +149,8 @@ export const fetchOrderStatuses = async (): Promise<string[]> => {
       'payment_review'
     ];
     
-    // This should be replaced with an actual query to the database
-    // to get all unique order statuses across all orders
+    // The following query retrieves transaction metadata so we can
+    // derive the unique order statuses from all saved orders
     const { data: transactions } = await supabase
       .from('transactions')
       .select('metadata');
