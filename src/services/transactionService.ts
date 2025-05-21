@@ -122,7 +122,22 @@ export const fetchTransactionData = async (
       throw error;
     }
     
-    return data || [];
+    // Transform the data to match the Transaction type by adding the required email field
+    const transformedData: Transaction[] = (data || []).map(item => ({
+      id: item.id,
+      store_id: item.store_id,
+      transaction_date: item.transaction_date,
+      amount: item.amount,
+      created_at: item.created_at,
+      product_id: item.product_id || null,
+      customer_id: item.customer_id || null,
+      external_id: item.external_id || null,
+      metadata: item.metadata || {},
+      email: '', // Add the required email field with a default empty value
+      customer_name: item.customer_name || null
+    }));
+    
+    return transformedData;
   } catch (error) {
     console.error('Error in fetchTransactionData:', error);
     throw error;
@@ -158,7 +173,23 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
       
       if (data && data.success && data.progress) {
         console.log('Sync progress from Edge Function:', data.progress);
-        return data.progress as SyncProgress;
+        // Transform to ensure it has all required SyncProgress fields
+        return {
+          id: data.progress.id,
+          store_id: data.progress.store_id,
+          connection_id: data.progress.connection_id,
+          current_page: data.progress.current_page,
+          total_pages: data.progress.total_pages,
+          orders_processed: data.progress.orders_processed,
+          total_orders: data.progress.total_orders, 
+          status: data.progress.status as 'in_progress' | 'completed' | 'error' | 'failed',
+          started_at: data.progress.started_at,
+          updated_at: data.progress.updated_at,
+          error_message: data.progress.error_message,
+          skipped_orders: data.progress.skipped_orders || 0,
+          warning_message: data.progress.warning_message || undefined,
+          notes: data.progress.notes
+        };
       }
     } catch (edgeFunctionError) {
       console.error('Edge Function error:', edgeFunctionError);
@@ -208,8 +239,8 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
         started_at: data.started_at as string,
         updated_at: data.updated_at as string,
         error_message: data.error_message as string | undefined,
-        skipped_orders: (data.skipped_orders as number | undefined) || 0,
-        warning_message: (data.warning_message as string | undefined) || undefined,
+        skipped_orders: data.skipped_orders as number | undefined || 0,
+        warning_message: data.warning_message as string | undefined || undefined,
         notes: data.notes as string | undefined
       };
     }
@@ -257,8 +288,8 @@ export const fetchSyncHistory = async (storeId: string, limit = 5): Promise<Sync
       started_at: item.started_at as string,
       updated_at: item.updated_at as string,
       error_message: item.error_message as string | undefined,
-      skipped_orders: (item.skipped_orders as number | undefined) || 0,
-      warning_message: (item.warning_message as string | undefined) || undefined,
+      skipped_orders: item.skipped_orders as number | undefined || 0,
+      warning_message: item.warning_message as string | undefined || undefined,
       notes: item.notes as string | undefined
     }));
     

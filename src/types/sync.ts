@@ -2,7 +2,7 @@
 import { SyncProgress } from './database';
 
 // Export SyncProgress from this file so components can import from either location
-export { SyncProgress };
+export type { SyncProgress };
 
 export interface SyncHistoryItem {
   id: string;
