@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SyncProgress, Transaction } from '@/types/database';
 
@@ -283,7 +284,7 @@ export const fetchSyncProgress = async (storeIdOrConnectionId: string): Promise<
     
     if (data && data.length > 0) {
       const syncData = data[0];
-      // Type cast to ensure all fields are included
+      // Type cast and add missing fields with default values if they don't exist
       return {
         id: syncData.id,
         store_id: syncData.store_id,
@@ -296,8 +297,8 @@ export const fetchSyncProgress = async (storeIdOrConnectionId: string): Promise<
         started_at: syncData.started_at,
         updated_at: syncData.updated_at,
         error_message: syncData.error_message,
-        skipped_orders: syncData.skipped_orders || 0,
-        warning_message: syncData.warning_message || '',
+        skipped_orders: 'skipped_orders' in syncData ? syncData.skipped_orders : 0,
+        warning_message: 'warning_message' in syncData ? syncData.warning_message : '',
         notes: syncData.notes
       };
     }
@@ -345,8 +346,8 @@ export const fetchSyncHistory = async (storeId: string, limit = 5): Promise<Sync
       started_at: item.started_at,
       updated_at: item.updated_at,
       error_message: item.error_message,
-      skipped_orders: (item as any).skipped_orders || 0,
-      warning_message: (item as any).warning_message,
+      skipped_orders: 'skipped_orders' in item ? item.skipped_orders : 0,
+      warning_message: 'warning_message' in item ? item.warning_message : '',
       notes: item.notes
     }));
     
