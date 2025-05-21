@@ -257,56 +257,49 @@ export const fetchSyncProgress = async (storeIdOrConnectionId: string): Promise<
     
     // Fallback: query the sync_progress table directly
     // If we're working with a connection ID, try to find sync_progress by connection_id first
-    let query = supabase.from('sync_progress');
+    let query = supabase.from('sync_progress').select('*');
     
     if (isConnectionId) {
       console.log(`Querying sync_progress by connection_id: ${connectionId}`);
       query = query
-        .select('*')
         .eq('connection_id', connectionId)
         .order('updated_at', { ascending: false })
         .limit(1);
     } else {
       console.log(`Querying sync_progress by store_id: ${storeId}`);
       query = query
-        .select('*')
         .eq('store_id', storeId)
         .order('updated_at', { ascending: false })
         .limit(1);
     }
     
-    const { data, error } = await query.maybeSingle();
+    const { data, error } = await query;
     
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No data found (single row expected)
-        console.log('No sync progress found in database');
-        return null;
-      }
-      
       console.error('Error fetching sync progress from database:', error);
       throw error;
     }
     
     console.log('Sync progress from database:', data);
     
-    // Type cast to ensure all fields are included
-    if (data) {
+    if (data && data.length > 0) {
+      const syncData = data[0];
+      // Type cast to ensure all fields are included
       return {
-        id: data.id,
-        store_id: data.store_id,
-        connection_id: data.connection_id,
-        current_page: data.current_page,
-        total_pages: data.total_pages,
-        orders_processed: data.orders_processed,
-        total_orders: data.total_orders,
-        status: data.status as 'in_progress' | 'completed' | 'error' | 'failed',
-        started_at: data.started_at,
-        updated_at: data.updated_at,
-        error_message: data.error_message,
-        skipped_orders: (data as any).skipped_orders || 0,
-        warning_message: (data as any).warning_message,
-        notes: data.notes
+        id: syncData.id,
+        store_id: syncData.store_id,
+        connection_id: syncData.connection_id,
+        current_page: syncData.current_page,
+        total_pages: syncData.total_pages,
+        orders_processed: syncData.orders_processed,
+        total_orders: syncData.total_orders,
+        status: syncData.status as 'in_progress' | 'completed' | 'error' | 'failed',
+        started_at: syncData.started_at,
+        updated_at: syncData.updated_at,
+        error_message: syncData.error_message,
+        skipped_orders: syncData.skipped_orders || 0,
+        warning_message: syncData.warning_message,
+        notes: syncData.notes
       };
     }
     return null;

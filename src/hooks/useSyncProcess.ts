@@ -34,39 +34,11 @@ export const useSyncProcess = () => {
       const interval = setInterval(async () => {
         try {
           let progress = null;
+          const idToUse = storeId || connectionId;
           
-          // If we have a storeId, use it directly
-          if (storeId) {
-            progress = await fetchSyncProgress(storeId);
-          } 
-          // If this is an initial connection, we need to check if the store_id has been assigned
-          else if (connectionId && isInitialConnection) {
-            // First try to get the connection to see if it has a store_id now
-            const { data: connection } = await supabase
-              .from('magento_connections')
-              .select('store_id')
-              .eq('id', connectionId)
-              .maybeSingle();
-            
-            if (connection && connection.store_id) {
-              // Store ID has been assigned, save it and use it for future queries
-              setStoreId(connection.store_id as string);
-              progress = await fetchSyncProgress(connection.store_id as string);
-            } else {
-              // Try to get progress using connection_id directly
-              const { data } = await supabase
-                .from('sync_progress')
-                .select('*')
-                .eq('connection_id', connectionId)
-                .order('updated_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-              
-              if (data) {
-                progress = data;
-              }
-            }
-          }
+          if (!idToUse) return;
+          
+          progress = await fetchSyncProgress(idToUse);
           
           if (progress) {
             setRealSyncProgress(progress);
@@ -129,6 +101,8 @@ export const useSyncProcess = () => {
         ? { trigger: 'initial_connection', connection_id: id }
         : { trigger: 'initial_connection', store_id: id };
         
+      console.log('Initial sync request body:', body);
+      
       const { data, error } = await supabase.functions.invoke('magento-sync', {
         body
       });

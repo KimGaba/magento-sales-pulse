@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export type MagentoConnection = {
@@ -106,6 +107,7 @@ export const triggerMagentoSync = async (id: string, changesOnly = false, isConn
   
   try {
     // Call the Supabase Edge Function with the id and trigger type
+    // Adjust the body structure to match what the edge function expects
     const body = isConnectionId 
       ? { 
           connection_id: id,

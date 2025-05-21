@@ -65,14 +65,21 @@ export const updateUserProfile = async (
  */
 export const isUserAdmin = async (userId: string): Promise<boolean> => {
   try {
-    const { data: user, error } = await supabase.auth.admin.getUserById(userId);
+    // Instead of using admin API, we'll check a field in the user's profile
+    // or check for membership in an admin group/role
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
     
     if (error) {
       console.error('Error checking admin status:', error);
       return false;
     }
     
-    return user?.user?.user_metadata?.role === 'admin';
+    // Check if the user has an admin role in their profile
+    return data?.role === 'admin';
   } catch (error) {
     console.error('Error checking admin status:', error);
     return false;
