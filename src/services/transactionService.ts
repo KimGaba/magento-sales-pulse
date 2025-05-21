@@ -132,7 +132,7 @@ export const fetchTransactionData = async (
       product_id: item.product_id || null,
       customer_id: item.customer_id || null,
       external_id: item.external_id || null,
-      metadata: item.metadata || {},
+      metadata: item.metadata || {}, // Cast to Record<string, any> to ensure compatibility
       email: '', // Add the required email field with a default empty value
       customer_name: item.customer_name || null
     }));
@@ -240,7 +240,7 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
         updated_at: data.updated_at as string,
         error_message: data.error_message as string | undefined,
         skipped_orders: data.skipped_orders as number | undefined || 0,
-        warning_message: data.warning_message as string | undefined || undefined,
+        warning_message: data.warning_message as string | undefined,
         notes: data.notes as string | undefined
       };
     }
@@ -289,7 +289,7 @@ export const fetchSyncHistory = async (storeId: string, limit = 5): Promise<Sync
       updated_at: item.updated_at as string,
       error_message: item.error_message as string | undefined,
       skipped_orders: item.skipped_orders as number | undefined || 0,
-      warning_message: item.warning_message as string | undefined || undefined,
+      warning_message: item.warning_message as string | undefined,
       notes: item.notes as string | undefined
     }));
     
