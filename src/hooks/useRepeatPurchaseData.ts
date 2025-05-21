@@ -36,28 +36,26 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
             customer_id: transaction.customer_id || null,
             external_id: transaction.external_id || null,
             metadata: transaction.metadata || {},
-            email: transaction.email
+            email: '', // Initialize with empty string, we'll try to extract it below
+            customer_name: transaction.customer_name || null
           };
           
           // Check if we have customer email info in metadata
           if (transaction.metadata && 
               typeof transaction.metadata === 'object' && 
               transaction.metadata !== null) {
+            // Type assertion to work with the metadata
             const metadata = transaction.metadata as Record<string, any>;
             if (metadata.customer_email) {
-              return {
-                ...basicTransaction,
-                email: metadata.customer_email
-              };
+              basicTransaction.email = metadata.customer_email as string;
             }
           }
           
           // Check if email might be in customer_id field (some systems store email as ID)
-          if (transaction.customer_id && typeof transaction.customer_id === 'string' && transaction.customer_id.includes('@')) {
-            return {
-              ...basicTransaction,
-              email: transaction.customer_id
-            };
+          if (!basicTransaction.email && transaction.customer_id && 
+              typeof transaction.customer_id === 'string' && 
+              transaction.customer_id.includes('@')) {
+            basicTransaction.email = transaction.customer_id;
           }
           
           return basicTransaction;
@@ -97,28 +95,26 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
             customer_id: transaction.customer_id || null,
             external_id: transaction.external_id || null,
             metadata: transaction.metadata || {},
-            email: transaction.email
+            email: '', // Initialize with empty string, we'll try to extract it below
+            customer_name: transaction.customer_name || null
           };
           
           // Check if we have customer email info in metadata
           if (transaction.metadata && 
               typeof transaction.metadata === 'object' && 
               transaction.metadata !== null) {
+            // Type assertion to work with the metadata
             const metadata = transaction.metadata as Record<string, any>;
             if (metadata.customer_email) {
-              return {
-                ...basicTransaction,
-                email: metadata.customer_email
-              };
+              basicTransaction.email = metadata.customer_email as string;
             }
           }
           
           // Check if email might be in customer_id field (some systems store email as ID)
-          if (transaction.customer_id && typeof transaction.customer_id === 'string' && transaction.customer_id.includes('@')) {
-            return {
-              ...basicTransaction,
-              email: transaction.customer_id
-            };
+          if (!basicTransaction.email && transaction.customer_id && 
+              typeof transaction.customer_id === 'string' && 
+              transaction.customer_id.includes('@')) {
+            basicTransaction.email = transaction.customer_id;
           }
           
           return basicTransaction;
@@ -142,7 +138,7 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
   
   // Calculate current period data
   const currentPeriodData = calculateRepeatPurchaseRate(
-    transactions, // Type should be fixed now
+    transactions,
     parseInt(selectedMonths)
   );
   

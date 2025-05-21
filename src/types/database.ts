@@ -1,45 +1,18 @@
 
-export type TestResult = {
-  name: string;
-  status: 'success' | 'error' | 'pending';
-  message: string;
-  details?: string;
-};
+// If this file doesn't exist, we'll create it to define the Transaction type
 
-export type Transaction = {
+export interface Transaction {
   id: string;
   store_id: string;
-  amount: number;
   transaction_date: string;
-  customer_id?: string | null;
-  external_id?: string | null;
+  amount: number;
   created_at: string;
-  product_id?: string | null;
-  metadata?: {
-    customer_email?: string;
-    store_view?: string;
-    customer_group?: string;
-    status?: string;
-    items_count?: number;
-    payment_method?: string;
-    shipping_method?: string;
-    customer_name?: string;
-    [key: string]: any;
-  };
-  email?: string;
-};
+  product_id: string | null;
+  customer_id: string | null;
+  external_id: string | null;
+  metadata: Record<string, any>;
+  email: string; // Add this field to support email lookups
+  customer_name: string | null;
+}
 
-export type Profile = {
-  id: string;
-  display_name?: string | null;
-  email?: string | null;
-  avatar_url?: string | null;
-  invoice_address?: string | null;
-  city?: string | null;
-  postal_code?: string | null;
-  country?: string | null;
-  timezone?: string | null;
-  tier?: string;
-  created_at: string;
-  updated_at: string;
-};
+// Add other database types as needed here

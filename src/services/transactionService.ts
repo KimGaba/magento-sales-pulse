@@ -194,7 +194,26 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
     }
     
     console.log('Sync progress from database:', data);
-    return data as unknown as SyncProgress;
+    // Type cast to ensure all fields are included
+    if (data) {
+      return {
+        id: data.id as string,
+        store_id: data.store_id as string,
+        connection_id: data.connection_id as string,
+        current_page: data.current_page as number,
+        total_pages: data.total_pages as number | null,
+        orders_processed: data.orders_processed as number,
+        total_orders: data.total_orders as number | null,
+        status: (data.status as 'in_progress' | 'completed' | 'error' | 'failed'),
+        started_at: data.started_at as string,
+        updated_at: data.updated_at as string,
+        error_message: data.error_message as string | undefined,
+        skipped_orders: (data.skipped_orders as number | undefined) || 0,
+        warning_message: (data.warning_message as string | undefined) || undefined,
+        notes: data.notes as string | undefined
+      };
+    }
+    return null;
   } catch (error) {
     console.error('Error in fetchSyncProgress:', error);
     throw error;
@@ -223,9 +242,8 @@ export const fetchSyncHistory = async (storeId: string, limit = 5): Promise<Sync
       return [];
     }
     
-    // Ensure all items have the correct status type
+    // Ensure all items have the correct status type and fields
     const history = data.map(item => ({
-      ...item,
       id: item.id as string,
       store_id: item.store_id as string,
       connection_id: item.connection_id as string,
@@ -239,8 +257,8 @@ export const fetchSyncHistory = async (storeId: string, limit = 5): Promise<Sync
       started_at: item.started_at as string,
       updated_at: item.updated_at as string,
       error_message: item.error_message as string | undefined,
-      skipped_orders: item.skipped_orders as number | undefined,
-      warning_message: item.warning_message as string | undefined,
+      skipped_orders: (item.skipped_orders as number | undefined) || 0,
+      warning_message: (item.warning_message as string | undefined) || undefined,
       notes: item.notes as string | undefined
     }));
     

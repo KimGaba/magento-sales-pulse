@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { fetchSyncProgress, SyncProgress } from '@/services/transactionService';
+import { fetchSyncProgress } from '@/services/transactionService';
+import { SyncProgress } from '@/types/sync';
 import { Button } from "@/components/ui/button"
 import { RefreshCcw, AlertCircle, RefreshCw, Play } from 'lucide-react';
 import { Progress } from "@/components/ui/progress"

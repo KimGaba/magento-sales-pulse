@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SyncProgress } from '@/services/transactionService';
+import { SyncProgress } from '@/types/sync';
 
 interface SyncProgressCardProps {
   syncProgress: number;
