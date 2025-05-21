@@ -10,7 +10,7 @@ export interface Transaction {
   product_id: string | null;
   customer_id: string | null;
   external_id: string | null;
-  metadata: Record<string, any>;
+  metadata: any; // Changed from Record<string, any> to any to support all JSON types
   email: string; // Add this field to support email lookups
   customer_name: string | null;
 }

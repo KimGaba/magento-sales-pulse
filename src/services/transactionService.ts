@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { SyncProgress, Transaction } from '@/types/database';
 
@@ -122,20 +121,22 @@ export const fetchTransactionData = async (
       throw error;
     }
     
-    // Transform the data to match the Transaction type by adding the required email field
-    const transformedData: Transaction[] = (data || []).map(item => ({
-      id: item.id,
-      store_id: item.store_id,
-      transaction_date: item.transaction_date,
-      amount: item.amount,
-      created_at: item.created_at,
-      product_id: item.product_id || null,
-      customer_id: item.customer_id || null,
-      external_id: item.external_id || null,
-      metadata: item.metadata || {}, // Cast to Record<string, any> to ensure compatibility
-      email: '', // Add the required email field with a default empty value
-      customer_name: item.customer_name || null
-    }));
+    // Transform the data to match the Transaction type
+    const transformedData: Transaction[] = (data || []).map(item => {
+      return {
+        id: item.id,
+        store_id: item.store_id,
+        transaction_date: item.transaction_date,
+        amount: item.amount,
+        created_at: item.created_at,
+        product_id: item.product_id || null,
+        customer_id: item.customer_id || null,
+        external_id: item.external_id || null,
+        metadata: item.metadata || {}, // Using 'any' type as defined in Transaction interface
+        email: '', // Required email field with default empty value
+        customer_name: item.customer_name || null
+      };
+    });
     
     return transformedData;
   } catch (error) {
@@ -173,6 +174,7 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
       
       if (data && data.success && data.progress) {
         console.log('Sync progress from Edge Function:', data.progress);
+        
         // Transform to ensure it has all required SyncProgress fields
         return {
           id: data.progress.id,
@@ -186,8 +188,8 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
           started_at: data.progress.started_at,
           updated_at: data.progress.updated_at,
           error_message: data.progress.error_message,
-          skipped_orders: data.progress.skipped_orders || 0,
-          warning_message: data.progress.warning_message || undefined,
+          skipped_orders: data.progress.skipped_orders,
+          warning_message: data.progress.warning_message,
           notes: data.progress.notes
         };
       }
@@ -225,23 +227,24 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
     }
     
     console.log('Sync progress from database:', data);
+    
     // Type cast to ensure all fields are included
     if (data) {
       return {
-        id: data.id as string,
-        store_id: data.store_id as string,
-        connection_id: data.connection_id as string,
-        current_page: data.current_page as number,
-        total_pages: data.total_pages as number | null,
-        orders_processed: data.orders_processed as number,
-        total_orders: data.total_orders as number | null,
-        status: (data.status as 'in_progress' | 'completed' | 'error' | 'failed'),
-        started_at: data.started_at as string,
-        updated_at: data.updated_at as string,
-        error_message: data.error_message as string | undefined,
-        skipped_orders: data.skipped_orders as number | undefined || 0,
-        warning_message: data.warning_message as string | undefined,
-        notes: data.notes as string | undefined
+        id: data.id,
+        store_id: data.store_id,
+        connection_id: data.connection_id,
+        current_page: data.current_page,
+        total_pages: data.total_pages,
+        orders_processed: data.orders_processed,
+        total_orders: data.total_orders,
+        status: data.status as 'in_progress' | 'completed' | 'error' | 'failed',
+        started_at: data.started_at,
+        updated_at: data.updated_at,
+        error_message: data.error_message,
+        skipped_orders: data.skipped_orders || 0,
+        warning_message: data.warning_message,
+        notes: data.notes
       };
     }
     return null;
@@ -275,22 +278,22 @@ export const fetchSyncHistory = async (storeId: string, limit = 5): Promise<Sync
     
     // Ensure all items have the correct status type and fields
     const history = data.map(item => ({
-      id: item.id as string,
-      store_id: item.store_id as string,
-      connection_id: item.connection_id as string,
-      current_page: item.current_page as number,
-      total_pages: item.total_pages as number | null,
-      orders_processed: item.orders_processed as number,
-      total_orders: item.total_orders as number | null,
+      id: item.id,
+      store_id: item.store_id,
+      connection_id: item.connection_id,
+      current_page: item.current_page,
+      total_pages: item.total_pages,
+      orders_processed: item.orders_processed,
+      total_orders: item.total_orders,
       status: (item.status === 'in_progress' || item.status === 'completed' || item.status === 'error' || item.status === 'failed') 
         ? item.status as 'in_progress' | 'completed' | 'error' | 'failed'
         : 'in_progress', // Default to in_progress if unknown status
-      started_at: item.started_at as string,
-      updated_at: item.updated_at as string,
-      error_message: item.error_message as string | undefined,
-      skipped_orders: item.skipped_orders as number | undefined || 0,
-      warning_message: item.warning_message as string | undefined,
-      notes: item.notes as string | undefined
+      started_at: item.started_at,
+      updated_at: item.updated_at,
+      error_message: item.error_message,
+      skipped_orders: item.skipped_orders || 0,
+      warning_message: item.warning_message,
+      notes: item.notes
     }));
     
     return history;
