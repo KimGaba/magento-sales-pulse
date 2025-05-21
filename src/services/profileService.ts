@@ -62,14 +62,15 @@ export const updateUserProfile = async (
 
 /**
  * Checks if user is an admin
+ * Note: Since we don't have a role field in profiles, we'll check a 'tier' field
+ * or alternatively, check for specific user IDs that are known to be admins
  */
 export const isUserAdmin = async (userId: string): Promise<boolean> => {
   try {
-    // Instead of using admin API, we'll check a field in the user's profile
-    // or check for membership in an admin group/role
+    // Instead of using admin API, we'll check the user's profile
     const { data, error } = await supabase
       .from('profiles')
-      .select('role')
+      .select('tier')
       .eq('id', userId)
       .single();
     
@@ -78,8 +79,13 @@ export const isUserAdmin = async (userId: string): Promise<boolean> => {
       return false;
     }
     
-    // Check if the user has an admin role in their profile
-    return data?.role === 'admin';
+    // Check if the user has an admin tier in their profile
+    // This assumes you're using the 'tier' field to determine admin status
+    return data?.tier === 'admin';
+    
+    // Alternative approach: hardcode admin user IDs if needed
+    // const adminUserIds = ['specific-user-id-1', 'specific-user-id-2'];
+    // return adminUserIds.includes(userId);
   } catch (error) {
     console.error('Error checking admin status:', error);
     return false;

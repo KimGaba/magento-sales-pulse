@@ -40,6 +40,7 @@ export interface Profile {
 }
 
 // Define SyncProgress for transactionService and related components
+// Added the missing properties: skipped_orders and warning_message
 export interface SyncProgress {
   id: string;
   store_id: string;
@@ -52,9 +53,10 @@ export interface SyncProgress {
   started_at: string;
   updated_at: string;
   error_message?: string;
-  skipped_orders?: number;  // Added missing property
-  warning_message?: string; // Added missing property
+  skipped_orders?: number;
+  warning_message?: string;
   notes?: string;
 }
 
 // Add other database types as needed here
+

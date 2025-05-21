@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { SyncProgress, Transaction } from '@/types/database';
 
@@ -238,7 +237,7 @@ export const fetchSyncProgress = async (storeIdOrConnectionId: string): Promise<
           updated_at: data.progress.updated_at,
           error_message: data.progress.error_message,
           skipped_orders: data.progress.skipped_orders || 0,
-          warning_message: data.progress.warning_message || undefined,
+          warning_message: data.progress.warning_message || '',
           notes: data.progress.notes
         };
       }
@@ -298,7 +297,7 @@ export const fetchSyncProgress = async (storeIdOrConnectionId: string): Promise<
         updated_at: syncData.updated_at,
         error_message: syncData.error_message,
         skipped_orders: syncData.skipped_orders || 0,
-        warning_message: syncData.warning_message,
+        warning_message: syncData.warning_message || '',
         notes: syncData.notes
       };
     }
