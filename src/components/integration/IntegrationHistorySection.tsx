@@ -4,16 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { format } from 'date-fns';
 import { CheckCircle, XCircle } from 'lucide-react';
-import { supabase } from '@/integrations/railway/client';
-
-interface SyncHistoryItem {
-  id: string;
-  timestamp: Date;
-  status: 'success' | 'error';
-  itemsSynced: number;
-  duration: number;
-  trigger: 'manual' | 'scheduled';
-}
+import { supabase } from '@/integrations/supabase/client';
+import { SyncHistoryItem } from '@/types/sync';
 
 const IntegrationHistorySection = () => {
   const [history, setHistory] = useState<SyncHistoryItem[]>([]);
@@ -38,7 +30,7 @@ const IntegrationHistorySection = () => {
         return;
       }
       
-      if (data) {
+      if (data && data.length > 0) {
         // Transform the data to match our component format
         const historyItems: SyncHistoryItem[] = data.map(item => {
           const startTime = new Date(item.started_at);
@@ -47,7 +39,7 @@ const IntegrationHistorySection = () => {
           const durationSeconds = Math.floor(durationMs / 1000);
           
           return {
-            id: item.id,
+            id: item.id as string,
             timestamp: startTime,
             status: item.status === 'completed' ? 'success' : 'error',
             itemsSynced: item.orders_processed || 0,

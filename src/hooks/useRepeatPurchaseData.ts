@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, subMonths } from 'date-fns';
 import { fetchTransactionData } from '@/services/transactionService';
-import { calculateRepeatPurchaseRate, calculateMonthlyRepeatRates, Transaction as CalcTransaction } from '@/utils/repeatPurchaseCalculator';
+import { calculateRepeatPurchaseRate, calculateMonthlyRepeatRates } from '@/utils/repeatPurchaseCalculator';
 import { Transaction } from '@/types/database';
 import { toast } from '@/hooks/use-toast';
 
@@ -25,35 +25,43 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
         
         // Ensure transactions have email data (extract from metadata if available)
         return result.map(transaction => {
-          // Create a typed safe transaction object
-          const typedTransaction: Transaction = {
-            ...transaction,
-            metadata: transaction.metadata as Record<string, any> || {}
+          // Make sure we have the required Transaction fields
+          const basicTransaction: Transaction = {
+            id: transaction.id,
+            store_id: transaction.store_id,
+            transaction_date: transaction.transaction_date,
+            amount: transaction.amount,
+            created_at: transaction.created_at,
+            product_id: transaction.product_id || null,
+            customer_id: transaction.customer_id || null,
+            external_id: transaction.external_id || null,
+            metadata: transaction.metadata || {},
+            email: transaction.email
           };
           
           // Check if we have customer email info in metadata
-          if (typedTransaction.metadata && 
-              typeof typedTransaction.metadata === 'object' && 
-              typedTransaction.metadata !== null) {
-            const metadata = typedTransaction.metadata as Record<string, any>;
+          if (transaction.metadata && 
+              typeof transaction.metadata === 'object' && 
+              transaction.metadata !== null) {
+            const metadata = transaction.metadata as Record<string, any>;
             if (metadata.customer_email) {
               return {
-                ...typedTransaction,
+                ...basicTransaction,
                 email: metadata.customer_email
               };
             }
           }
           
           // Check if email might be in customer_id field (some systems store email as ID)
-          if (typedTransaction.customer_id && typeof typedTransaction.customer_id === 'string' && typedTransaction.customer_id.includes('@')) {
+          if (transaction.customer_id && typeof transaction.customer_id === 'string' && transaction.customer_id.includes('@')) {
             return {
-              ...typedTransaction,
-              email: typedTransaction.customer_id
+              ...basicTransaction,
+              email: transaction.customer_id
             };
           }
           
-          return typedTransaction;
-        }) as Transaction[];
+          return basicTransaction;
+        });
       } catch (fetchError) {
         console.error('Error in all transactions query:', fetchError);
         toast({
@@ -78,35 +86,43 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
         
         // Ensure transactions have email data (extract from metadata if available)
         return result.map(transaction => {
-          // Create a typed safe transaction object
-          const typedTransaction: Transaction = {
-            ...transaction,
-            metadata: transaction.metadata as Record<string, any> || {}
+          // Make sure we have the required Transaction fields
+          const basicTransaction: Transaction = {
+            id: transaction.id,
+            store_id: transaction.store_id,
+            transaction_date: transaction.transaction_date,
+            amount: transaction.amount,
+            created_at: transaction.created_at,
+            product_id: transaction.product_id || null,
+            customer_id: transaction.customer_id || null,
+            external_id: transaction.external_id || null,
+            metadata: transaction.metadata || {},
+            email: transaction.email
           };
           
           // Check if we have customer email info in metadata
-          if (typedTransaction.metadata && 
-              typeof typedTransaction.metadata === 'object' && 
-              typedTransaction.metadata !== null) {
-            const metadata = typedTransaction.metadata as Record<string, any>;
+          if (transaction.metadata && 
+              typeof transaction.metadata === 'object' && 
+              transaction.metadata !== null) {
+            const metadata = transaction.metadata as Record<string, any>;
             if (metadata.customer_email) {
               return {
-                ...typedTransaction,
+                ...basicTransaction,
                 email: metadata.customer_email
               };
             }
           }
           
           // Check if email might be in customer_id field (some systems store email as ID)
-          if (typedTransaction.customer_id && typeof typedTransaction.customer_id === 'string' && typedTransaction.customer_id.includes('@')) {
+          if (transaction.customer_id && typeof transaction.customer_id === 'string' && transaction.customer_id.includes('@')) {
             return {
-              ...typedTransaction,
-              email: typedTransaction.customer_id
+              ...basicTransaction,
+              email: transaction.customer_id
             };
           }
           
-          return typedTransaction;
-        }) as Transaction[];
+          return basicTransaction;
+        });
       } catch (fetchError) {
         console.error('Error in transaction query:', fetchError);
         toast({
@@ -126,12 +142,12 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
   
   // Calculate current period data
   const currentPeriodData = calculateRepeatPurchaseRate(
-    transactions as unknown as CalcTransaction[], // Type casting to match the calculator's expected type
+    transactions, // Type should be fixed now
     parseInt(selectedMonths)
   );
   
   // Calculate monthly trend data
-  const monthlyTrendData = calculateMonthlyRepeatRates(allTransactions as unknown as CalcTransaction[], 12);
+  const monthlyTrendData = calculateMonthlyRepeatRates(allTransactions, 12);
   
   // Log calculated data for debugging
   console.log("Monthly trend data calculated:", monthlyTrendData);

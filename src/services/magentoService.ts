@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/railway/client';
+import { supabase } from '@/integrations/supabase/client';
 
 export type MagentoConnection = {
   id: string;
@@ -30,7 +30,8 @@ export const fetchMagentoConnections = async (userId: string): Promise<MagentoCo
       throw error;
     }
     
-    return data || [];
+    // Type assert the data to ensure it matches our expected type
+    return (data || []) as MagentoConnection[];
   } catch (error) {
     console.error('Error in fetchMagentoConnections:', error);
     throw error;
@@ -54,7 +55,8 @@ export const fetchActiveMagentoConnections = async (userId: string): Promise<Mag
       throw error;
     }
     
-    return data || [];
+    // Type assert the data to ensure it matches our expected type
+    return (data || []) as MagentoConnection[];
   } catch (error) {
     console.error('Error in fetchActiveMagentoConnections:', error);
     throw error;
@@ -83,7 +85,8 @@ export const addMagentoConnection = async (connection: Omit<MagentoConnection, '
       throw error;
     }
     
-    return data;
+    // Type assert the data to ensure it matches our expected type
+    return data as MagentoConnection;
   } catch (error) {
     console.error('Error in addMagentoConnection:', error);
     throw error;

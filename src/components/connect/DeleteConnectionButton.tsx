@@ -3,23 +3,38 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/railway/client';
+import { supabase } from '@/integrations/supabase/client';
 import { toast as sonnerToast } from 'sonner';
+
+interface StoreConnection {
+  id: string;
+  store_id?: string;
+  store_name: string;
+  store_url: string;
+  status: string;
+  order_statuses?: string[];
+}
 
 interface DeleteConnectionButtonProps {
   connectionId: string;
   onDeleted: () => void;
+  // Add the connection prop with optional marker
+  connection?: StoreConnection;
 }
 
 const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({ 
   connectionId, 
+  connection,
   onDeleted 
 }) => {
   const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
 
   const handleDelete = async () => {
-    if (!connectionId) {
+    // If we have a connection object, use its ID, otherwise use the connectionId prop
+    const idToDelete = connection?.id || connectionId;
+
+    if (!idToDelete) {
       console.error('No connection ID provided for deletion');
       toast({
         variant: 'destructive',
@@ -36,13 +51,13 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
     setDeleting(true);
     
     try {
-      console.log(`Deleting connection ID: ${connectionId}`);
+      console.log(`Deleting connection ID: ${idToDelete}`);
       
       // Call the Edge Function to handle deletion
       const { data, error } = await supabase.functions.invoke('magento-sync', {
         body: { 
           action: 'delete_connection',
-          connectionId 
+          connectionId: idToDelete 
         }
       });
       
@@ -56,7 +71,7 @@ const DeleteConnectionButton: React.FC<DeleteConnectionButtonProps> = ({
         return;
       }
       
-      if (!data.success) {
+      if (data && !data.success) {
         console.error('Delete connection returned error:', data.error);
         toast({
           variant: 'destructive',

@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/railway/client';
+import { supabase } from '@/integrations/supabase/client';
 import { DailySales } from '@/types/sales';
 
 /**
@@ -67,13 +67,17 @@ export const fetchDailySalesData = async (
       return await fetchDailySalesFromTransactions(fromDate, toDate, storeIds);
     }
     
-    // Ensure numeric types are consistent
+    // Ensure numeric types are consistent and cast to DailySales type
     return data.map(item => ({
-      ...item,
+      id: item.id as string,
+      store_id: item.store_id as string,
+      date: item.date as string,
       total_sales: Number(item.total_sales),
       order_count: Number(item.order_count),
-      average_order_value: item.average_order_value ? Number(item.average_order_value) : null
-    }));
+      average_order_value: item.average_order_value ? Number(item.average_order_value) : null,
+      created_at: item.created_at as string,
+      updated_at: item.updated_at as string
+    })) as DailySales[];
   } catch (error) {
     console.error('Error in fetchDailySalesData:', error);
     throw error instanceof Error 
@@ -121,9 +125,10 @@ export const fetchDailySalesFromTransactions = async (
     const salesByDateAndStore = transactions.reduce((acc, transaction) => {
       if (!transaction.transaction_date) return acc;
       
-      // Extract date part from ISO string
-      const transactionDate = transaction.transaction_date.split('T')[0];
-      const storeId = transaction.store_id;
+      // Extract date part from ISO string (ensuring it's a string)
+      const transactionDateStr = String(transaction.transaction_date);
+      const transactionDate = transactionDateStr.split('T')[0];
+      const storeId = transaction.store_id as string;
       const key = `${transactionDate}-${storeId}`;
       
       if (!acc[key]) {
@@ -143,14 +148,14 @@ export const fetchDailySalesFromTransactions = async (
       acc[key].total_sales += amount;
       
       // Count as a new order if we haven't seen this transaction before
-      acc[key].sales.add(transaction.transaction_date);
+      acc[key].sales.add(String(transaction.transaction_date));
       acc[key].order_count = acc[key].sales.size;
       
       return acc;
     }, {} as Record<string, any>);
     
     // Convert the aggregated data to DailySales format
-    const dailySales = Object.values(salesByDateAndStore).map(item => ({
+    const dailySales: DailySales[] = Object.values(salesByDateAndStore).map(item => ({
       id: `fallback-${item.date}-${item.store_id}`,
       store_id: item.store_id,
       date: item.date,
@@ -159,7 +164,7 @@ export const fetchDailySalesFromTransactions = async (
       average_order_value: item.order_count > 0 ? Number((item.total_sales / item.order_count).toFixed(2)) : null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
-    })) as DailySales[];
+    }));
     
     console.log(`Generated ${dailySales.length} fallback daily sales records`);
     return dailySales;
@@ -222,7 +227,8 @@ export const fetchAvailableDataMonths = async (storeIds: string[] = []): Promise
       data.forEach(item => {
         if (!item.date) return; // Skip items without date
         
-        const date = new Date(item.date);
+        const dateStr = String(item.date);
+        const date = new Date(dateStr);
         const monthYear = `${date.getMonth() + 1}-${date.getFullYear()}`;
         
         if (!monthsSet.has(monthYear)) {
@@ -285,7 +291,8 @@ export const fetchAvailableMonthsFromTransactions = async (
       data.forEach(item => {
         if (!item.transaction_date) return; // Skip items without date
         
-        const date = new Date(item.transaction_date);
+        const dateStr = String(item.transaction_date);
+        const date = new Date(dateStr);
         const monthYear = `${date.getMonth() + 1}-${date.getFullYear()}`;
         
         if (!monthsSet.has(monthYear)) {

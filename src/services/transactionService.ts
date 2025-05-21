@@ -1,4 +1,6 @@
-import { supabase } from '@/integrations/railway/client';
+
+import { supabase } from '@/integrations/supabase/client';
+import { SyncProgress } from '@/types/sync';
 
 // Type definitions
 export interface BasketOpenerProduct {
@@ -7,23 +9,6 @@ export interface BasketOpenerProduct {
   opener_count: number;
   total_appearances: number;
   opener_score: number;
-}
-
-export interface SyncProgress {
-  id: string;
-  store_id: string;
-  connection_id: string;
-  current_page: number;
-  total_pages: number | null;
-  orders_processed: number;
-  total_orders: number | null;
-  status: 'in_progress' | 'completed' | 'error' | 'failed';
-  started_at: string;
-  updated_at: string;
-  error_message?: string;
-  skipped_orders?: number;
-  warning_message?: string;
-  notes?: string;
 }
 
 /**
@@ -86,7 +71,8 @@ export const fetchBasketOpenerProducts = async (
       throw error;
     }
     
-    return data || [];
+    // Ensure we return an array of BasketOpenerProduct, even if empty
+    return data ? data as BasketOpenerProduct[] : [];
   } catch (error) {
     console.error('Exception in fetchBasketOpenerProducts:', error);
     throw error;
@@ -172,7 +158,7 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
       
       if (data && data.success && data.progress) {
         console.log('Sync progress from Edge Function:', data.progress);
-        return data.progress;
+        return data.progress as SyncProgress;
       }
     } catch (edgeFunctionError) {
       console.error('Edge Function error:', edgeFunctionError);
@@ -208,7 +194,7 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
     }
     
     console.log('Sync progress from database:', data);
-    return data as SyncProgress;
+    return data as unknown as SyncProgress;
   } catch (error) {
     console.error('Error in fetchSyncProgress:', error);
     throw error;
@@ -232,12 +218,30 @@ export const fetchSyncHistory = async (storeId: string, limit = 5): Promise<Sync
       throw error;
     }
     
+    // Make sure we get back a properly typed array
+    if (!data) {
+      return [];
+    }
+    
     // Ensure all items have the correct status type
-    const history: SyncProgress[] = (data || []).map(item => ({
+    const history = data.map(item => ({
       ...item,
+      id: item.id as string,
+      store_id: item.store_id as string,
+      connection_id: item.connection_id as string,
+      current_page: item.current_page as number,
+      total_pages: item.total_pages as number | null,
+      orders_processed: item.orders_processed as number,
+      total_orders: item.total_orders as number | null,
       status: (item.status === 'in_progress' || item.status === 'completed' || item.status === 'error' || item.status === 'failed') 
         ? item.status as 'in_progress' | 'completed' | 'error' | 'failed'
-        : 'in_progress' // Default to in_progress if unknown status
+        : 'in_progress', // Default to in_progress if unknown status
+      started_at: item.started_at as string,
+      updated_at: item.updated_at as string,
+      error_message: item.error_message as string | undefined,
+      skipped_orders: item.skipped_orders as number | undefined,
+      warning_message: item.warning_message as string | undefined,
+      notes: item.notes as string | undefined
     }));
     
     return history;

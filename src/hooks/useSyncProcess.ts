@@ -1,8 +1,9 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/railway/client';
-import { fetchSyncProgress, SyncProgress } from '@/services/transactionService';
+import { supabase } from '@/integrations/supabase/client';
+import { fetchSyncProgress } from '@/services/transactionService';
+import { SyncProgress } from '@/types/sync';
 
 interface SyncState {
   products: 'waiting' | 'syncing' | 'completed';
@@ -49,8 +50,8 @@ export const useSyncProcess = () => {
             
             if (connection && connection.store_id) {
               // Store ID has been assigned, save it and use it for future queries
-              setStoreId(connection.store_id);
-              progress = await fetchSyncProgress(connection.store_id);
+              setStoreId(connection.store_id as string);
+              progress = await fetchSyncProgress(connection.store_id as string);
             } else {
               // Try to get progress using connection_id directly
               const { data } = await supabase

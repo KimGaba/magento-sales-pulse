@@ -71,7 +71,8 @@ const ConnectionsList: React.FC<ConnectionsListProps> = ({
               </div>
               <div>
                 <DeleteConnectionButton 
-                  connection={connection} 
+                  connectionId={connection.id}
+                  connection={connection}
                   onDeleted={() => onDisconnect(connection)} 
                 />
               </div>

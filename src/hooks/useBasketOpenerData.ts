@@ -38,8 +38,13 @@ export const useBasketOpenerData = (selectedMonths: string) => {
       // Get stores the user has access to
       let storeIds: string[] = [];
       if (user) {
-        const userStores = await getStoresForUser(user.id);
-        storeIds = userStores.map(store => store.id);
+        try {
+          const userStores = await getStoresForUser(user.id);
+          storeIds = userStores.map(store => store.id);
+        } catch (error) {
+          console.error('Error getting stores for user:', error);
+          // Continue with empty storeIds
+        }
       }
       
       // If there are no stores, return empty data
