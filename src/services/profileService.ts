@@ -80,7 +80,7 @@ export const isUserAdmin = async (userId: string): Promise<boolean> => {
     }
     
     // Check if tier field exists and has admin value
-    if (data && data.tier) {
+    if (data && typeof data.tier === 'string') {
       return data.tier === 'admin';
     }
     

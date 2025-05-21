@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { SyncProgress, Transaction } from '@/types/database';
 
@@ -284,7 +283,7 @@ export const fetchSyncProgress = async (storeIdOrConnectionId: string): Promise<
     
     if (data && data.length > 0) {
       const syncData = data[0];
-      // Type cast and add missing fields with default values if they don't exist
+      // Create a properly typed object from the data
       return {
         id: syncData.id,
         store_id: syncData.store_id,
@@ -297,8 +296,8 @@ export const fetchSyncProgress = async (storeIdOrConnectionId: string): Promise<
         started_at: syncData.started_at,
         updated_at: syncData.updated_at,
         error_message: syncData.error_message,
-        skipped_orders: 'skipped_orders' in syncData ? syncData.skipped_orders : 0,
-        warning_message: 'warning_message' in syncData ? syncData.warning_message : '',
+        skipped_orders: typeof syncData.skipped_orders === 'number' ? syncData.skipped_orders : 0,
+        warning_message: typeof syncData.warning_message === 'string' ? syncData.warning_message : '',
         notes: syncData.notes
       };
     }
@@ -332,7 +331,7 @@ export const fetchSyncHistory = async (storeId: string, limit = 5): Promise<Sync
     }
     
     // Ensure all items have the correct status type and fields
-    const history = data.map(item => ({
+    const history: SyncProgress[] = data.map(item => ({
       id: item.id,
       store_id: item.store_id,
       connection_id: item.connection_id,
@@ -346,8 +345,8 @@ export const fetchSyncHistory = async (storeId: string, limit = 5): Promise<Sync
       started_at: item.started_at,
       updated_at: item.updated_at,
       error_message: item.error_message,
-      skipped_orders: 'skipped_orders' in item ? item.skipped_orders : 0,
-      warning_message: 'warning_message' in item ? item.warning_message : '',
+      skipped_orders: typeof item.skipped_orders === 'number' ? item.skipped_orders : 0,
+      warning_message: typeof item.warning_message === 'string' ? item.warning_message : '',
       notes: item.notes
     }));
     
