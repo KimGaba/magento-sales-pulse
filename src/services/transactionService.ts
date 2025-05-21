@@ -211,7 +211,7 @@ export const fetchSyncProgress = async (storeIdOrConnectionId: string): Promise<
       });
       
       if (error) {
-        console.error('Error invoking Edge Function for sync progress:', error);
+        console.log('Error invoking Edge Function for sync progress:', error);
         
         // Special handling for Edge Function connection errors
         if (error.message && error.message.includes('Failed to send a request to the Edge Function')) {
@@ -237,8 +237,8 @@ export const fetchSyncProgress = async (storeIdOrConnectionId: string): Promise<
           started_at: data.progress.started_at,
           updated_at: data.progress.updated_at,
           error_message: data.progress.error_message,
-          skipped_orders: data.progress.skipped_orders || 0,
-          warning_message: data.progress.warning_message || '',
+          skipped_orders: data.progress.skipped_orders ?? 0,
+          warning_message: data.progress.warning_message ?? '',
           notes: data.progress.notes
         };
       }
@@ -284,7 +284,7 @@ export const fetchSyncProgress = async (storeIdOrConnectionId: string): Promise<
     
     if (data && data.length > 0) {
       const syncData = data[0];
-      // Create a properly typed object from the data
+      // Create a properly typed object from the data and ensure all fields are present
       return {
         id: syncData.id,
         store_id: syncData.store_id,
@@ -296,9 +296,9 @@ export const fetchSyncProgress = async (storeIdOrConnectionId: string): Promise<
         status: syncData.status as 'in_progress' | 'completed' | 'error' | 'failed',
         started_at: syncData.started_at,
         updated_at: syncData.updated_at,
-        error_message: syncData.error_message || '',
+        error_message: syncData.error_message ?? '',
         skipped_orders: syncData.skipped_orders !== undefined ? Number(syncData.skipped_orders) : 0,
-        warning_message: syncData.warning_message || '',
+        warning_message: syncData.warning_message ?? '',
         notes: syncData.notes
       };
     }
@@ -345,9 +345,9 @@ export const fetchSyncHistory = async (storeId: string, limit = 5): Promise<Sync
         : 'in_progress', // Default to in_progress if unknown status
       started_at: item.started_at,
       updated_at: item.updated_at,
-      error_message: item.error_message || '',
+      error_message: item.error_message ?? '',
       skipped_orders: item.skipped_orders !== undefined ? Number(item.skipped_orders) : 0,
-      warning_message: item.warning_message || '',
+      warning_message: item.warning_message ?? '',
       notes: item.notes
     }));
     
