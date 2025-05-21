@@ -87,13 +87,13 @@ You can generate a production build and serve it locally with:
 
 ```bash
 npm run build
-npx serve -s dist -l tcp://0.0.0.0:8080
+npx serve -s dist -l tcp://0.0.0.0:3000
 ```
 
 The `Dockerfile` instead starts the development server with:
 
 ```bash
-npm run dev -- --host 0.0.0.0
+npm run dev -- --host 0.0.0.0 --port 3000
 ```
 
 ### Deploying to Railway
@@ -122,4 +122,4 @@ The project includes a `docker-compose.yml` file that starts the React dev serve
 docker compose up
 ```
 
-The application will be available at `http://localhost:5173` and the PostgreSQL database listens on port `5432`.
+The application will be available at `http://localhost:3000` and the PostgreSQL database listens on port `5432`.
