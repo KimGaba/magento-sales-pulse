@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SyncProgress } from '@/types/sync';
+import { SyncProgress, Transaction } from '@/types/database';
 
 // Type definitions
 export interface BasketOpenerProduct {
@@ -89,7 +89,7 @@ export const fetchTransactionData = async (
   storeView?: string,
   customerGroup?: string,
   orderStatuses?: string[]
-) => {
+): Promise<Transaction[]> => {
   try {
     console.log(`Fetching transactions from ${fromDate} to ${toDate}`);
     

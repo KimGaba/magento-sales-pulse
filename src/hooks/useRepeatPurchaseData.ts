@@ -35,7 +35,7 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
             product_id: transaction.product_id || null,
             customer_id: transaction.customer_id || null,
             external_id: transaction.external_id || null,
-            metadata: transaction.metadata || {},
+            metadata: typeof transaction.metadata === 'object' ? transaction.metadata as Record<string, any> : {},
             email: '', // Initialize with empty string, we'll try to extract it below
             customer_name: transaction.customer_name || null
           };
@@ -94,7 +94,7 @@ export const useRepeatPurchaseData = (selectedMonths: string) => {
             product_id: transaction.product_id || null,
             customer_id: transaction.customer_id || null,
             external_id: transaction.external_id || null,
-            metadata: transaction.metadata || {},
+            metadata: typeof transaction.metadata === 'object' ? transaction.metadata as Record<string, any> : {},
             email: '', // Initialize with empty string, we'll try to extract it below
             customer_name: transaction.customer_name || null
           };

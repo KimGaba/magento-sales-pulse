@@ -15,4 +15,46 @@ export interface Transaction {
   customer_name: string | null;
 }
 
+// Define the TestResult interface that multiple files are looking for
+export interface TestResult {
+  name: string;
+  status: 'pending' | 'success' | 'error';
+  message: string;
+  details?: string;
+}
+
+// Define the Profile interface that multiple files are looking for
+export interface Profile {
+  id: string;
+  display_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  invoice_address: string | null;
+  city: string | null;
+  postal_code: string | null;
+  country: string | null;
+  timezone: string | null;
+  tier: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Define SyncProgress for transactionService and related components
+export interface SyncProgress {
+  id: string;
+  store_id: string;
+  connection_id: string;
+  current_page: number;
+  total_pages: number | null;
+  orders_processed: number;
+  total_orders: number | null;
+  status: 'in_progress' | 'completed' | 'error' | 'failed';
+  started_at: string;
+  updated_at: string;
+  error_message?: string;
+  skipped_orders?: number;
+  warning_message?: string;
+  notes?: string;
+}
+
 // Add other database types as needed here
