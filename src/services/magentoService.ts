@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export type MagentoConnection = {
@@ -94,26 +93,37 @@ export const addMagentoConnection = async (connection: Omit<MagentoConnection, '
 };
 
 /**
- * Triggers a Magento synchronization for a specific store
+ * Triggers a Magento synchronization for a specific store or connection
  */
-export const triggerMagentoSync = async (storeId: string, changesOnly = false): Promise<any> => {
-  // Validate storeId
-  if (!storeId || storeId.trim() === '') {
-    console.error('Error triggering Magento sync: storeId is empty or undefined');
-    throw new Error('Store ID is required for synchronization');
+export const triggerMagentoSync = async (id: string, changesOnly = false, isConnectionId = false): Promise<any> => {
+  // Validate id
+  if (!id || id.trim() === '') {
+    console.error('Error triggering Magento sync: id is empty or undefined');
+    throw new Error('ID is required for synchronization');
   }
   
-  console.log(`Triggering Magento sync for store ${storeId}, changesOnly: ${changesOnly}`);
+  console.log(`Triggering Magento sync for ${isConnectionId ? 'connection' : 'store'} ${id}, changesOnly: ${changesOnly}`);
   
   try {
-    // Call the Supabase Edge Function with the store ID and trigger type
+    // Call the Supabase Edge Function with the id and trigger type
+    const body = isConnectionId 
+      ? { 
+          connection_id: id,
+          trigger: 'manual_sync',
+          syncType: changesOnly ? 'changes_only' : 'full',
+          maxPages: 1000
+        } 
+      : { 
+          store_id: id,
+          trigger: 'manual_sync',
+          syncType: changesOnly ? 'changes_only' : 'full',
+          maxPages: 1000
+        };
+    
+    console.log('Invoking edge function with body:', body);
+    
     const { data, error } = await supabase.functions.invoke('magento-sync', {
-      body: { 
-        store_id: storeId,
-        trigger: 'manual_sync',
-        syncType: changesOnly ? 'changes_only' : 'full',
-        maxPages: 1000 // Set maximum pages to 1000 to support up to 100,000 orders
-      }
+      body: body
     });
     
     if (error) {

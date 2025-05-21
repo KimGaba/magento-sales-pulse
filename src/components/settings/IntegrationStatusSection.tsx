@@ -21,7 +21,7 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ sho
   const [loading, setLoading] = useState(true);
   const [fetchingChanges, setFetchingChanges] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [selectedStore, setSelectedStore] = useState<string | null>(null);
+  const [selectedConnection, setSelectedConnection] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
@@ -31,13 +31,19 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ sho
   }, [user]);
   
   useEffect(() => {
-    if (connections.length > 0 && !selectedStore) {
-      const firstValidStore = connections.find(conn => conn.store_id)?.store_id || null;
-      if (firstValidStore) {
-        console.log('Setting default selected store:', firstValidStore);
-        setSelectedStore(firstValidStore);
+    if (connections.length > 0 && !selectedConnection) {
+      // Prioriter forbindelser med store_id, men tag den første forbindelse hvis ingen har store_id
+      const connectionWithStoreId = connections.find(conn => conn.store_id);
+      const firstConnection = connections[0];
+      
+      if (connectionWithStoreId) {
+        console.log('Vælger forbindelse med store_id:', connectionWithStoreId.id);
+        setSelectedConnection(connectionWithStoreId.store_id as string);
+      } else if (firstConnection) {
+        console.log('Ingen forbindelser med store_id fundet, bruger connection_id i stedet:', firstConnection.id);
+        setSelectedConnection(firstConnection.id);
       } else {
-        console.warn('No valid store_id found in connections');
+        console.warn('Ingen forbindelser fundet');
       }
     }
   }, [connections]);
@@ -51,15 +57,18 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ sho
     try {
       const connectionsData = await fetchMagentoConnections(user.id);
       
-      const validConnections = connectionsData.filter(
-        (conn) => conn.store_id !== null
-      );
-      
-      if (validConnections.length === 0 && connectionsData.length > 0) {
-        setError('Du har forbindelser, men ingen har et gyldigt store_id');
+      if (connectionsData.length > 0) {
+        setConnections(connectionsData);
+        
+        // Tjek om der er nogen forbindelser med gyldigt store_id
+        const hasValidStoreId = connectionsData.some(conn => conn.store_id);
+        
+        if (!hasValidStoreId) {
+          setError('Du har forbindelser, men ingen har et gyldigt store_id. Prøv at trykke på "Synkroniser nu" for at starte en synkronisering.');
+        }
+      } else {
+        setConnections([]);
       }
-      
-      setConnections(validConnections);
     } catch (error) {
       console.error("Error fetching connections:", error);
       setError('Der opstod en fejl ved indlæsning af integrationer');
@@ -70,15 +79,28 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ sho
   };
   
   const handleFullSync = async () => {
-    if (!selectedStore) {
-      toast.error("Ingen butik valgt. Vælg venligst en butik først.");
+    if (!selectedConnection) {
+      toast.error("Ingen forbindelse valgt. Vælg venligst en forbindelse først.");
       return;
     }
     
     setSyncing(true);
     try {
-      console.log('Triggering full sync for store ID:', selectedStore);
-      const result = await triggerMagentoSync(selectedStore);
+      console.log('Trigger sync for connection/store ID:', selectedConnection);
+      
+      // Afgør om dette er et store_id eller connection_id
+      const selectedConn = connections.find(c => c.store_id === selectedConnection || c.id === selectedConnection);
+      
+      if (!selectedConn) {
+        throw new Error('Valgt forbindelse ikke fundet');
+      }
+      
+      const idToUse = selectedConn.store_id || selectedConn.id;
+      const isConnectionId = !selectedConn.store_id;
+      
+      console.log(`Using ${isConnectionId ? 'connection_id' : 'store_id'}: ${idToUse}`);
+      
+      const result = await triggerMagentoSync(idToUse, false, isConnectionId);
       console.log('Sync result:', result);
       
       toast.success("Synkronisering er igangsat. Det kan tage et par minutter at fuldføre.");
@@ -101,16 +123,27 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ sho
   };
   
   const handleFetchChanges = async () => {
-    if (!selectedStore) {
-      toast.error("Ingen butik valgt. Vælg venligst en butik først.");
+    if (!selectedConnection) {
+      toast.error("Ingen forbindelse valgt. Vælg venligst en forbindelse først.");
       return;
     }
     
     setFetchingChanges(true);
     
     try {
-      console.log('Fetching changes for store ID:', selectedStore);
-      const result = await triggerMagentoSync(selectedStore);
+      // Afgør om dette er et store_id eller connection_id
+      const selectedConn = connections.find(c => c.store_id === selectedConnection || c.id === selectedConnection);
+      
+      if (!selectedConn) {
+        throw new Error('Valgt forbindelse ikke fundet');
+      }
+      
+      const idToUse = selectedConn.store_id || selectedConn.id;
+      const isConnectionId = !selectedConn.store_id;
+      
+      console.log(`Fetching changes for ${isConnectionId ? 'connection_id' : 'store_id'}: ${idToUse}`);
+      
+      const result = await triggerMagentoSync(idToUse, true, isConnectionId);
       console.log('Fetch changes result:', result);
       
       toast.success("Henter ændringer fra din butik. Dette vil blive opdateret om et øjeblik.");
@@ -144,14 +177,6 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ sho
     );
   }
   
-  if (error) {
-    return (
-      <Alert variant="destructive" className="mb-6">
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
-  }
-  
   if (connections.length === 0) {
     return (
       <Card>
@@ -175,7 +200,7 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ sho
               onClick={handleFetchChanges} 
               size="sm" 
               variant="outline"
-              disabled={fetchingChanges || !selectedStore}
+              disabled={fetchingChanges || !selectedConnection}
               className="flex items-center gap-1"
             >
               {fetchingChanges ? (
@@ -195,7 +220,7 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ sho
               <Button 
                 onClick={handleFullSync} 
                 size="sm" 
-                disabled={syncing || !selectedStore}
+                disabled={syncing || !selectedConnection}
                 className="flex items-center gap-1"
               >
                 {syncing ? (
@@ -218,6 +243,12 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ sho
             connections={connections}
             loadingConnections={loading}
           />
+          
+          {error && (
+            <Alert variant="warning" className="mt-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
@@ -231,25 +262,31 @@ const IntegrationStatusSection: React.FC<IntegrationStatusSectionProps> = ({ sho
               <select
                 id="storeSelect"
                 className="border border-gray-300 rounded-md w-full p-2"
-                value={selectedStore || ''}
+                value={selectedConnection || ''}
                 onChange={(e) => {
-                  console.log('Store selected:', e.target.value);
-                  setSelectedStore(e.target.value);
+                  console.log('Store/connection selected:', e.target.value);
+                  setSelectedConnection(e.target.value);
                 }}
               >
-                {connections.map(connection => (
-                  <option key={connection.id} value={connection.store_id || ''}>
-                    {connection.store_name} {!connection.store_id && '(Mangler store ID)'}
-                  </option>
-                ))}
+                {connections.map(connection => {
+                  const label = connection.store_name + (connection.store_id ? '' : ' (Mangler store ID)');
+                  const value = connection.store_id || connection.id;
+                  return (
+                    <option key={connection.id} value={value}>
+                      {label}
+                    </option>
+                  );
+                })}
               </select>
             </div>
           )}
           
-          {selectedStore && (
+          {selectedConnection && (
             <SyncStatus 
-              storeId={selectedStore} 
+              storeId={selectedConnection} 
               onRefresh={loadConnections}
+              onStartSync={handleFullSync}
+              onRestartSync={handleFullSync}
             />
           )}
         </div>

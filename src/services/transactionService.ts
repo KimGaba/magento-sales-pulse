@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SyncProgress, Transaction } from '@/types/database';
 
@@ -161,18 +162,52 @@ export const fetchTransactionData = async (
 
 /**
  * Fetches the sync progress for a store
+ * Modified to handle connections without a valid store_id
  */
-export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress | null> => {
+export const fetchSyncProgress = async (storeIdOrConnectionId: string): Promise<SyncProgress | null> => {
   try {
-    console.log(`Fetching sync progress for store: ${storeId}`);
+    console.log(`Fetching sync progress for: ${storeIdOrConnectionId}`);
+    
+    // First try to determine if this is a connection_id rather than a store_id
+    let isConnectionId = false;
+    let connectionId = null;
+    let storeId = storeIdOrConnectionId;
+    
+    // Check if this might be a connection ID and not a store ID
+    try {
+      const { data: connectionData } = await supabase
+        .from('magento_connections')
+        .select('id, store_id')
+        .eq('id', storeIdOrConnectionId)
+        .maybeSingle();
+      
+      if (connectionData) {
+        console.log('Found matching connection:', connectionData);
+        isConnectionId = true;
+        connectionId = connectionData.id;
+        
+        // If the connection has a valid store_id, use that instead
+        if (connectionData.store_id) {
+          console.log(`Connection has store_id: ${connectionData.store_id}, using it`);
+          storeId = connectionData.store_id;
+          isConnectionId = false;
+        }
+      }
+    } catch (err) {
+      console.log('Error checking if ID is a connection ID, assuming it is a store ID:', err);
+    }
     
     // First try to use the Edge Function to get more detailed progress
     try {
+      // If we are working with a connection_id without store_id, adjust the request
+      const requestBody = isConnectionId 
+        ? { action: 'get_sync_progress', connectionId: connectionId } 
+        : { action: 'get_sync_progress', storeId: storeId };
+      
+      console.log('Invoking Edge Function with:', requestBody);
+      
       const { data, error } = await supabase.functions.invoke('magento-sync', {
-        body: { 
-          action: 'get_sync_progress',
-          storeId: storeId
-        }
+        body: requestBody
       });
       
       if (error) {
@@ -202,7 +237,6 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
           started_at: data.progress.started_at,
           updated_at: data.progress.updated_at,
           error_message: data.progress.error_message,
-          // Add missing properties with defaults if not present
           skipped_orders: data.progress.skipped_orders || 0,
           warning_message: data.progress.warning_message || undefined,
           notes: data.progress.notes
@@ -222,13 +256,26 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
     }
     
     // Fallback: query the sync_progress table directly
-    const { data, error } = await supabase
-      .from('sync_progress')
-      .select('*')
-      .eq('store_id', storeId)
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // If we're working with a connection ID, try to find sync_progress by connection_id first
+    let query = supabase.from('sync_progress');
+    
+    if (isConnectionId) {
+      console.log(`Querying sync_progress by connection_id: ${connectionId}`);
+      query = query
+        .select('*')
+        .eq('connection_id', connectionId)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+    } else {
+      console.log(`Querying sync_progress by store_id: ${storeId}`);
+      query = query
+        .select('*')
+        .eq('store_id', storeId)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+    }
+    
+    const { data, error } = await query.maybeSingle();
     
     if (error) {
       if (error.code === 'PGRST116') {
@@ -257,7 +304,6 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
         started_at: data.started_at,
         updated_at: data.updated_at,
         error_message: data.error_message,
-        // Add missing properties with defaults if not present in the database response
         skipped_orders: (data as any).skipped_orders || 0,
         warning_message: (data as any).warning_message,
         notes: data.notes
