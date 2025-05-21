@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SyncProgress, Transaction } from '@/types/database';
 
@@ -123,6 +124,20 @@ export const fetchTransactionData = async (
     
     // Transform the data to match the Transaction type
     const transformedData: Transaction[] = (data || []).map(item => {
+      // Extract email from metadata if available
+      let email = '';
+      if (item.metadata && typeof item.metadata === 'object') {
+        const meta = item.metadata as Record<string, any>;
+        if (meta.customer_email) {
+          email = meta.customer_email.toString();
+        }
+      }
+      
+      // Check if customer_id might contain an email
+      if (!email && item.customer_id && typeof item.customer_id === 'string' && item.customer_id.includes('@')) {
+        email = item.customer_id;
+      }
+      
       return {
         id: item.id,
         store_id: item.store_id,
@@ -133,7 +148,7 @@ export const fetchTransactionData = async (
         customer_id: item.customer_id || null,
         external_id: item.external_id || null,
         metadata: item.metadata || {}, // Using 'any' type as defined in Transaction interface
-        email: item.email || '', // Set a default value for email
+        email: email, // Set email from extracted value
         customer_name: item.customer_name || null
       };
     });
@@ -188,8 +203,9 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
           started_at: data.progress.started_at,
           updated_at: data.progress.updated_at,
           error_message: data.progress.error_message,
-          skipped_orders: data.progress.skipped_orders,
-          warning_message: data.progress.warning_message,
+          // Add missing properties with defaults if not present
+          skipped_orders: data.progress.skipped_orders || 0,
+          warning_message: data.progress.warning_message || undefined,
           notes: data.progress.notes
         };
       }
@@ -242,8 +258,9 @@ export const fetchSyncProgress = async (storeId: string): Promise<SyncProgress |
         started_at: data.started_at,
         updated_at: data.updated_at,
         error_message: data.error_message,
-        skipped_orders: data.skipped_orders || 0,
-        warning_message: data.warning_message,
+        // Add missing properties with defaults if not present in the database response
+        skipped_orders: (data as any).skipped_orders || 0,
+        warning_message: (data as any).warning_message,
         notes: data.notes
       };
     }
@@ -291,8 +308,9 @@ export const fetchSyncHistory = async (storeId: string, limit = 5): Promise<Sync
       started_at: item.started_at,
       updated_at: item.updated_at,
       error_message: item.error_message,
-      skipped_orders: item.skipped_orders || 0,
-      warning_message: item.warning_message,
+      // Add missing properties with defaults if not present
+      skipped_orders: (item as any).skipped_orders || 0,
+      warning_message: (item as any).warning_message,
       notes: item.notes
     }));
     
