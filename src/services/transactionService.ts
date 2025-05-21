@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { SyncProgress, Transaction } from '@/types/database';
 
@@ -147,8 +146,8 @@ export const fetchTransactionData = async (
         product_id: item.product_id || null,
         customer_id: item.customer_id || null,
         external_id: item.external_id || null,
-        metadata: item.metadata || {}, // Using 'any' type as defined in Transaction interface
-        email: email, // Set email from extracted value
+        metadata: item.metadata || {}, 
+        email: email, 
         customer_name: item.customer_name || null
       };
     });
@@ -308,7 +307,6 @@ export const fetchSyncHistory = async (storeId: string, limit = 5): Promise<Sync
       started_at: item.started_at,
       updated_at: item.updated_at,
       error_message: item.error_message,
-      // Add missing properties with defaults if not present
       skipped_orders: (item as any).skipped_orders || 0,
       warning_message: (item as any).warning_message,
       notes: item.notes
