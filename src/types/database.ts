@@ -10,8 +10,8 @@ export interface Transaction {
   product_id: string | null;
   customer_id: string | null;
   external_id: string | null;
-  metadata: any; // Changed from Record<string, any> to any to support all JSON types
-  email: string; // Add this field to support email lookups
+  metadata: any; // Using 'any' type to support all JSON types
+  email: string; // Required for email lookups
   customer_name: string | null;
 }
 
@@ -52,8 +52,8 @@ export interface SyncProgress {
   started_at: string;
   updated_at: string;
   error_message?: string;
-  skipped_orders?: number;
-  warning_message?: string;
+  skipped_orders?: number;  // Added missing property
+  warning_message?: string; // Added missing property
   notes?: string;
 }
 

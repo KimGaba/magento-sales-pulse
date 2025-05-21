@@ -133,7 +133,7 @@ export const fetchTransactionData = async (
         customer_id: item.customer_id || null,
         external_id: item.external_id || null,
         metadata: item.metadata || {}, // Using 'any' type as defined in Transaction interface
-        email: '', // Required email field with default empty value
+        email: item.email || '', // Set a default value for email
         customer_name: item.customer_name || null
       };
     });
