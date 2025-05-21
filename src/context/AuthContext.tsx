@@ -41,44 +41,86 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [showConfigError, setShowConfigError] = useState<boolean>(false);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const [supabaseInitialized, setSupabaseInitialized] = useState<boolean>(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   const isPublicPage = location.pathname === '/login' || location.pathname === '/';
   
   console.log("AuthContext initialized, current path:", location.pathname);
+  console.log("Supabase client exists:", !!supabase);
+
+  // Check if supabase is properly initialized
+  useEffect(() => {
+    if (!supabase) {
+      console.error("Supabase client is not defined");
+      setShowConfigError(true);
+      setSupabaseInitialized(false);
+    } else {
+      setSupabaseInitialized(true);
+    }
+  }, []);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        console.log("Auth state changed:", event, currentSession);
-        
-        if (currentSession) {
-          console.log("User authenticated:", currentSession.user?.email);
-          setIsAuthenticated(true);
-          setUser(currentSession.user);
-          setSession(currentSession);
-          
-          if (location.pathname === '/login' && isInitialized) {
-            console.log("Redirecting from login to dashboard");
-            navigate('/dashboard', { replace: true });
-          }
-        } else {
-          console.log("No active session");
-          setIsAuthenticated(false);
-          setUser(null);
-          setSession(null);
-          
-          if (!isPublicPage && isInitialized) {
-            console.log("Not authenticated, redirecting to login");
-            navigate('/login', { replace: true });
-          }
-        }
+    let subscription: { unsubscribe: () => void } | null = null;
+    
+    const setupAuthListener = async () => {
+      if (!supabase || !supabaseInitialized) {
+        console.log("Skipping auth listener setup - supabase not initialized");
+        return;
       }
-    );
+      
+      try {
+        const { data } = supabase.auth.onAuthStateChange(
+          (event, currentSession) => {
+            console.log("Auth state changed:", event, currentSession);
+            
+            if (currentSession) {
+              console.log("User authenticated:", currentSession.user?.email);
+              setIsAuthenticated(true);
+              setUser(currentSession.user);
+              setSession(currentSession);
+              
+              if (location.pathname === '/login' && isInitialized) {
+                console.log("Redirecting from login to dashboard");
+                navigate('/dashboard', { replace: true });
+              }
+            } else {
+              console.log("No active session");
+              setIsAuthenticated(false);
+              setUser(null);
+              setSession(null);
+              
+              if (!isPublicPage && isInitialized) {
+                console.log("Not authenticated, redirecting to login");
+                navigate('/login', { replace: true });
+              }
+            }
+          }
+        );
+        
+        subscription = data.subscription;
+      } catch (error) {
+        console.error("Error setting up auth listener:", error);
+      }
+    };
 
     const checkSession = async () => {
       console.log("Checking for existing session...");
+      if (!supabase || !supabaseInitialized) {
+        console.error("Cannot check session - supabase not initialized");
+        setIsAuthenticated(false);
+        setUser(null);
+        setSession(null);
+        setIsInitialized(true);
+        
+        if (!isPublicPage) {
+          console.log("No Supabase connection, redirecting to login");
+          navigate('/login', { replace: true });
+        }
+        return;
+      }
+      
       try {
         const { data, error } = await supabase.auth.getSession();
         
@@ -120,16 +162,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsInitialized(true);
       }
     };
-
+    
+    setupAuthListener();
     checkSession();
 
     return () => {
       console.log("Cleaning up auth effect, unsubscribing");
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
-  }, [navigate, isPublicPage, location.pathname, isInitialized]);
+  }, [navigate, isPublicPage, location.pathname, supabaseInitialized]);
 
   const login = async (email: string, password: string) => {
+    if (!supabase) {
+      toast.error('Supabase is not properly initialized');
+      throw new Error('Supabase is not properly initialized');
+    }
+    
     try {
       console.log("Attempting email login with:", email);
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -150,6 +198,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (email: string, password: string) => {
+    if (!supabase) {
+      toast.error('Supabase is not properly initialized');
+      throw new Error('Supabase is not properly initialized');
+    }
+    
     try {
       console.log("Attempting registration with:", email);
       const { data, error } = await supabase.auth.signUp({
@@ -172,6 +225,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithGoogle = async () => {
+    if (!supabase) {
+      toast.error('Supabase is not properly initialized');
+      throw new Error('Supabase is not properly initialized');
+    }
+    
     try {
       console.log("Starting Google login...");
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -195,6 +253,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    if (!supabase) {
+      toast.error('Supabase is not properly initialized');
+      return;
+    }
+    
     try {
       console.log("Attempting logout");
       const { error } = await supabase.auth.signOut();
@@ -213,6 +276,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const testLogin = async () => {
+    if (!supabase) {
+      toast.error('Supabase is not properly initialized');
+      throw new Error('Supabase is not properly initialized');
+    }
+    
     try {
       console.log("Attempting test user login");
       const testEmail = "test@test.dk";
@@ -247,13 +315,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         
         if (signUpError) throw signUpError;
-        
-        // Use a custom approach to bypass email verification
-        // Since we can't directly mark email as confirmed through frontend,
-        // we'll use the admin API token in a production environment
-        
-        // For development purposes, we'll attempt direct login and inform the user
-        // about email confirmation requirements
         
         // Try to sign in again after creating the account
         const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
