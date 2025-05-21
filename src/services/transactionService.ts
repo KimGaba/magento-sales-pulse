@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { SyncProgress, Transaction } from '@/types/database';
 
@@ -290,14 +291,14 @@ export const fetchSyncProgress = async (storeIdOrConnectionId: string): Promise<
         connection_id: syncData.connection_id,
         current_page: syncData.current_page,
         total_pages: syncData.total_pages,
-        orders_processed: syncData.orders_processed,
         total_orders: syncData.total_orders,
+        orders_processed: syncData.orders_processed,
         status: syncData.status as 'in_progress' | 'completed' | 'error' | 'failed',
         started_at: syncData.started_at,
         updated_at: syncData.updated_at,
-        error_message: syncData.error_message,
-        skipped_orders: typeof syncData.skipped_orders === 'number' ? syncData.skipped_orders : 0,
-        warning_message: typeof syncData.warning_message === 'string' ? syncData.warning_message : '',
+        error_message: syncData.error_message || '',
+        skipped_orders: syncData.skipped_orders !== undefined ? Number(syncData.skipped_orders) : 0,
+        warning_message: syncData.warning_message || '',
         notes: syncData.notes
       };
     }
@@ -344,9 +345,9 @@ export const fetchSyncHistory = async (storeId: string, limit = 5): Promise<Sync
         : 'in_progress', // Default to in_progress if unknown status
       started_at: item.started_at,
       updated_at: item.updated_at,
-      error_message: item.error_message,
-      skipped_orders: typeof item.skipped_orders === 'number' ? item.skipped_orders : 0,
-      warning_message: typeof item.warning_message === 'string' ? item.warning_message : '',
+      error_message: item.error_message || '',
+      skipped_orders: item.skipped_orders !== undefined ? Number(item.skipped_orders) : 0,
+      warning_message: item.warning_message || '',
       notes: item.notes
     }));
     

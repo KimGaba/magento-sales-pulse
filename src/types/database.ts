@@ -34,7 +34,7 @@ export interface Profile {
   postal_code: string | null;
   country: string | null;
   timezone: string | null;
-  tier: string;
+  tier: string | null; // Added tier property
   created_at: string;
   updated_at: string;
 }
@@ -52,8 +52,8 @@ export interface SyncProgress {
   started_at: string;
   updated_at: string;
   error_message?: string;
-  skipped_orders?: number;
-  warning_message?: string;
+  skipped_orders: number; // Ensure this is required, not optional
+  warning_message: string; // Ensure this is required, not optional
   notes?: string;
 }
 
